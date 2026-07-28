@@ -19,7 +19,7 @@ export default function FilamentForm({
     <form action={action} className="space-y-4">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Color name
           </label>
           <input
@@ -27,24 +27,24 @@ export default function FilamentForm({
             required
             placeholder="Obsidian Black, Sakura Pink..."
             defaultValue={initial?.color_name ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Material type (optional)
           </label>
           <input
             name="material_type"
             placeholder="PLA, PETG..."
             defaultValue={initial?.material_type ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Stock level
           </label>
           <input
@@ -52,18 +52,18 @@ export default function FilamentForm({
             step="0.1"
             name="stock_level"
             defaultValue={initial?.stock_level ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Unit
           </label>
           <select
             name="stock_unit"
             defaultValue={initial?.stock_unit ?? "spools"}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white"
+            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
           >
             <option value="spools">Spools</option>
             <option value="percent">% remaining</option>
@@ -72,7 +72,7 @@ export default function FilamentForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Low-stock threshold
           </label>
           <input
@@ -80,23 +80,23 @@ export default function FilamentForm({
             step="0.1"
             name="low_stock_threshold"
             defaultValue={initial?.low_stock_threshold ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-ink mb-1">
           Prizes that use this color
         </label>
-        <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded-md p-2 grid sm:grid-cols-2 gap-1">
+        <div className="max-h-40 overflow-y-auto border border-border-warm rounded-md p-2 grid sm:grid-cols-2 gap-1">
           {allPrizes.length === 0 && (
-            <p className="text-sm text-neutral-400 col-span-2">
+            <p className="text-sm text-muted col-span-2">
               Add prizes to the catalog first to link them here.
             </p>
           )}
           {allPrizes.map((p) => (
-            <label key={p.id} className="flex items-center gap-2 text-sm">
+            <label key={p.id} className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 name="prize_ids"
@@ -111,7 +111,7 @@ export default function FilamentForm({
 
       <button
         type="submit"
-        className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+        className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
       >
         {submitLabel}
       </button>

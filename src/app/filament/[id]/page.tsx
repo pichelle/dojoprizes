@@ -38,13 +38,13 @@ export default async function EditFilamentPage({
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Edit filament</h1>
-        <Link href="/filament" className="text-sm text-neutral-500 hover:underline">
+        <h1 className="font-serif text-2xl text-ink">Edit filament</h1>
+        <Link href="/filament" className="text-sm text-muted hover:text-ink hover:underline">
           ← Back to filament
         </Link>
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+      <div className="bg-card border border-border-warm rounded-xl p-6">
         <FilamentForm
           action={boundUpdate}
           initial={filament}
@@ -60,7 +60,7 @@ export default async function EditFilamentPage({
           await boundDelete();
         }}
       >
-        <button type="submit" className="text-sm text-red-600 hover:underline">
+        <button type="submit" className="text-sm text-rust hover:underline">
           Delete this filament color
         </button>
       </form>

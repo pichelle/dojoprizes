@@ -166,6 +166,8 @@ Partially built: top-line stat cards live directly on the Catalog and Request Lo
 - Should the catalog eventually pull print files/thumbnails directly from MakerWorld links? (Partially addressed — the app now does a best-effort auto-fetch of a preview image from the link, though this isn't a real MakerWorld API integration.)
 - Kiosk/self-service mode for students — worth revisiting once MVP is validated?
 - A real "fulfilled this week/month" stat needs a timestamp for when a request's status changes to Fulfilled (not just date_requested) — worth adding if that trend becomes useful.
+- Replace the Silver/Gold/Obsidian text labels with hand-drawn coin icon illustrations once Michelle draws them.
+- Prize Catalog: surface "date added" (already stored as `created_at`) as a visible sort/filter option, so staff can find the prizes that have been sitting in the catalog longest.
 
 ---
 

@@ -38,7 +38,7 @@ export default function CatalogFilterBar({
   }
 
   return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-3 flex flex-wrap gap-2 items-center text-sm">
+    <div className="bg-card border border-border-warm rounded-xl p-3 flex flex-wrap gap-2 items-center text-sm">
       <input
         type="text"
         placeholder="Search by name..."
@@ -48,12 +48,12 @@ export default function CatalogFilterBar({
           if (e.key === "Enter") updateParam("q", q);
         }}
         onBlur={() => updateParam("q", q)}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 w-40"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 w-40 bg-card focus:outline-none focus:ring-2 focus:ring-clay"
       />
       <select
         value={searchParams.get("franchise") ?? ""}
         onChange={(e) => updateParam("franchise", e.target.value)}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
       >
         <option value="">All themes</option>
         {franchiseOptions.map((f) => (
@@ -65,7 +65,7 @@ export default function CatalogFilterBar({
       <select
         value={searchParams.get("color") ?? ""}
         onChange={(e) => updateParam("color", e.target.value)}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
       >
         <option value="">All colors</option>
         {colorOptions.map((f) => (
@@ -77,7 +77,7 @@ export default function CatalogFilterBar({
       <select
         value={searchParams.get("status") ?? ""}
         onChange={(e) => updateParam("status", e.target.value)}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
       >
         <option value="">All statuses</option>
         {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -89,7 +89,7 @@ export default function CatalogFilterBar({
       <select
         value={searchParams.get("sort") ?? ""}
         onChange={(e) => updateParam("sort", e.target.value)}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
       >
         <option value="">Sort: Name (A–Z)</option>
         <option value="price_asc">Price: low to high</option>
@@ -99,7 +99,7 @@ export default function CatalogFilterBar({
         <button
           type="button"
           onClick={clearAll}
-          className="text-neutral-500 hover:text-neutral-900 underline ml-auto"
+          className="text-muted hover:text-ink underline ml-auto"
         >
           Clear filters
         </button>

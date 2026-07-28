@@ -54,13 +54,13 @@ export default async function EditPrizePage({
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Edit prize</h1>
-        <Link href="/catalog" className="text-sm text-neutral-500 hover:underline">
+        <h1 className="font-serif text-2xl text-ink">Edit prize</h1>
+        <Link href="/catalog" className="text-sm text-muted hover:text-ink hover:underline">
           ← Back to catalog
         </Link>
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+      <div className="bg-card border border-border-warm rounded-xl p-6">
         <PrizeForm
           action={boundUpdate}
           initial={prize}
@@ -80,7 +80,7 @@ export default async function EditPrizePage({
       >
         <button
           type="submit"
-          className="text-sm text-red-600 hover:underline"
+          className="text-sm text-rust hover:underline"
         >
           Delete this prize
         </button>

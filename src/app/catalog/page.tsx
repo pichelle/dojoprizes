@@ -115,26 +115,21 @@ export default async function CatalogPage({
     await quickCheckout(prizeId);
   }
 
+  const statLine = `${totalPrizes ?? 0} prize${totalPrizes === 1 ? "" : "s"} · ${totalCheckedOut ?? 0} bought · ${mostPopularFranchise ?? "no checkouts yet"}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Prize Catalog</h1>
+        <div>
+          <h1 className="font-serif text-2xl text-ink">Prize catalog</h1>
+          <p className="text-sm text-muted mt-1">{statLine}</p>
+        </div>
         <Link
           href="/catalog/new"
-          className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
         >
-          + Add Prize
+          Add a prize
         </Link>
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-4">
-        <StatCard label="Total prizes" value={totalPrizes ?? 0} />
-        <StatCard label="Checked out (all time)" value={totalCheckedOut ?? 0} />
-        <StatCard
-          label="Most popular franchise"
-          value={mostPopularFranchise ?? "No checkouts yet"}
-          small={!mostPopularFranchise}
-        />
       </div>
 
       <CatalogFilterBar
@@ -143,7 +138,7 @@ export default async function CatalogPage({
       />
 
       {error && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-rust">
           Couldn&apos;t load prizes: {error.message}. Have you run
           supabase/schema.sql in your Supabase project yet?
         </p>
@@ -160,29 +155,10 @@ export default async function CatalogPage({
       </div>
 
       {prizes.length === 0 && !error && (
-        <p className="text-sm text-neutral-500">
-          No prizes match these filters.
+        <p className="text-sm text-muted">
+          Nothing here yet — add your first prize to get started.
         </p>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  small,
-}: {
-  label: string;
-  value: string | number;
-  small?: boolean;
-}) {
-  return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-4">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={small ? "text-sm font-medium mt-1" : "text-2xl font-semibold mt-1"}>
-        {value}
-      </div>
     </div>
   );
 }

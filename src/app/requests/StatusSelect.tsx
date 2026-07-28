@@ -31,7 +31,7 @@ export default function StatusSelect({
           onChange(requestId, next);
         });
       }}
-      className="text-xs rounded-md border border-neutral-300 px-2 py-1 bg-white capitalize"
+      className="text-xs rounded-md border border-border-warm-strong px-2 py-1 bg-card capitalize"
     >
       {STATUS_OPTIONS.map((s) => (
         <option key={s} value={s} className="capitalize">

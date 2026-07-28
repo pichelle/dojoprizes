@@ -40,8 +40,8 @@ export default async function FilamentPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Filament Inventory</h1>
-          <p className="text-sm text-neutral-500 max-w-2xl">
+          <h1 className="font-serif text-2xl text-ink">Filament inventory</h1>
+          <p className="text-sm text-muted max-w-2xl mt-1">
             Standalone-but-linked to the prize catalog — see which prizes a
             color affects before you run out, and which colors are actually
             worth restocking.
@@ -49,15 +49,15 @@ export default async function FilamentPage({
         </div>
         <Link
           href={params.add ? "/filament" : "/filament?add=1"}
-          className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
         >
-          {params.add ? "Cancel" : "+ Add Filament"}
+          {params.add ? "Cancel" : "Add a color"}
         </Link>
       </div>
 
       {params.add && (
-        <div className="bg-white border border-neutral-200 rounded-xl p-6">
-          <h2 className="font-medium mb-4">Add a filament color</h2>
+        <div className="bg-card border border-border-warm rounded-xl p-6">
+          <h2 className="font-medium text-ink mb-4">Add a filament color</h2>
           <FilamentForm
             action={createFilament}
             allPrizes={prizes ?? []}
@@ -67,7 +67,7 @@ export default async function FilamentPage({
       )}
 
       {error && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-rust">
           Couldn&apos;t load filament: {error.message}
         </p>
       )}
@@ -85,29 +85,29 @@ export default async function FilamentPage({
             <Link
               href={`/filament/${f.id}`}
               key={f.id}
-              className="bg-white border border-neutral-200 rounded-xl p-4 hover:border-neutral-300 flex flex-col gap-2"
+              className="bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="font-medium">{f.color_name}</span>
+                <span className="font-medium text-ink">{f.color_name}</span>
                 <div className="flex flex-col items-end gap-1">
                   {isLow && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 whitespace-nowrap">
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-rust/10 text-rust whitespace-nowrap">
                       Low stock
                     </span>
                   )}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 whitespace-nowrap">
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-page text-muted whitespace-nowrap">
                     Used by {f.linkedPrizes.length}{" "}
                     {f.linkedPrizes.length === 1 ? "prize" : "prizes"}
                   </span>
                 </div>
               </div>
-              <div className="text-sm text-neutral-500">
+              <div className="text-sm text-muted">
                 {f.material_type ?? "Material not set"}
               </div>
-              <div className="text-sm text-neutral-600">
+              <div className="text-sm text-ink">
                 {f.stock_level ?? "—"} {f.stock_unit}
                 {f.low_stock_threshold != null && (
-                  <span className="text-neutral-400">
+                  <span className="text-muted">
                     {" "}
                     (low below {f.low_stock_threshold})
                   </span>
@@ -115,14 +115,14 @@ export default async function FilamentPage({
               </div>
               <div className="flex flex-wrap gap-1 pt-1">
                 {f.linkedPrizes.length === 0 && (
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-muted">
                     No prizes linked
                   </span>
                 )}
                 {f.linkedPrizes.map((p: { id: string; name: string }) => (
                   <span
                     key={p.id}
-                    className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600"
+                    className="text-xs px-2 py-0.5 rounded-full bg-page text-muted"
                   >
                     {p.name}
                   </span>
@@ -134,8 +134,8 @@ export default async function FilamentPage({
       </div>
 
       {filaments.length === 0 && !error && (
-        <p className="text-sm text-neutral-500">
-          No filament colors yet. Click &quot;+ Add Filament&quot; to add one.
+        <p className="text-sm text-muted">
+          No filament colors yet — add your first one to get started.
         </p>
       )}
     </div>

@@ -7,7 +7,7 @@ export default function PasswordField() {
 
   return (
     <div>
-      <label htmlFor="password" className="block text-sm font-medium text-neutral-700">
+      <label htmlFor="password" className="block text-sm font-medium text-ink">
         Password
       </label>
       <div className="mt-1 relative">
@@ -17,12 +17,12 @@ export default function PasswordField() {
           type={visible ? "text" : "password"}
           required
           autoFocus
-          className="w-full rounded-md border border-neutral-300 pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+          className="w-full rounded-md border border-border-warm-strong bg-card pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="absolute inset-y-0 right-0 px-3 flex items-center text-neutral-500 hover:text-neutral-800"
+          className="absolute inset-y-0 right-0 px-3 flex items-center text-muted hover:text-ink"
           aria-label={visible ? "Hide password" : "Show password"}
           tabIndex={-1}
         >

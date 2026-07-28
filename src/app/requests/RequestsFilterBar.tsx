@@ -34,8 +34,8 @@ export default function RequestsFilterBar({
             onClick={() => updateParam("status", s)}
             className={`px-3 py-1.5 rounded-full border capitalize ${
               statusValue === s
-                ? "bg-neutral-900 text-white border-neutral-900"
-                : "border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+                ? "bg-ink text-page border-ink"
+                : "border-border-warm-strong text-muted hover:bg-page"
             }`}
           >
             {s || "All"}
@@ -43,11 +43,11 @@ export default function RequestsFilterBar({
         ))}
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-3 flex flex-wrap gap-2 items-center text-sm">
+      <div className="bg-card border border-border-warm rounded-xl p-3 flex flex-wrap gap-2 items-center text-sm">
         <select
           value={searchParams.get("franchise") ?? ""}
           onChange={(e) => updateParam("franchise", e.target.value)}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+          className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
         >
           <option value="">All themes</option>
           {franchiseOptions.map((f) => (
@@ -59,7 +59,7 @@ export default function RequestsFilterBar({
         <select
           value={searchParams.get("color") ?? ""}
           onChange={(e) => updateParam("color", e.target.value)}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+          className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
         >
           <option value="">All colors</option>
           {colorOptions.map((f) => (
@@ -71,7 +71,7 @@ export default function RequestsFilterBar({
         <select
           value={searchParams.get("sort") ?? ""}
           onChange={(e) => updateParam("sort", e.target.value)}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+          className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
         >
           <option value="">Sort: Date (newest)</option>
           <option value="price_asc">Price: low to high</option>
@@ -81,7 +81,7 @@ export default function RequestsFilterBar({
           <button
             type="button"
             onClick={() => router.push("/requests")}
-            className="text-neutral-500 hover:text-neutral-900 underline ml-auto"
+            className="text-muted hover:text-ink underline ml-auto"
           >
             Clear filters
           </button>

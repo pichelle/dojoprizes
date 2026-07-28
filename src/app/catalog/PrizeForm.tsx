@@ -66,19 +66,19 @@ export default function PrizeForm({
     <form action={action} className="space-y-5">
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Name
           </label>
           <input
             name="name"
             required
             defaultValue={initial?.name ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
 
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Print source (MakerWorld link / design name)
           </label>
           <div className="mt-1 flex gap-2">
@@ -87,29 +87,29 @@ export default function PrizeForm({
               placeholder="https://makerworld.com/... or design name"
               value={makerworldLink}
               onChange={(e) => setMakerworldLink(e.target.value)}
-              className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
             />
             <button
               type="button"
               onClick={fetchImageFromMakerworld}
               disabled={fetching}
-              className="whitespace-nowrap rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-100 disabled:opacity-50"
+              className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-page disabled:opacity-50"
             >
               {fetching ? "Fetching…" : "Fetch image"}
             </button>
           </div>
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-muted">
             Pulls the preview image from that link automatically. If it
             doesn&apos;t work (some links don&apos;t expose one), just paste a
             photo URL below.
           </p>
           {fetchError && (
-            <p className="mt-1 text-xs text-red-600">{fetchError}</p>
+            <p className="mt-1 text-xs text-rust">{fetchError}</p>
           )}
         </div>
 
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Photo URL
           </label>
           <div className="mt-1 flex items-start gap-3">
@@ -118,14 +118,14 @@ export default function PrizeForm({
               placeholder="https://..."
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
-              className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
             />
             {photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={photoUrl}
                 alt="Preview"
-                className="h-10 w-10 object-cover rounded-md border border-neutral-200 shrink-0"
+                className="h-10 w-10 object-cover rounded-md border border-border-warm shrink-0"
                 onError={(e) => (e.currentTarget.style.display = "none")}
                 onLoad={(e) => (e.currentTarget.style.display = "block")}
               />
@@ -134,7 +134,7 @@ export default function PrizeForm({
         </div>
 
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Theme / franchise tags
           </label>
           <div className="mt-1">
@@ -145,20 +145,20 @@ export default function PrizeForm({
               placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
             />
           </div>
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-muted">
             Pick from existing tags or type a new one and hit Enter to
             create it.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Coin tier
           </label>
           <select
             name="coin_tier"
             defaultValue={initial?.coin_tier ?? "silver"}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white"
+            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
           >
             <option value="silver">Silver</option>
             <option value="gold">Gold</option>
@@ -167,13 +167,13 @@ export default function PrizeForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Status
           </label>
           <select
             name="status"
             defaultValue={initial?.status ?? "in_stock"}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm bg-white"
+            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -184,7 +184,7 @@ export default function PrizeForm({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-700">
+          <label className="block text-sm font-medium text-ink">
             Stock count
           </label>
           <input
@@ -192,18 +192,18 @@ export default function PrizeForm({
             min={0}
             name="stock_count"
             defaultValue={initial?.stock_count ?? 0}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-ink mb-1">
           Listed price
         </label>
         <div className="grid grid-cols-3 gap-3 max-w-md">
           <div>
-            <label className="block text-xs text-neutral-500">Silver</label>
+            <label className="block text-xs text-muted">Silver</label>
             <input
               type="number"
               min={0}
@@ -211,11 +211,11 @@ export default function PrizeForm({
               name="coin_price_silver"
               defaultValue={priceBreakdown.silver || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
             />
           </div>
           <div>
-            <label className="block text-xs text-neutral-500">Gold</label>
+            <label className="block text-xs text-muted">Gold</label>
             <input
               type="number"
               min={0}
@@ -223,11 +223,11 @@ export default function PrizeForm({
               name="coin_price_gold"
               defaultValue={priceBreakdown.gold || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
             />
           </div>
           <div>
-            <label className="block text-xs text-neutral-500">Obsidian</label>
+            <label className="block text-xs text-muted">Obsidian</label>
             <input
               type="number"
               min={0}
@@ -235,29 +235,29 @@ export default function PrizeForm({
               name="coin_price_obsidian"
               defaultValue={priceBreakdown.obsidian || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
             />
           </div>
         </div>
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-muted">
           Tracking only — not used anywhere else. Handy for checking what a
           prize sold for against what it was meant to cost.
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-1">
+        <label className="block text-sm font-medium text-ink mb-1">
           Filament colors this prize uses
         </label>
-        <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded-md p-2 grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
+        <div className="max-h-40 overflow-y-auto border border-border-warm rounded-md p-2 grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
           {allFilaments.length === 0 && (
-            <p className="text-sm text-neutral-400 col-span-full">
+            <p className="text-sm text-muted col-span-full">
               Add filament colors on the Filament page first to link them
               here.
             </p>
           )}
           {allFilaments.map((f) => (
-            <label key={f.id} className="flex items-center gap-2 text-sm">
+            <label key={f.id} className="flex items-center gap-2 text-sm text-ink">
               <input
                 type="checkbox"
                 name="filament_ids"
@@ -272,7 +272,7 @@ export default function PrizeForm({
 
       <button
         type="submit"
-        className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+        className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
       >
         {submitLabel}
       </button>

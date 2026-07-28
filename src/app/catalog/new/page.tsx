@@ -22,13 +22,13 @@ export default async function NewPrizePage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Add a new prize</h1>
-        <Link href="/catalog" className="text-sm text-neutral-500 hover:underline">
+        <h1 className="font-serif text-2xl text-ink">Add a prize</h1>
+        <Link href="/catalog" className="text-sm text-muted hover:text-ink hover:underline">
           ← Back to catalog
         </Link>
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+      <div className="bg-card border border-border-warm rounded-xl p-6">
         <PrizeForm
           action={createPrize}
           allFilaments={filaments ?? []}

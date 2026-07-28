@@ -1,3 +1,4 @@
+import Image from "next/image";
 import PasswordField from "./PasswordField";
 
 export default async function LoginPage({
@@ -10,11 +11,11 @@ export default async function LoginPage({
   const hasError = params.error === "1";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
-      <div className="w-full max-w-sm bg-white border border-neutral-200 rounded-xl shadow-sm p-8">
-        <h1 className="text-xl font-semibold text-neutral-900">🥋 DojoPrizes</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Staff access only. Enter the shared password to continue.
+    <div className="min-h-screen flex items-center justify-center bg-page bg-dot-grid px-4">
+      <div className="w-full max-w-sm bg-card border border-border-warm rounded-xl p-8">
+        <Image src="/wordmark.png" alt="DojoPrizes" width={160} height={46} priority />
+        <p className="mt-3 text-sm text-muted">
+          Hey there! Enter the password to get in.
         </p>
 
         <form action="/api/login" method="POST" className="mt-6 space-y-4">
@@ -22,14 +23,14 @@ export default async function LoginPage({
           <PasswordField />
 
           {hasError && (
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-rust">
               That password isn&apos;t right. Try again.
             </p>
           )}
 
           <button
             type="submit"
-            className="w-full rounded-md bg-neutral-900 text-white text-sm font-medium py-2 hover:bg-neutral-800"
+            className="w-full rounded-md bg-ink text-page text-sm font-medium py-2 hover:opacity-90"
           >
             Enter
           </button>

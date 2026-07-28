@@ -71,17 +71,17 @@ export default function TagInput({
       {selected.map((t) => (
         <input key={t} type="hidden" name={name} value={t} />
       ))}
-      <div className="flex flex-wrap gap-1 items-center rounded-md border border-neutral-300 px-2 py-1.5 focus-within:ring-2 focus-within:ring-neutral-900">
+      <div className="flex flex-wrap gap-1 items-center rounded-md border border-border-warm-strong bg-card px-2 py-1.5 focus-within:ring-2 focus-within:ring-clay">
         {selected.map((t) => (
           <span
             key={t}
-            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700"
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-page text-ink"
           >
             {t}
             <button
               type="button"
               onClick={() => removeTag(t)}
-              className="text-neutral-400 hover:text-neutral-700"
+              className="text-muted hover:text-ink"
               aria-label={`Remove ${t}`}
             >
               ×
@@ -115,14 +115,14 @@ export default function TagInput({
       </div>
 
       {open && (filtered.length > 0 || canCreate) && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-neutral-200 rounded-md shadow-md max-h-48 overflow-y-auto text-sm">
+        <div className="absolute z-20 mt-1 w-full bg-card border border-border-warm rounded-md shadow-md max-h-48 overflow-y-auto text-sm">
           {filtered.map((t) => (
             <button
               key={t.id}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addTag(t.name)}
-              className="w-full text-left px-3 py-1.5 hover:bg-neutral-100"
+              className="w-full text-left px-3 py-1.5 text-ink hover:bg-page"
             >
               {t.name}
             </button>
@@ -132,7 +132,7 @@ export default function TagInput({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addTag(trimmedQuery)}
-              className="w-full text-left px-3 py-1.5 hover:bg-neutral-100 text-neutral-700"
+              className="w-full text-left px-3 py-1.5 hover:bg-page text-ink"
             >
               Create &quot;{trimmedQuery}&quot;
             </button>

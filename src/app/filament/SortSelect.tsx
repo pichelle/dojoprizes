@@ -14,7 +14,7 @@ export default function SortSelect({ sort }: { sort: string }) {
 
   return (
     <div className="flex items-center gap-2 text-sm">
-      <label htmlFor="sort" className="text-neutral-500">
+      <label htmlFor="sort" className="text-muted">
         Sort by
       </label>
       <select
@@ -25,7 +25,7 @@ export default function SortSelect({ sort }: { sort: string }) {
           params.set("sort", e.target.value);
           router.push(`/filament?${params.toString()}`);
         }}
-        className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 bg-card"
       >
         {SORT_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>

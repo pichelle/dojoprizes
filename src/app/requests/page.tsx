@@ -6,10 +6,10 @@ import StatusSelect from "./StatusSelect";
 import RequestsFilterBar from "./RequestsFilterBar";
 
 const STATUS_STYLES: Record<RequestStatus, string> = {
-  pending: "bg-amber-100 text-amber-800",
-  printed: "bg-blue-100 text-blue-800",
-  fulfilled: "bg-green-100 text-green-800",
-  cancelled: "bg-neutral-200 text-neutral-600",
+  pending: "bg-amber/10 text-amber",
+  printed: "bg-slate/10 text-slate",
+  fulfilled: "bg-sage/10 text-sage",
+  cancelled: "bg-taupe/10 text-taupe",
 };
 
 const SIZE_LABELS: Record<RequestSize, string> = {
@@ -116,31 +116,21 @@ export default async function RequestsPage({
     });
   }
 
+  const statLine = `${pendingCount ?? 0} pending · ${fulfilledCount ?? 0} fulfilled · ${mostRequestedFranchise ?? "no requests yet"}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Request Log</h1>
-          <p className="text-sm text-neutral-500">
-            One shared, running list — nothing gets lost or forgotten.
-          </p>
+          <h1 className="font-serif text-2xl text-ink">Request log</h1>
+          <p className="text-sm text-muted mt-1">{statLine}</p>
         </div>
         <Link
           href="/requests/new"
-          className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
         >
-          + Log Request
+          Log a request
         </Link>
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-4">
-        <StatCard label="Pending requests" value={pendingCount ?? 0} />
-        <StatCard label="Fulfilled (all time)" value={fulfilledCount ?? 0} />
-        <StatCard
-          label="Most requested franchise"
-          value={mostRequestedFranchise ?? "No requests yet"}
-          small={!mostRequestedFranchise}
-        />
       </div>
 
       <RequestsFilterBar
@@ -149,14 +139,14 @@ export default async function RequestsPage({
       />
 
       {error && (
-        <p className="text-sm text-red-600">
+        <p className="text-sm text-rust">
           Couldn&apos;t load requests: {error.message}
         </p>
       )}
 
-      <div className="bg-white border border-neutral-200 rounded-xl overflow-x-auto">
+      <div className="bg-card border border-border-warm rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-neutral-50 text-neutral-500 text-left">
+          <thead className="bg-page text-muted text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Student</th>
               <th className="px-4 py-2 font-medium">Prize</th>
@@ -171,22 +161,22 @@ export default async function RequestsPage({
           </thead>
           <tbody>
             {requests.map((r) => (
-              <tr key={r.id} className="border-t border-neutral-100 align-top">
-                <td className="px-4 py-2 font-medium whitespace-nowrap">
+              <tr key={r.id} className="border-t border-border-warm align-top">
+                <td className="px-4 py-2 font-medium text-ink whitespace-nowrap">
                   {r.student_name}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-ink">
                   {r.prize?.name ?? r.free_text_prize ?? (
-                    <span className="text-neutral-400">—</span>
+                    <span className="text-muted">—</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-500">
+                <td className="px-4 py-2 text-muted">
                   {r.franchiseTags.length > 0 ? (
                     <div className="flex flex-wrap gap-1 max-w-[10rem]">
                       {r.franchiseTags.map((t: { id: string; name: string }) => (
                         <span
                           key={t.id}
-                          className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 whitespace-nowrap"
+                          className="text-xs px-2 py-0.5 rounded-full bg-page text-muted whitespace-nowrap"
                         >
                           {t.name}
                         </span>
@@ -196,13 +186,13 @@ export default async function RequestsPage({
                     "—"
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                <td className="px-4 py-2 text-muted whitespace-nowrap">
                   {r.size ? SIZE_LABELS[r.size as RequestSize] : "—"}
                 </td>
-                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                <td className="px-4 py-2 text-muted whitespace-nowrap">
                   {r.color_filament?.color_name ?? "—"}
                 </td>
-                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                <td className="px-4 py-2 text-muted whitespace-nowrap">
                   {r.date_requested}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">
@@ -217,7 +207,7 @@ export default async function RequestsPage({
                     onChange={updateRequestStatus}
                   />
                 </td>
-                <td className="px-4 py-2 text-neutral-500 max-w-[16rem]">
+                <td className="px-4 py-2 text-muted max-w-[16rem]">
                   {r.links && (
                     <div className="flex flex-col gap-0.5 mb-1">
                       {r.links.split("\n").filter(Boolean).map((link: string, i: number) => (
@@ -226,7 +216,7 @@ export default async function RequestsPage({
                           href={link.trim()}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline truncate block max-w-[16rem]"
+                          className="text-clay hover:underline truncate block max-w-[16rem]"
                         >
                           {link.trim()}
                         </a>
@@ -244,7 +234,7 @@ export default async function RequestsPage({
                   >
                     <button
                       type="submit"
-                      className="text-xs text-red-600 hover:underline"
+                      className="text-xs text-rust hover:underline"
                     >
                       Delete
                     </button>
@@ -255,27 +245,8 @@ export default async function RequestsPage({
           </tbody>
         </table>
         {requests.length === 0 && !error && (
-          <p className="p-4 text-sm text-neutral-500">No requests match these filters.</p>
+          <p className="p-4 text-sm text-muted">Nothing logged yet — add the first request.</p>
         )}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  small,
-}: {
-  label: string;
-  value: string | number;
-  small?: boolean;
-}) {
-  return (
-    <div className="bg-white border border-neutral-200 rounded-xl p-4">
-      <div className="text-xs text-neutral-500">{label}</div>
-      <div className={small ? "text-sm font-medium mt-1" : "text-2xl font-semibold mt-1"}>
-        {value}
       </div>
     </div>
   );

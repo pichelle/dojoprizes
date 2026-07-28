@@ -28,13 +28,13 @@ export default async function NewRequestPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Log a new request</h1>
-        <Link href="/requests" className="text-sm text-neutral-500 hover:underline">
+        <h1 className="font-serif text-2xl text-ink">Log a request</h1>
+        <Link href="/requests" className="text-sm text-muted hover:text-ink hover:underline">
           ← Back to requests
         </Link>
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
+      <div className="bg-card border border-border-warm rounded-xl p-6">
         <RequestForm
           prizes={prizes ?? []}
           filaments={filaments ?? []}
