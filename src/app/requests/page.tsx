@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import type { PrizeRequest, RequestSize, RequestStatus } from "@/lib/types";
 import { createRequest, updateRequestStatus, deleteRequest } from "./actions";
@@ -21,7 +22,13 @@ const SIZE_LABELS: Record<RequestSize, string> = {
 export default async function RequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{
+    add?: string;
+    status?: string;
+    franchise?: string;
+    color?: string;
+    sort?: string;
+  }>;
 }) {
   const params = await searchParams;
   const supabase = createServerClient();
@@ -36,50 +43,152 @@ export default async function RequestsPage({
     .select("id, color_name")
     .order("color_name");
 
+  // Stats -- always across ALL requests, independent of filters below.
+  const { count: pendingCount } = await supabase
+    .from("requests")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "pending");
+
+  const { count: fulfilledCount } = await supabase
+    .from("requests")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "fulfilled");
+
+  const { data: franchiseRows } = await supabase
+    .from("requests")
+    .select("franchise");
+  const mostRequestedFranchise = mostCommon(
+    (franchiseRows ?? []).map((r) => r.franchise).filter((f): f is string => !!f),
+  );
+
+  const franchiseOptions = Array.from(
+    new Set((franchiseRows ?? []).map((r) => r.franchise).filter((f): f is string => !!f)),
+  ).sort();
+
   let query = supabase
     .from("requests")
-    .select("*, prize:prizes(id, name, photo_url), color_filament:filaments(id, color_name)")
+    .select(
+      "*, prize:prizes(id, name, photo_url, coin_price), color_filament:filaments(id, color_name)",
+    )
     .order("date_requested", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (params.status) {
-    query = query.eq("status", params.status);
-  }
+  if (params.status) query = query.eq("status", params.status);
+  if (params.franchise) query = query.eq("franchise", params.franchise);
+  if (params.color) query = query.eq("color_filament_id", params.color);
 
-  const { data: requests, error } = await query;
+  const { data: requestsRaw, error } = await query;
+
+  let requests = requestsRaw ?? [];
+  if (params.sort === "price_asc" || params.sort === "price_desc") {
+    const dir = params.sort === "price_asc" ? 1 : -1;
+    requests = [...requests].sort((a, b) => {
+      const pa = a.prize?.coin_price;
+      const pb = b.prize?.coin_price;
+      if (pa == null && pb == null) return 0;
+      if (pa == null) return 1; // nulls last regardless of direction
+      if (pb == null) return -1;
+      return (pa - pb) * dir;
+    });
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Request Log</h1>
-        <p className="text-sm text-neutral-500">
-          One shared, running list — nothing gets lost or forgotten.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Request Log</h1>
+          <p className="text-sm text-neutral-500">
+            One shared, running list — nothing gets lost or forgotten.
+          </p>
+        </div>
+        <Link
+          href={params.add ? "/requests" : "/requests?add=1"}
+          className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
+        >
+          {params.add ? "Cancel" : "+ Log Request"}
+        </Link>
       </div>
 
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
-        <h2 className="font-medium mb-4">Log a new request</h2>
-        <RequestForm
-          prizes={prizes ?? []}
-          filaments={filaments ?? []}
-          action={createRequest}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <StatCard label="Pending requests" value={pendingCount ?? 0} />
+        <StatCard label="Fulfilled (all time)" value={fulfilledCount ?? 0} />
+        <StatCard
+          label="Most requested franchise"
+          value={mostRequestedFranchise ?? "No requests yet"}
+          small={!mostRequestedFranchise}
         />
       </div>
 
-      <div className="flex gap-2 text-sm">
-        {["", "pending", "printed", "fulfilled", "cancelled"].map((s) => (
-          <a
-            key={s || "all"}
-            href={s ? `/requests?status=${s}` : "/requests"}
-            className={`px-3 py-1.5 rounded-full border capitalize ${
-              (params.status ?? "") === s
-                ? "bg-neutral-900 text-white border-neutral-900"
-                : "border-neutral-300 text-neutral-600 hover:bg-neutral-100"
-            }`}
+      {params.add && (
+        <div className="bg-white border border-neutral-200 rounded-xl p-6">
+          <h2 className="font-medium mb-4">Log a new request</h2>
+          <RequestForm
+            prizes={prizes ?? []}
+            filaments={filaments ?? []}
+            action={createRequest}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex gap-2 text-sm">
+          {["", "pending", "printed", "fulfilled", "cancelled"].map((s) => (
+            <a
+              key={s || "all"}
+              href={buildHref(params, { status: s || undefined })}
+              className={`px-3 py-1.5 rounded-full border capitalize ${
+                (params.status ?? "") === s
+                  ? "bg-neutral-900 text-white border-neutral-900"
+                  : "border-neutral-300 text-neutral-600 hover:bg-neutral-100"
+              }`}
+            >
+              {s || "All"}
+            </a>
+          ))}
+        </div>
+
+        <form className="flex flex-wrap gap-2 items-center text-sm ml-auto">
+          <input type="hidden" name="status" value={params.status ?? ""} />
+          <select
+            name="franchise"
+            defaultValue={params.franchise ?? ""}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
           >
-            {s || "All"}
-          </a>
-        ))}
+            <option value="">All themes</option>
+            {franchiseOptions.map((f) => (
+              <option key={f} value={f}>
+                {f}
+              </option>
+            ))}
+          </select>
+          <select
+            name="color"
+            defaultValue={params.color ?? ""}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+          >
+            <option value="">All colors</option>
+            {filaments?.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.color_name}
+              </option>
+            ))}
+          </select>
+          <select
+            name="sort"
+            defaultValue={params.sort ?? ""}
+            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
+          >
+            <option value="">Sort: Date (newest)</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+          </select>
+          <button
+            type="submit"
+            className="rounded-md border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100"
+          >
+            Filter
+          </button>
+        </form>
       </div>
 
       {error && (
@@ -104,7 +213,7 @@ export default async function RequestsPage({
             </tr>
           </thead>
           <tbody>
-            {requests?.map((r: PrizeRequest) => (
+            {requests.map((r: PrizeRequest) => (
               <tr key={r.id} className="border-t border-neutral-100 align-top">
                 <td className="px-4 py-2 font-medium whitespace-nowrap">
                   {r.student_name}
@@ -175,10 +284,57 @@ export default async function RequestsPage({
             ))}
           </tbody>
         </table>
-        {requests?.length === 0 && !error && (
-          <p className="p-4 text-sm text-neutral-500">No requests logged yet.</p>
+        {requests.length === 0 && !error && (
+          <p className="p-4 text-sm text-neutral-500">No requests match these filters.</p>
         )}
       </div>
     </div>
   );
+}
+
+function StatCard({
+  label,
+  value,
+  small,
+}: {
+  label: string;
+  value: string | number;
+  small?: boolean;
+}) {
+  return (
+    <div className="bg-white border border-neutral-200 rounded-xl p-4">
+      <div className="text-xs text-neutral-500">{label}</div>
+      <div className={small ? "text-sm font-medium mt-1" : "text-2xl font-semibold mt-1"}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function mostCommon(values: string[]): string | null {
+  if (values.length === 0) return null;
+  const counts = new Map<string, number>();
+  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [v, c] of counts) {
+    if (c > bestCount) {
+      best = v;
+      bestCount = c;
+    }
+  }
+  return best;
+}
+
+function buildHref(
+  current: { franchise?: string; color?: string; sort?: string },
+  overrides: { status?: string },
+): string {
+  const p = new URLSearchParams();
+  if (overrides.status) p.set("status", overrides.status);
+  if (current.franchise) p.set("franchise", current.franchise);
+  if (current.color) p.set("color", current.color);
+  if (current.sort) p.set("sort", current.sort);
+  const qs = p.toString();
+  return qs ? `/requests?${qs}` : "/requests";
 }

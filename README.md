@@ -1,9 +1,9 @@
-# Digital Prize Bin
+# DojoPrizes
 
 Internal staff tool for Code Ninjas Yorba Linda's prize program: a shared
 prize catalog, request log, checkout tracker, and filament inventory, in
-place of tracking everything on paper/memory. See the full PRD for context
-on scope and decisions.
+place of tracking everything on paper/memory. See [docs/PRD.md](./docs/PRD.md)
+for the full PRD, current scope, and open questions.
 
 Stack: Next.js (App Router) + Supabase (Postgres) + Vercel, with a simple
 shared-password gate instead of individual staff logins (MVP scope per the

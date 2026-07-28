@@ -182,20 +182,22 @@ export default function PrizeForm({
 
         <div>
           <label className="block text-sm font-medium text-neutral-700">
-            Listed price (coins)
+            Listed price (in Silver coins)
           </label>
           <input
             type="number"
             min={0}
             step="1"
             name="coin_price"
-            placeholder="optional"
+            placeholder="e.g. 30 = 1 Obsidian + 1 Gold"
             defaultValue={initial?.coin_price ?? ""}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
           <p className="mt-1 text-xs text-neutral-500">
-            Tracking only — not used anywhere else. Handy for checking what a
-            prize sold for against what it was meant to cost.
+            Tracking only — not used anywhere else. Enter the total value in
+            Silver-equivalent coins (5 Silver = 1 Gold, 25 Silver = 1
+            Obsidian); the catalog card shows it broken down, e.g. &quot;1
+            Obsidian, 1 Gold&quot;.
           </p>
         </div>
       </div>

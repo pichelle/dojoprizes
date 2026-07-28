@@ -47,7 +47,7 @@ export interface PrizeRequest {
   notes: string | null;
   created_at: string;
   // populated via join
-  prize?: Pick<Prize, "id" | "name" | "photo_url"> | null;
+  prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
   color_filament?: Pick<Filament, "id" | "color_name"> | null;
 }
 
