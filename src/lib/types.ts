@@ -14,11 +14,16 @@ export type RequestStatus = "pending" | "printed" | "fulfilled" | "cancelled";
 
 export type RequestSize = "small" | "medium" | "large" | "xlarge";
 
+export interface FranchiseTag {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Prize {
   id: string;
   name: string;
   photo_url: string | null;
-  franchise: string | null;
   coin_tier: CoinTier | null;
   coin_value_silver_equivalent: number | null;
   // Informational only -- the coin price staff intended to charge, kept
@@ -31,6 +36,7 @@ export interface Prize {
   created_at: string;
   updated_at: string;
   filaments?: Pick<Filament, "id" | "color_name">[];
+  franchiseTags?: FranchiseTag[];
 }
 
 export interface PrizeRequest {
@@ -38,7 +44,6 @@ export interface PrizeRequest {
   student_name: string;
   prize_id: string | null;
   free_text_prize: string | null;
-  franchise: string | null;
   size: RequestSize | null;
   color_filament_id: string | null;
   links: string | null;
@@ -49,6 +54,7 @@ export interface PrizeRequest {
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
   color_filament?: Pick<Filament, "id" | "color_name"> | null;
+  franchiseTags?: FranchiseTag[];
 }
 
 export interface Checkout {
@@ -56,7 +62,7 @@ export interface Checkout {
   prize_id: string;
   date_checked_out: string;
   created_at: string;
-  prize?: Pick<Prize, "id" | "name" | "photo_url" | "franchise"> | null;
+  prize?: Pick<Prize, "id" | "name" | "photo_url"> | null;
 }
 
 export interface Filament {

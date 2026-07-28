@@ -51,3 +51,35 @@ export function formatCoinPriceBreakdown(
 
   return parts.length > 0 ? parts.join(", ") : null;
 }
+
+export interface CoinBreakdown {
+  obsidian: number;
+  gold: number;
+  silver: number;
+}
+
+// Same math as formatCoinPriceBreakdown, but as raw counts for pre-filling
+// the Silver/Gold/Obsidian count inputs on the prize form.
+export function coinPriceToBreakdown(
+  silverEquivalent: number | null | undefined,
+): CoinBreakdown {
+  if (silverEquivalent == null || silverEquivalent <= 0) {
+    return { obsidian: 0, gold: 0, silver: 0 };
+  }
+  let remaining = Math.round(silverEquivalent);
+  const obsidian = Math.floor(remaining / SILVER_PER_OBSIDIAN);
+  remaining -= obsidian * SILVER_PER_OBSIDIAN;
+  const gold = Math.floor(remaining / SILVER_PER_GOLD);
+  remaining -= gold * SILVER_PER_GOLD;
+  return { obsidian, gold, silver: remaining };
+}
+
+// Inverse: staff enter how many Silver/Gold/Obsidian coins a prize costs,
+// this collapses that into the single Silver-equivalent total we store.
+export function breakdownToCoinPrice(breakdown: CoinBreakdown): number {
+  return (
+    (breakdown.obsidian || 0) * SILVER_PER_OBSIDIAN +
+    (breakdown.gold || 0) * SILVER_PER_GOLD +
+    (breakdown.silver || 0)
+  );
+}

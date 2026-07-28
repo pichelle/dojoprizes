@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Filament, Prize, RequestSize } from "@/lib/types";
+import type { Filament, FranchiseTag, Prize, RequestSize } from "@/lib/types";
+import TagInput from "@/components/TagInput";
 
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "small", label: "Small" },
@@ -13,17 +14,19 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
 export default function RequestForm({
   prizes,
   filaments,
+  allFranchiseTags,
   action,
 }: {
   prizes: Pick<Prize, "id" | "name">[];
   filaments: Pick<Filament, "id" | "color_name">[];
+  allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   action: (formData: FormData) => void;
 }) {
   const [prizeId, setPrizeId] = useState("");
 
   return (
     <form action={action} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-neutral-700">
             Student name
@@ -80,17 +83,6 @@ export default function RequestForm({
 
         <div>
           <label className="block text-sm font-medium text-neutral-700">
-            Franchise
-          </label>
-          <input
-            name="franchise"
-            placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-700">
             Size
           </label>
           <select
@@ -130,7 +122,20 @@ export default function RequestForm({
           )}
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
+          <label className="block text-sm font-medium text-neutral-700">
+            Theme / franchise tags
+          </label>
+          <div className="mt-1">
+            <TagInput
+              name="franchise_tag_names"
+              allTags={allFranchiseTags}
+              placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
+            />
+          </div>
+        </div>
+
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
             Reference links (one per line, optional)
           </label>
@@ -142,7 +147,7 @@ export default function RequestForm({
           />
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
             Notes (optional)
           </label>

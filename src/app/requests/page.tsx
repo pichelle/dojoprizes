@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
-import type { PrizeRequest, RequestSize, RequestStatus } from "@/lib/types";
-import { createRequest, updateRequestStatus, deleteRequest } from "./actions";
-import RequestForm from "./RequestForm";
+import type { RequestSize, RequestStatus } from "@/lib/types";
+import { updateRequestStatus, deleteRequest } from "./actions";
 import StatusSelect from "./StatusSelect";
+import RequestsFilterBar from "./RequestsFilterBar";
 
 const STATUS_STYLES: Record<RequestStatus, string> = {
   pending: "bg-amber-100 text-amber-800",
@@ -23,7 +23,6 @@ export default async function RequestsPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    add?: string;
     status?: string;
     franchise?: string;
     color?: string;
@@ -32,11 +31,6 @@ export default async function RequestsPage({
 }) {
   const params = await searchParams;
   const supabase = createServerClient();
-
-  const { data: prizes } = await supabase
-    .from("prizes")
-    .select("id, name")
-    .order("name");
 
   const { data: filaments } = await supabase
     .from("filaments")
@@ -54,16 +48,42 @@ export default async function RequestsPage({
     .select("*", { count: "exact", head: true })
     .eq("status", "fulfilled");
 
-  const { data: franchiseRows } = await supabase
-    .from("requests")
-    .select("franchise");
+  const { data: allTagLinks } = await supabase
+    .from("request_franchise_tags")
+    .select("request_id, tag:franchise_tags(id, name)");
+
+  const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
+  for (const link of (allTagLinks ?? []) as unknown as {
+    request_id: string;
+    tag: { id: string; name: string } | null;
+  }[]) {
+    if (!link.tag) continue;
+    const list = tagsByRequestId.get(link.request_id) ?? [];
+    list.push(link.tag);
+    tagsByRequestId.set(link.request_id, list);
+  }
+
   const mostRequestedFranchise = mostCommon(
-    (franchiseRows ?? []).map((r) => r.franchise).filter((f): f is string => !!f),
+    Array.from(tagsByRequestId.values()).flatMap((tags) => tags.map((t) => t.name)),
   );
 
-  const franchiseOptions = Array.from(
-    new Set((franchiseRows ?? []).map((r) => r.franchise).filter((f): f is string => !!f)),
-  ).sort();
+  const { data: franchiseTagRows } = await supabase
+    .from("franchise_tags")
+    .select("id, name")
+    .order("name");
+  const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
+
+  let requestIdsForFranchise: string[] | null = null;
+  if (params.franchise) {
+    const tag = (franchiseTagRows ?? []).find(
+      (t) => t.name.toLowerCase() === params.franchise!.toLowerCase(),
+    );
+    requestIdsForFranchise = tag
+      ? Array.from(tagsByRequestId.entries())
+          .filter(([, tags]) => tags.some((t) => t.id === tag.id))
+          .map(([requestId]) => requestId)
+      : [];
+  }
 
   let query = supabase
     .from("requests")
@@ -74,12 +94,16 @@ export default async function RequestsPage({
     .order("created_at", { ascending: false });
 
   if (params.status) query = query.eq("status", params.status);
-  if (params.franchise) query = query.eq("franchise", params.franchise);
   if (params.color) query = query.eq("color_filament_id", params.color);
+  if (requestIdsForFranchise) query = query.in("id", requestIdsForFranchise);
 
   const { data: requestsRaw, error } = await query;
 
-  let requests = requestsRaw ?? [];
+  let requests = (requestsRaw ?? []).map((r) => ({
+    ...r,
+    franchiseTags: tagsByRequestId.get(r.id) ?? [],
+  }));
+
   if (params.sort === "price_asc" || params.sort === "price_desc") {
     const dir = params.sort === "price_asc" ? 1 : -1;
     requests = [...requests].sort((a, b) => {
@@ -102,10 +126,10 @@ export default async function RequestsPage({
           </p>
         </div>
         <Link
-          href={params.add ? "/requests" : "/requests?add=1"}
+          href="/requests/new"
           className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
         >
-          {params.add ? "Cancel" : "+ Log Request"}
+          + Log Request
         </Link>
       </div>
 
@@ -119,77 +143,10 @@ export default async function RequestsPage({
         />
       </div>
 
-      {params.add && (
-        <div className="bg-white border border-neutral-200 rounded-xl p-6">
-          <h2 className="font-medium mb-4">Log a new request</h2>
-          <RequestForm
-            prizes={prizes ?? []}
-            filaments={filaments ?? []}
-            action={createRequest}
-          />
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="flex gap-2 text-sm">
-          {["", "pending", "printed", "fulfilled", "cancelled"].map((s) => (
-            <a
-              key={s || "all"}
-              href={buildHref(params, { status: s || undefined })}
-              className={`px-3 py-1.5 rounded-full border capitalize ${
-                (params.status ?? "") === s
-                  ? "bg-neutral-900 text-white border-neutral-900"
-                  : "border-neutral-300 text-neutral-600 hover:bg-neutral-100"
-              }`}
-            >
-              {s || "All"}
-            </a>
-          ))}
-        </div>
-
-        <form className="flex flex-wrap gap-2 items-center text-sm ml-auto">
-          <input type="hidden" name="status" value={params.status ?? ""} />
-          <select
-            name="franchise"
-            defaultValue={params.franchise ?? ""}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-          >
-            <option value="">All themes</option>
-            {franchiseOptions.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
-          <select
-            name="color"
-            defaultValue={params.color ?? ""}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-          >
-            <option value="">All colors</option>
-            {filaments?.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.color_name}
-              </option>
-            ))}
-          </select>
-          <select
-            name="sort"
-            defaultValue={params.sort ?? ""}
-            className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-          >
-            <option value="">Sort: Date (newest)</option>
-            <option value="price_asc">Price: low to high</option>
-            <option value="price_desc">Price: high to low</option>
-          </select>
-          <button
-            type="submit"
-            className="rounded-md border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100"
-          >
-            Filter
-          </button>
-        </form>
-      </div>
+      <RequestsFilterBar
+        franchiseOptions={franchiseOptions}
+        colorOptions={(filaments ?? []).map((f) => ({ id: f.id, name: f.color_name }))}
+      />
 
       {error && (
         <p className="text-sm text-red-600">
@@ -203,7 +160,7 @@ export default async function RequestsPage({
             <tr>
               <th className="px-4 py-2 font-medium">Student</th>
               <th className="px-4 py-2 font-medium">Prize</th>
-              <th className="px-4 py-2 font-medium">Franchise</th>
+              <th className="px-4 py-2 font-medium">Theme</th>
               <th className="px-4 py-2 font-medium">Size</th>
               <th className="px-4 py-2 font-medium">Color</th>
               <th className="px-4 py-2 font-medium">Date</th>
@@ -213,7 +170,7 @@ export default async function RequestsPage({
             </tr>
           </thead>
           <tbody>
-            {requests.map((r: PrizeRequest) => (
+            {requests.map((r) => (
               <tr key={r.id} className="border-t border-neutral-100 align-top">
                 <td className="px-4 py-2 font-medium whitespace-nowrap">
                   {r.student_name}
@@ -223,11 +180,24 @@ export default async function RequestsPage({
                     <span className="text-neutral-400">—</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
-                  {r.franchise ?? "—"}
+                <td className="px-4 py-2 text-neutral-500">
+                  {r.franchiseTags.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 max-w-[10rem]">
+                      {r.franchiseTags.map((t: { id: string; name: string }) => (
+                        <span
+                          key={t.id}
+                          className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 whitespace-nowrap"
+                        >
+                          {t.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
-                  {r.size ? SIZE_LABELS[r.size] : "—"}
+                  {r.size ? SIZE_LABELS[r.size as RequestSize] : "—"}
                 </td>
                 <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
                   {r.color_filament?.color_name ?? "—"}
@@ -237,20 +207,20 @@ export default async function RequestsPage({
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap">
                   <span
-                    className={`inline-block mr-2 text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[r.status]}`}
+                    className={`inline-block mr-2 text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[r.status as RequestStatus]}`}
                   >
                     {r.status}
                   </span>
                   <StatusSelect
                     requestId={r.id}
-                    status={r.status}
+                    status={r.status as RequestStatus}
                     onChange={updateRequestStatus}
                   />
                 </td>
                 <td className="px-4 py-2 text-neutral-500 max-w-[16rem]">
                   {r.links && (
                     <div className="flex flex-col gap-0.5 mb-1">
-                      {r.links.split("\n").filter(Boolean).map((link, i) => (
+                      {r.links.split("\n").filter(Boolean).map((link: string, i: number) => (
                         <a
                           key={i}
                           href={link.trim()}
@@ -324,17 +294,4 @@ function mostCommon(values: string[]): string | null {
     }
   }
   return best;
-}
-
-function buildHref(
-  current: { franchise?: string; color?: string; sort?: string },
-  overrides: { status?: string },
-): string {
-  const p = new URLSearchParams();
-  if (overrides.status) p.set("status", overrides.status);
-  if (current.franchise) p.set("franchise", current.franchise);
-  if (current.color) p.set("color", current.color);
-  if (current.sort) p.set("sort", current.sort);
-  const qs = p.toString();
-  return qs ? `/requests?${qs}` : "/requests";
 }

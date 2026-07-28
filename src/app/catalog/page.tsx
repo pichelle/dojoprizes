@@ -1,22 +1,14 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Prize } from "@/lib/types";
-import { createPrize, quickCheckout } from "./actions";
-import PrizeForm from "./PrizeForm";
+import { quickCheckout } from "./actions";
 import PrizeCard from "./PrizeCard";
-
-const STATUS_LABELS: Record<Prize["status"], string> = {
-  in_stock: "In stock",
-  low_stock: "Low stock",
-  out_of_stock: "Out of stock",
-  print_on_request: "Print-on-request",
-};
+import CatalogFilterBar from "./CatalogFilterBar";
 
 export default async function CatalogPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    add?: string;
     status?: string;
     q?: string;
     franchise?: string;
@@ -37,27 +29,38 @@ export default async function CatalogPage({
     .from("checkouts")
     .select("*", { count: "exact", head: true });
 
-  const { data: checkoutFranchiseRows } = await supabase
+  // All prize <-> franchise tag links, used both for the "most popular
+  // franchise" stat and to decorate each card below.
+  const { data: allTagLinks } = await supabase
+    .from("prize_franchise_tags")
+    .select("prize_id, tag:franchise_tags(id, name)");
+
+  const tagsByPrizeId = new Map<string, { id: string; name: string }[]>();
+  for (const link of (allTagLinks ?? []) as unknown as {
+    prize_id: string;
+    tag: { id: string; name: string } | null;
+  }[]) {
+    if (!link.tag) continue;
+    const list = tagsByPrizeId.get(link.prize_id) ?? [];
+    list.push(link.tag);
+    tagsByPrizeId.set(link.prize_id, list);
+  }
+
+  const { data: checkoutRows } = await supabase
     .from("checkouts")
-    .select("prize:prizes(franchise)");
+    .select("prize_id");
+  const franchiseOccurrences: string[] = [];
+  for (const row of checkoutRows ?? []) {
+    const tags = tagsByPrizeId.get(row.prize_id) ?? [];
+    for (const t of tags) franchiseOccurrences.push(t.name);
+  }
+  const mostPopularFranchise = mostCommon(franchiseOccurrences);
 
-  const mostPopularFranchise = mostCommon(
-    (checkoutFranchiseRows ?? [])
-      .map((r) => (r.prize as unknown as { franchise: string | null })?.franchise)
-      .filter((f): f is string => !!f),
-  );
-
-  // Filter option sources
-  const { data: allPrizesForFranchise } = await supabase
-    .from("prizes")
-    .select("franchise");
-  const franchiseOptions = Array.from(
-    new Set(
-      (allPrizesForFranchise ?? [])
-        .map((p) => p.franchise)
-        .filter((f): f is string => !!f),
-    ),
-  ).sort();
+  const { data: franchiseTagRows } = await supabase
+    .from("franchise_tags")
+    .select("id, name")
+    .order("name");
+  const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
 
   const { data: filamentOptions } = await supabase
     .from("filaments")
@@ -74,12 +77,24 @@ export default async function CatalogPage({
     prizeIdsForColor = (links ?? []).map((l) => l.prize_id);
   }
 
+  let prizeIdsForFranchise: string[] | null = null;
+  if (params.franchise) {
+    const tag = (franchiseTagRows ?? []).find(
+      (t) => t.name.toLowerCase() === params.franchise!.toLowerCase(),
+    );
+    prizeIdsForFranchise = tag
+      ? Array.from(tagsByPrizeId.entries())
+          .filter(([, tags]) => tags.some((t) => t.id === tag.id))
+          .map(([prizeId]) => prizeId)
+      : [];
+  }
+
   let query = supabase.from("prizes").select("*");
 
   if (params.status) query = query.eq("status", params.status);
   if (params.q) query = query.ilike("name", `%${params.q}%`);
-  if (params.franchise) query = query.eq("franchise", params.franchise);
   if (prizeIdsForColor) query = query.in("id", prizeIdsForColor);
+  if (prizeIdsForFranchise) query = query.in("id", prizeIdsForFranchise);
 
   if (params.sort === "price_asc") {
     query = query.order("coin_price", { ascending: true, nullsFirst: false });
@@ -89,11 +104,11 @@ export default async function CatalogPage({
     query = query.order("name", { ascending: true });
   }
 
-  const { data: prizes, error } = await query;
-  const { data: filaments } = await supabase
-    .from("filaments")
-    .select("id, color_name")
-    .order("color_name");
+  const { data: prizesRaw, error } = await query;
+  const prizes = (prizesRaw ?? []).map((p) => ({
+    ...p,
+    franchiseTags: tagsByPrizeId.get(p.id) ?? [],
+  }));
 
   async function handleCheckout(prizeId: string) {
     "use server";
@@ -103,14 +118,12 @@ export default async function CatalogPage({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Prize Catalog</h1>
-        </div>
+        <h1 className="text-2xl font-semibold">Prize Catalog</h1>
         <Link
-          href={params.add ? "/catalog" : "/catalog?add=1"}
+          href="/catalog/new"
           className="rounded-md bg-neutral-900 text-white text-sm font-medium px-4 py-2 hover:bg-neutral-800"
         >
-          {params.add ? "Cancel" : "+ Add Prize"}
+          + Add Prize
         </Link>
       </div>
 
@@ -124,77 +137,10 @@ export default async function CatalogPage({
         />
       </div>
 
-      {params.add && (
-        <div className="bg-white border border-neutral-200 rounded-xl p-6">
-          <h2 className="font-medium mb-4">Add a new prize</h2>
-          <PrizeForm
-            action={createPrize}
-            allFilaments={filaments ?? []}
-            submitLabel="Add prize"
-          />
-        </div>
-      )}
-
-      <form className="flex flex-wrap gap-2 items-center text-sm">
-        <input
-          type="text"
-          name="q"
-          placeholder="Search by name..."
-          defaultValue={params.q ?? ""}
-          className="rounded-md border border-neutral-300 px-3 py-1.5"
-        />
-        <select
-          name="franchise"
-          defaultValue={params.franchise ?? ""}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-        >
-          <option value="">All themes</option>
-          {franchiseOptions.map((f) => (
-            <option key={f} value={f}>
-              {f}
-            </option>
-          ))}
-        </select>
-        <select
-          name="color"
-          defaultValue={params.color ?? ""}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-        >
-          <option value="">All colors</option>
-          {filamentOptions?.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.color_name}
-            </option>
-          ))}
-        </select>
-        <select
-          name="status"
-          defaultValue={params.status ?? ""}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-        >
-          <option value="">All statuses</option>
-          {Object.entries(STATUS_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <select
-          name="sort"
-          defaultValue={params.sort ?? ""}
-          className="rounded-md border border-neutral-300 px-3 py-1.5 bg-white"
-        >
-          <option value="">Sort: Name (A–Z)</option>
-          <option value="price_asc">Price: low to high</option>
-          <option value="price_desc">Price: high to low</option>
-        </select>
-        <button
-          type="submit"
-          className="rounded-md border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100"
-        >
-          Filter
-        </button>
-      </form>
+      <CatalogFilterBar
+        franchiseOptions={franchiseOptions}
+        colorOptions={(filamentOptions ?? []).map((f) => ({ id: f.id, name: f.color_name }))}
+      />
 
       {error && (
         <p className="text-sm text-red-600">
@@ -204,12 +150,16 @@ export default async function CatalogPage({
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {prizes?.map((prize: Prize) => (
-          <PrizeCard key={prize.id} prize={prize} onCheckout={handleCheckout} />
+        {prizes.map((prize) => (
+          <PrizeCard
+            key={prize.id}
+            prize={prize as Prize}
+            onCheckout={handleCheckout}
+          />
         ))}
       </div>
 
-      {prizes?.length === 0 && !error && (
+      {prizes.length === 0 && !error && (
         <p className="text-sm text-neutral-500">
           No prizes match these filters.
         </p>

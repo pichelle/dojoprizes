@@ -7,18 +7,31 @@
 create extension if not exists "pgcrypto";
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- Franchise tags — a shared, reusable, multi-select tag list used by both
+-- prizes and requests (e.g. "Pokemon", "Hello Kitty"), so spelling stays
+-- consistent and a prize/request can carry more than one tag.
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists franchise_tags (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- Prizes
 -- ─────────────────────────────────────────────────────────────────────────
 create table if not exists prizes (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   photo_url text,
-  franchise text,
   coin_tier text check (coin_tier in ('silver', 'gold', 'obsidian')),
   coin_value_silver_equivalent integer,
-  -- Purely informational: the coin price staff intended to charge, kept
-  -- separate from coin_tier so it can be compared against what a prize
-  -- actually sold for. Not used in any calculation.
+  -- Purely informational: the coin price staff intended to charge, stored
+  -- as a total in Silver-equivalent units (5 Silver = 1 Gold, 25 Silver =
+  -- 1 Obsidian) and broken back down into denominations for display, e.g.
+  -- "1 Obsidian, 1 Gold". Kept separate from coin_tier so mismatches
+  -- (someone sold it for a different price) can be spotted. Not used in
+  -- any calculation.
   coin_price numeric,
   makerworld_link text,
   stock_count integer not null default 0,
@@ -28,8 +41,13 @@ create table if not exists prizes (
   updated_at timestamptz not null default now()
 );
 
-create index if not exists prizes_franchise_idx on prizes (franchise);
 create index if not exists prizes_status_idx on prizes (status);
+
+create table if not exists prize_franchise_tags (
+  prize_id uuid not null references prizes (id) on delete cascade,
+  tag_id uuid not null references franchise_tags (id) on delete cascade,
+  primary key (prize_id, tag_id)
+);
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- Filament (created before requests/prize_filament since both reference it)
@@ -59,7 +77,6 @@ create table if not exists requests (
   student_name text not null,
   prize_id uuid references prizes (id) on delete set null,
   free_text_prize text,
-  franchise text,
   size text check (size in ('small', 'medium', 'large', 'xlarge')),
   color_filament_id uuid references filaments (id) on delete set null,
   links text,
@@ -73,7 +90,12 @@ create table if not exists requests (
 create index if not exists requests_status_idx on requests (status);
 create index if not exists requests_date_idx on requests (date_requested);
 create index if not exists requests_color_filament_idx on requests (color_filament_id);
-create index if not exists requests_franchise_idx on requests (franchise);
+
+create table if not exists request_franchise_tags (
+  request_id uuid not null references requests (id) on delete cascade,
+  tag_id uuid not null references franchise_tags (id) on delete cascade,
+  primary key (request_id, tag_id)
+);
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- Checkouts
@@ -121,6 +143,9 @@ alter table requests enable row level security;
 alter table checkouts enable row level security;
 alter table filaments enable row level security;
 alter table prize_filament enable row level security;
+alter table franchise_tags enable row level security;
+alter table prize_franchise_tags enable row level security;
+alter table request_franchise_tags enable row level security;
 
 drop policy if exists "anon full access" on prizes;
 create policy "anon full access" on prizes for all
@@ -140,4 +165,16 @@ create policy "anon full access" on filaments for all
 
 drop policy if exists "anon full access" on prize_filament;
 create policy "anon full access" on prize_filament for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on franchise_tags;
+create policy "anon full access" on franchise_tags for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on prize_franchise_tags;
+create policy "anon full access" on prize_franchise_tags for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on request_franchise_tags;
+create policy "anon full access" on request_franchise_tags for all
   using (true) with check (true);

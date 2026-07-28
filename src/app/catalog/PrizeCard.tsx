@@ -38,7 +38,7 @@ export default function PrizeCard({
       }}
       className="bg-white border border-neutral-200 rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-neutral-400 hover:shadow-sm transition"
     >
-      <div className="h-36 bg-neutral-100 flex items-center justify-center relative">
+      <div className="h-36 bg-neutral-100 flex items-center justify-center">
         {prize.photo_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -48,11 +48,6 @@ export default function PrizeCard({
           />
         ) : (
           <span className="text-4xl">🎁</span>
-        )}
-        {priceTag && (
-          <span className="absolute bottom-2 right-2 text-xs px-2 py-0.5 rounded-full bg-black/70 text-white whitespace-nowrap">
-            {priceTag}
-          </span>
         )}
       </div>
       <div className="p-4 flex-1 flex flex-col gap-2">
@@ -64,9 +59,22 @@ export default function PrizeCard({
             {STATUS_LABELS[prize.status]}
           </span>
         </div>
-        <div className="text-sm text-neutral-500">
-          {prize.franchise ?? "Uncategorized"}
-        </div>
+
+        {prize.franchiseTags && prize.franchiseTags.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {prize.franchiseTags.map((t) => (
+              <span
+                key={t.id}
+                className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600"
+              >
+                {t.name}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-neutral-400">No theme tags</div>
+        )}
+
         {prize.coin_tier && (
           <div>
             <span
@@ -76,17 +84,26 @@ export default function PrizeCard({
             </span>
           </div>
         )}
+
         <div className="text-sm text-neutral-600">
           Stock: <span className="font-medium">{prize.stock_count}</span>
         </div>
-        <div className="mt-auto pt-2">
+
+        <div className="mt-auto pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
+          {priceTag ? (
+            <span className="text-base font-semibold text-amber-700">
+              🪙 {priceTag}
+            </span>
+          ) : (
+            <span className="text-xs text-neutral-400">No price set</span>
+          )}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               onCheckout(prize.id);
             }}
-            className="text-xs rounded-md border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100"
+            className="text-xs rounded-md border border-neutral-300 px-3 py-1.5 hover:bg-neutral-100 shrink-0"
             title="Log that a student took this off the shelf"
           >
             Check out ✅

@@ -32,11 +32,27 @@ export default async function EditPrizePage({
 
   const linkedFilamentIds = links?.map((l) => l.filament_id) ?? [];
 
+  const { data: franchiseTags } = await supabase
+    .from("franchise_tags")
+    .select("id, name")
+    .order("name");
+
+  const { data: tagLinks } = await supabase
+    .from("prize_franchise_tags")
+    .select("tag:franchise_tags(name)")
+    .eq("prize_id", id);
+
+  const initialFranchiseTags = (
+    (tagLinks as { tag: { name: string } | null }[] | null) ?? []
+  )
+    .map((l) => l.tag?.name)
+    .filter((n): n is string => !!n);
+
   const boundUpdate = updatePrize.bind(null, id);
   const boundDelete = deletePrize.bind(null, id);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Edit prize</h1>
         <Link href="/catalog" className="text-sm text-neutral-500 hover:underline">
@@ -50,6 +66,8 @@ export default async function EditPrizePage({
           initial={prize}
           allFilaments={filaments ?? []}
           linkedFilamentIds={linkedFilamentIds}
+          allFranchiseTags={franchiseTags ?? []}
+          initialFranchiseTags={initialFranchiseTags}
           submitLabel="Save changes"
         />
       </div>

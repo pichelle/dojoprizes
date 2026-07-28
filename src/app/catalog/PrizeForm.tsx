@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import type { Filament, Prize } from "@/lib/types";
+import type { Filament, FranchiseTag, Prize } from "@/lib/types";
+import { coinPriceToBreakdown } from "@/lib/coins";
+import TagInput from "@/components/TagInput";
 
 const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
   { value: "in_stock", label: "In stock" },
@@ -15,12 +17,16 @@ export default function PrizeForm({
   initial,
   allFilaments,
   linkedFilamentIds = [],
+  allFranchiseTags,
+  initialFranchiseTags = [],
   submitLabel = "Save prize",
 }: {
   action: (formData: FormData) => void;
   initial?: Partial<Prize>;
   allFilaments: Pick<Filament, "id" | "color_name">[];
   linkedFilamentIds?: string[];
+  allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
+  initialFranchiseTags?: string[];
   submitLabel?: string;
 }) {
   const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? "");
@@ -29,6 +35,8 @@ export default function PrizeForm({
   );
   const [fetching, setFetching] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const priceBreakdown = coinPriceToBreakdown(initial?.coin_price);
 
   async function fetchImageFromMakerworld() {
     if (!makerworldLink.trim()) {
@@ -55,9 +63,9 @@ export default function PrizeForm({
   }
 
   return (
-    <form action={action} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="sm:col-span-2">
+    <form action={action} className="space-y-5">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
             Name
           </label>
@@ -69,7 +77,7 @@ export default function PrizeForm({
           />
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
             Print source (MakerWorld link / design name)
           </label>
@@ -100,39 +108,47 @@ export default function PrizeForm({
           )}
         </div>
 
-        <div className="sm:col-span-2">
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
             Photo URL
           </label>
-          <input
-            name="photo_url"
-            placeholder="https://..."
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          {photoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={photoUrl}
-              alt="Preview"
-              className="mt-2 h-20 w-20 object-cover rounded-md border border-neutral-200"
-              onError={(e) => (e.currentTarget.style.display = "none")}
-              onLoad={(e) => (e.currentTarget.style.display = "block")}
+          <div className="mt-1 flex items-start gap-3">
+            <input
+              name="photo_url"
+              placeholder="https://..."
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+              className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />
-          )}
+            {photoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt="Preview"
+                className="h-10 w-10 object-cover rounded-md border border-neutral-200 shrink-0"
+                onError={(e) => (e.currentTarget.style.display = "none")}
+                onLoad={(e) => (e.currentTarget.style.display = "block")}
+              />
+            )}
+          </div>
         </div>
 
-        <div>
+        <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-neutral-700">
-            Franchise / category
+            Theme / franchise tags
           </label>
-          <input
-            name="franchise"
-            placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
-            defaultValue={initial?.franchise ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
+          <div className="mt-1">
+            <TagInput
+              name="franchise_tag_names"
+              allTags={allFranchiseTags}
+              initialTags={initialFranchiseTags}
+              placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
+            />
+          </div>
+          <p className="mt-1 text-xs text-neutral-500">
+            Pick from existing tags or type a new one and hit Enter to
+            create it.
+          </p>
         </div>
 
         <div>
@@ -179,36 +195,63 @@ export default function PrizeForm({
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700">
-            Listed price (in Silver coins)
-          </label>
-          <input
-            type="number"
-            min={0}
-            step="1"
-            name="coin_price"
-            placeholder="e.g. 30 = 1 Obsidian + 1 Gold"
-            defaultValue={initial?.coin_price ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-          <p className="mt-1 text-xs text-neutral-500">
-            Tracking only — not used anywhere else. Enter the total value in
-            Silver-equivalent coins (5 Silver = 1 Gold, 25 Silver = 1
-            Obsidian); the catalog card shows it broken down, e.g. &quot;1
-            Obsidian, 1 Gold&quot;.
-          </p>
+      <div>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          Listed price
+        </label>
+        <div className="grid grid-cols-3 gap-3 max-w-md">
+          <div>
+            <label className="block text-xs text-neutral-500">Silver</label>
+            <input
+              type="number"
+              min={0}
+              step="1"
+              name="coin_price_silver"
+              defaultValue={priceBreakdown.silver || ""}
+              placeholder="0"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-500">Gold</label>
+            <input
+              type="number"
+              min={0}
+              step="1"
+              name="coin_price_gold"
+              defaultValue={priceBreakdown.gold || ""}
+              placeholder="0"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-neutral-500">Obsidian</label>
+            <input
+              type="number"
+              min={0}
+              step="1"
+              name="coin_price_obsidian"
+              defaultValue={priceBreakdown.obsidian || ""}
+              placeholder="0"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
         </div>
+        <p className="mt-1 text-xs text-neutral-500">
+          Tracking only — not used anywhere else. Handy for checking what a
+          prize sold for against what it was meant to cost.
+        </p>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-1">
           Filament colors this prize uses
         </label>
-        <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded-md p-2 grid sm:grid-cols-2 gap-1">
+        <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded-md p-2 grid sm:grid-cols-2 lg:grid-cols-3 gap-1">
           {allFilaments.length === 0 && (
-            <p className="text-sm text-neutral-400 col-span-2">
+            <p className="text-sm text-neutral-400 col-span-full">
               Add filament colors on the Filament page first to link them
               here.
             </p>
