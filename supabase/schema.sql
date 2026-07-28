@@ -1,7 +1,8 @@
--- Digital Prize Bin — initial schema
+-- DojoPrizes — full schema (fresh install)
 -- Run this once in the Supabase SQL Editor (Project > SQL Editor > New query)
--- for a fresh project. Safe to re-run: uses IF NOT EXISTS / OR REPLACE where
--- possible, but DROP the tables first if you need a clean reset.
+-- for a brand new project. Safe to re-run. If your project already has the
+-- original tables and you're catching up, run the files in
+-- supabase/migrations/ in order instead.
 
 create extension if not exists "pgcrypto";
 
@@ -13,9 +14,12 @@ create table if not exists prizes (
   name text not null,
   photo_url text,
   franchise text,
-  tags text[] not null default '{}',
   coin_tier text check (coin_tier in ('silver', 'gold', 'obsidian')),
   coin_value_silver_equivalent integer,
+  -- Purely informational: the coin price staff intended to charge, kept
+  -- separate from coin_tier so it can be compared against what a prize
+  -- actually sold for. Not used in any calculation.
+  coin_price numeric,
   makerworld_link text,
   stock_count integer not null default 0,
   status text not null default 'in_stock'
@@ -28,38 +32,7 @@ create index if not exists prizes_franchise_idx on prizes (franchise);
 create index if not exists prizes_status_idx on prizes (status);
 
 -- ─────────────────────────────────────────────────────────────────────────
--- Requests
--- ─────────────────────────────────────────────────────────────────────────
-create table if not exists requests (
-  id uuid primary key default gen_random_uuid(),
-  student_name text not null,
-  prize_id uuid references prizes (id) on delete set null,
-  free_text_prize text,
-  date_requested date not null default current_date,
-  status text not null default 'pending'
-    check (status in ('pending', 'printed', 'fulfilled', 'cancelled')),
-  notes text,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists requests_status_idx on requests (status);
-create index if not exists requests_date_idx on requests (date_requested);
-
--- ─────────────────────────────────────────────────────────────────────────
--- Checkouts
--- ─────────────────────────────────────────────────────────────────────────
-create table if not exists checkouts (
-  id uuid primary key default gen_random_uuid(),
-  prize_id uuid not null references prizes (id) on delete cascade,
-  date_checked_out date not null default current_date,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists checkouts_prize_idx on checkouts (prize_id);
-create index if not exists checkouts_date_idx on checkouts (date_checked_out);
-
--- ─────────────────────────────────────────────────────────────────────────
--- Filament
+-- Filament (created before requests/prize_filament since both reference it)
 -- ─────────────────────────────────────────────────────────────────────────
 create table if not exists filaments (
   id uuid primary key default gen_random_uuid(),
@@ -77,6 +50,43 @@ create table if not exists prize_filament (
   filament_id uuid not null references filaments (id) on delete cascade,
   primary key (prize_id, filament_id)
 );
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Requests
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists requests (
+  id uuid primary key default gen_random_uuid(),
+  student_name text not null,
+  prize_id uuid references prizes (id) on delete set null,
+  free_text_prize text,
+  franchise text,
+  size text check (size in ('small', 'medium', 'large', 'xlarge')),
+  color_filament_id uuid references filaments (id) on delete set null,
+  links text,
+  date_requested date not null default current_date,
+  status text not null default 'pending'
+    check (status in ('pending', 'printed', 'fulfilled', 'cancelled')),
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists requests_status_idx on requests (status);
+create index if not exists requests_date_idx on requests (date_requested);
+create index if not exists requests_color_filament_idx on requests (color_filament_id);
+create index if not exists requests_franchise_idx on requests (franchise);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Checkouts
+-- ─────────────────────────────────────────────────────────────────────────
+create table if not exists checkouts (
+  id uuid primary key default gen_random_uuid(),
+  prize_id uuid not null references prizes (id) on delete cascade,
+  date_checked_out date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists checkouts_prize_idx on checkouts (prize_id);
+create index if not exists checkouts_date_idx on checkouts (date_checked_out);
 
 -- ─────────────────────────────────────────────────────────────────────────
 -- updated_at trigger for prizes
@@ -99,8 +109,8 @@ create trigger prizes_set_updated_at
 -- Row Level Security
 --
 -- This app has no per-user Supabase Auth — it's a single internal tool
--- protected by an app-level shared password (see src/middleware.ts) and
--- talks to Supabase using the anon key from server-only code (Server
+-- protected by an app-level shared password (see src/proxy.ts) and talks
+-- to Supabase using the anon key from server-only code (Server
 -- Components / Server Actions), never from the browser. RLS is enabled
 -- with policies that allow full access to the anon role so the app works,
 -- since the anon key is not exposed to the client. If you ever add a

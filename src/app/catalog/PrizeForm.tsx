@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Prize } from "@/lib/types";
+import type { Filament, Prize } from "@/lib/types";
 
 const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
   { value: "in_stock", label: "In stock" },
@@ -13,13 +13,46 @@ const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
 export default function PrizeForm({
   action,
   initial,
+  allFilaments,
+  linkedFilamentIds = [],
   submitLabel = "Save prize",
 }: {
   action: (formData: FormData) => void;
   initial?: Partial<Prize>;
+  allFilaments: Pick<Filament, "id" | "color_name">[];
+  linkedFilamentIds?: string[];
   submitLabel?: string;
 }) {
   const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? "");
+  const [makerworldLink, setMakerworldLink] = useState(
+    initial?.makerworld_link ?? "",
+  );
+  const [fetching, setFetching] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  async function fetchImageFromMakerworld() {
+    if (!makerworldLink.trim()) {
+      setFetchError("Paste a MakerWorld link first.");
+      return;
+    }
+    setFetching(true);
+    setFetchError(null);
+    try {
+      const res = await fetch(
+        `/api/makerworld-preview?url=${encodeURIComponent(makerworldLink.trim())}`,
+      );
+      const data = await res.json();
+      if (data.imageUrl) {
+        setPhotoUrl(data.imageUrl);
+      } else {
+        setFetchError(data.error ?? "Couldn't find an image on that page.");
+      }
+    } catch {
+      setFetchError("Something went wrong fetching that link.");
+    } finally {
+      setFetching(false);
+    }
+  }
 
   return (
     <form action={action} className="space-y-4">
@@ -38,12 +71,43 @@ export default function PrizeForm({
 
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-neutral-700">
+            Print source (MakerWorld link / design name)
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              name="makerworld_link"
+              placeholder="https://makerworld.com/... or design name"
+              value={makerworldLink}
+              onChange={(e) => setMakerworldLink(e.target.value)}
+              className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              onClick={fetchImageFromMakerworld}
+              disabled={fetching}
+              className="whitespace-nowrap rounded-md border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-100 disabled:opacity-50"
+            >
+              {fetching ? "Fetching…" : "Fetch image"}
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-neutral-500">
+            Pulls the preview image from that link automatically. If it
+            doesn&apos;t work (some links don&apos;t expose one), just paste a
+            photo URL below.
+          </p>
+          {fetchError && (
+            <p className="mt-1 text-xs text-red-600">{fetchError}</p>
+          )}
+        </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-neutral-700">
             Photo URL
           </label>
           <input
             name="photo_url"
             placeholder="https://..."
-            defaultValue={initial?.photo_url ?? ""}
+            value={photoUrl}
             onChange={(e) => setPhotoUrl(e.target.value)}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
@@ -67,18 +131,6 @@ export default function PrizeForm({
             name="franchise"
             placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
             defaultValue={initial?.franchise ?? ""}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-neutral-700">
-            Tags (comma separated)
-          </label>
-          <input
-            name="tags"
-            placeholder="red, dragon, small"
-            defaultValue={initial?.tags?.join(", ") ?? ""}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
         </div>
@@ -128,16 +180,48 @@ export default function PrizeForm({
           />
         </div>
 
-        <div className="sm:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-neutral-700">
-            Print source (MakerWorld link / design name)
+            Listed price (coins)
           </label>
           <input
-            name="makerworld_link"
-            placeholder="https://makerworld.com/... or design name"
-            defaultValue={initial?.makerworld_link ?? ""}
+            type="number"
+            min={0}
+            step="1"
+            name="coin_price"
+            placeholder="optional"
+            defaultValue={initial?.coin_price ?? ""}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
+          <p className="mt-1 text-xs text-neutral-500">
+            Tracking only — not used anywhere else. Handy for checking what a
+            prize sold for against what it was meant to cost.
+          </p>
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-neutral-700 mb-1">
+          Filament colors this prize uses
+        </label>
+        <div className="max-h-40 overflow-y-auto border border-neutral-200 rounded-md p-2 grid sm:grid-cols-2 gap-1">
+          {allFilaments.length === 0 && (
+            <p className="text-sm text-neutral-400 col-span-2">
+              Add filament colors on the Filament page first to link them
+              here.
+            </p>
+          )}
+          {allFilaments.map((f) => (
+            <label key={f.id} className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="filament_ids"
+                value={f.id}
+                defaultChecked={linkedFilamentIds.includes(f.id)}
+              />
+              {f.color_name}
+            </label>
+          ))}
         </div>
       </div>
 

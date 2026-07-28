@@ -12,19 +12,25 @@ export type PrizeStatus =
 
 export type RequestStatus = "pending" | "printed" | "fulfilled" | "cancelled";
 
+export type RequestSize = "small" | "medium" | "large" | "xlarge";
+
 export interface Prize {
   id: string;
   name: string;
   photo_url: string | null;
   franchise: string | null;
-  tags: string[];
   coin_tier: CoinTier | null;
   coin_value_silver_equivalent: number | null;
+  // Informational only -- the coin price staff intended to charge, kept
+  // separate from coin_tier so mismatches (someone sold it for a different
+  // price) can be spotted. Not used in any calculation.
+  coin_price: number | null;
   makerworld_link: string | null;
   stock_count: number;
   status: PrizeStatus;
   created_at: string;
   updated_at: string;
+  filaments?: Pick<Filament, "id" | "color_name">[];
 }
 
 export interface PrizeRequest {
@@ -32,12 +38,17 @@ export interface PrizeRequest {
   student_name: string;
   prize_id: string | null;
   free_text_prize: string | null;
+  franchise: string | null;
+  size: RequestSize | null;
+  color_filament_id: string | null;
+  links: string | null;
   date_requested: string;
   status: RequestStatus;
   notes: string | null;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url"> | null;
+  color_filament?: Pick<Filament, "id" | "color_name"> | null;
 }
 
 export interface Checkout {

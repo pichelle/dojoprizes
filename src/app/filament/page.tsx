@@ -2,13 +2,15 @@ import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import { createFilament } from "./actions";
 import FilamentForm from "./FilamentForm";
+import SortSelect from "./SortSelect";
 
 export default async function FilamentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ add?: string }>;
+  searchParams: Promise<{ add?: string; sort?: string }>;
 }) {
   const params = await searchParams;
+  const sort = params.sort ?? "name";
   const supabase = createServerClient();
 
   const { data: prizes } = await supabase
@@ -16,10 +18,23 @@ export default async function FilamentPage({
     .select("id, name")
     .order("name");
 
-  const { data: filaments, error } = await supabase
+  const { data: filamentsRaw, error } = await supabase
     .from("filaments")
     .select("*, prize_filament(prize:prizes(id, name))")
     .order("color_name");
+
+  const filaments = (filamentsRaw ?? []).map((f) => ({
+    ...f,
+    linkedPrizes: (
+      (f.prize_filament as { prize: { id: string; name: string } }[]) ?? []
+    ).map((pf) => pf.prize),
+  }));
+
+  if (sort === "most_used") {
+    filaments.sort((a, b) => b.linkedPrizes.length - a.linkedPrizes.length);
+  } else if (sort === "least_used") {
+    filaments.sort((a, b) => a.linkedPrizes.length - b.linkedPrizes.length);
+  }
 
   return (
     <div className="space-y-6">
@@ -28,7 +43,8 @@ export default async function FilamentPage({
           <h1 className="text-2xl font-semibold">Filament Inventory</h1>
           <p className="text-sm text-neutral-500 max-w-2xl">
             Standalone-but-linked to the prize catalog — see which prizes a
-            color affects before you run out.
+            color affects before you run out, and which colors are actually
+            worth restocking.
           </p>
         </div>
         <Link
@@ -56,16 +72,14 @@ export default async function FilamentPage({
         </p>
       )}
 
+      <SortSelect sort={sort} />
+
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filaments?.map((f) => {
+        {filaments.map((f) => {
           const isLow =
             f.low_stock_threshold != null &&
             f.stock_level != null &&
             f.stock_level <= f.low_stock_threshold;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const linkedPrizes = (f.prize_filament as any[])?.map(
-            (pf) => pf.prize,
-          ) ?? [];
 
           return (
             <Link
@@ -75,11 +89,17 @@ export default async function FilamentPage({
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-medium">{f.color_name}</span>
-                {isLow && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 whitespace-nowrap">
-                    Low stock
+                <div className="flex flex-col items-end gap-1">
+                  {isLow && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-800 whitespace-nowrap">
+                      Low stock
+                    </span>
+                  )}
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600 whitespace-nowrap">
+                    Used by {f.linkedPrizes.length}{" "}
+                    {f.linkedPrizes.length === 1 ? "prize" : "prizes"}
                   </span>
-                )}
+                </div>
               </div>
               <div className="text-sm text-neutral-500">
                 {f.material_type ?? "Material not set"}
@@ -94,12 +114,12 @@ export default async function FilamentPage({
                 )}
               </div>
               <div className="flex flex-wrap gap-1 pt-1">
-                {linkedPrizes.length === 0 && (
+                {f.linkedPrizes.length === 0 && (
                   <span className="text-xs text-neutral-400">
                     No prizes linked
                   </span>
                 )}
-                {linkedPrizes.map((p) => (
+                {f.linkedPrizes.map((p: { id: string; name: string }) => (
                   <span
                     key={p.id}
                     className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600"
@@ -113,7 +133,7 @@ export default async function FilamentPage({
         })}
       </div>
 
-      {filaments?.length === 0 && !error && (
+      {filaments.length === 0 && !error && (
         <p className="text-sm text-neutral-500">
           No filament colors yet. Click &quot;+ Add Filament&quot; to add one.
         </p>

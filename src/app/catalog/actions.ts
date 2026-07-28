@@ -6,41 +6,67 @@ import { createServerClient } from "@/lib/supabase/server";
 import { silverEquivalentForTier } from "@/lib/coins";
 import type { CoinTier, PrizeStatus } from "@/lib/types";
 
-function parseTags(raw: FormDataEntryValue | null): string[] {
-  const str = String(raw ?? "");
-  return str
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+function parseFilamentIds(formData: FormData): string[] {
+  return formData.getAll("filament_ids").map(String).filter(Boolean);
+}
+
+async function syncFilamentLinks(
+  supabase: ReturnType<typeof createServerClient>,
+  prizeId: string,
+  filamentIds: string[],
+) {
+  const { error: deleteError } = await supabase
+    .from("prize_filament")
+    .delete()
+    .eq("prize_id", prizeId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (filamentIds.length > 0) {
+    const { error: linkError } = await supabase.from("prize_filament").insert(
+      filamentIds.map((filament_id) => ({ prize_id: prizeId, filament_id })),
+    );
+    if (linkError) throw new Error(linkError.message);
+  }
 }
 
 export async function createPrize(formData: FormData) {
   const supabase = createServerClient();
   const coinTier = (formData.get("coin_tier") as CoinTier) || null;
+  const coinPrice = formData.get("coin_price");
 
-  const { error } = await supabase.from("prizes").insert({
-    name: String(formData.get("name") ?? "").trim(),
-    photo_url: String(formData.get("photo_url") ?? "").trim() || null,
-    franchise: String(formData.get("franchise") ?? "").trim() || null,
-    tags: parseTags(formData.get("tags")),
-    coin_tier: coinTier,
-    coin_value_silver_equivalent: coinTier
-      ? silverEquivalentForTier(coinTier)
-      : null,
-    makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
-    stock_count: Number(formData.get("stock_count") ?? 0),
-    status: (formData.get("status") as PrizeStatus) || "in_stock",
-  });
+  const { data: prize, error } = await supabase
+    .from("prizes")
+    .insert({
+      name: String(formData.get("name") ?? "").trim(),
+      photo_url: String(formData.get("photo_url") ?? "").trim() || null,
+      franchise: String(formData.get("franchise") ?? "").trim() || null,
+      coin_tier: coinTier,
+      coin_value_silver_equivalent: coinTier
+        ? silverEquivalentForTier(coinTier)
+        : null,
+      coin_price: coinPrice ? Number(coinPrice) : null,
+      makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
+      stock_count: Number(formData.get("stock_count") ?? 0),
+      status: (formData.get("status") as PrizeStatus) || "in_stock",
+    })
+    .select("id")
+    .single();
 
   if (error) throw new Error(error.message);
 
+  if (prize) {
+    await syncFilamentLinks(supabase, prize.id, parseFilamentIds(formData));
+  }
+
   revalidatePath("/catalog");
+  revalidatePath("/filament");
   redirect("/catalog");
 }
 
 export async function updatePrize(prizeId: string, formData: FormData) {
   const supabase = createServerClient();
   const coinTier = (formData.get("coin_tier") as CoinTier) || null;
+  const coinPrice = formData.get("coin_price");
 
   const { error } = await supabase
     .from("prizes")
@@ -48,11 +74,11 @@ export async function updatePrize(prizeId: string, formData: FormData) {
       name: String(formData.get("name") ?? "").trim(),
       photo_url: String(formData.get("photo_url") ?? "").trim() || null,
       franchise: String(formData.get("franchise") ?? "").trim() || null,
-      tags: parseTags(formData.get("tags")),
       coin_tier: coinTier,
       coin_value_silver_equivalent: coinTier
         ? silverEquivalentForTier(coinTier)
         : null,
+      coin_price: coinPrice ? Number(coinPrice) : null,
       makerworld_link:
         String(formData.get("makerworld_link") ?? "").trim() || null,
       stock_count: Number(formData.get("stock_count") ?? 0),
@@ -63,8 +89,11 @@ export async function updatePrize(prizeId: string, formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  await syncFilamentLinks(supabase, prizeId, parseFilamentIds(formData));
+
   revalidatePath("/catalog");
   revalidatePath(`/catalog/${prizeId}`);
+  revalidatePath("/filament");
   redirect("/catalog");
 }
 
@@ -73,6 +102,7 @@ export async function deletePrize(prizeId: string) {
   const { error } = await supabase.from("prizes").delete().eq("id", prizeId);
   if (error) throw new Error(error.message);
   revalidatePath("/catalog");
+  revalidatePath("/filament");
   redirect("/catalog");
 }
 

@@ -1,5 +1,5 @@
 import { createServerClient } from "@/lib/supabase/server";
-import type { PrizeRequest, RequestStatus } from "@/lib/types";
+import type { PrizeRequest, RequestSize, RequestStatus } from "@/lib/types";
 import { createRequest, updateRequestStatus, deleteRequest } from "./actions";
 import RequestForm from "./RequestForm";
 import StatusSelect from "./StatusSelect";
@@ -9,6 +9,13 @@ const STATUS_STYLES: Record<RequestStatus, string> = {
   printed: "bg-blue-100 text-blue-800",
   fulfilled: "bg-green-100 text-green-800",
   cancelled: "bg-neutral-200 text-neutral-600",
+};
+
+const SIZE_LABELS: Record<RequestSize, string> = {
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+  xlarge: "X-Large",
 };
 
 export default async function RequestsPage({
@@ -24,9 +31,14 @@ export default async function RequestsPage({
     .select("id, name")
     .order("name");
 
+  const { data: filaments } = await supabase
+    .from("filaments")
+    .select("id, color_name")
+    .order("color_name");
+
   let query = supabase
     .from("requests")
-    .select("*, prize:prizes(id, name, photo_url)")
+    .select("*, prize:prizes(id, name, photo_url), color_filament:filaments(id, color_name)")
     .order("date_requested", { ascending: false })
     .order("created_at", { ascending: false });
 
@@ -47,7 +59,11 @@ export default async function RequestsPage({
 
       <div className="bg-white border border-neutral-200 rounded-xl p-6">
         <h2 className="font-medium mb-4">Log a new request</h2>
-        <RequestForm prizes={prizes ?? []} action={createRequest} />
+        <RequestForm
+          prizes={prizes ?? []}
+          filaments={filaments ?? []}
+          action={createRequest}
+        />
       </div>
 
       <div className="flex gap-2 text-sm">
@@ -72,31 +88,45 @@ export default async function RequestsPage({
         </p>
       )}
 
-      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-neutral-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-neutral-50 text-neutral-500 text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Student</th>
               <th className="px-4 py-2 font-medium">Prize</th>
+              <th className="px-4 py-2 font-medium">Franchise</th>
+              <th className="px-4 py-2 font-medium">Size</th>
+              <th className="px-4 py-2 font-medium">Color</th>
               <th className="px-4 py-2 font-medium">Date</th>
               <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Notes</th>
+              <th className="px-4 py-2 font-medium">Links / Notes</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody>
             {requests?.map((r: PrizeRequest) => (
-              <tr key={r.id} className="border-t border-neutral-100">
-                <td className="px-4 py-2 font-medium">{r.student_name}</td>
+              <tr key={r.id} className="border-t border-neutral-100 align-top">
+                <td className="px-4 py-2 font-medium whitespace-nowrap">
+                  {r.student_name}
+                </td>
                 <td className="px-4 py-2">
                   {r.prize?.name ?? r.free_text_prize ?? (
                     <span className="text-neutral-400">—</span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-500">
+                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                  {r.franchise ?? "—"}
+                </td>
+                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                  {r.size ? SIZE_LABELS[r.size] : "—"}
+                </td>
+                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
+                  {r.color_filament?.color_name ?? "—"}
+                </td>
+                <td className="px-4 py-2 text-neutral-500 whitespace-nowrap">
                   {r.date_requested}
                 </td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 whitespace-nowrap">
                   <span
                     className={`inline-block mr-2 text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[r.status]}`}
                   >
@@ -108,8 +138,23 @@ export default async function RequestsPage({
                     onChange={updateRequestStatus}
                   />
                 </td>
-                <td className="px-4 py-2 text-neutral-500 max-w-[16rem] truncate">
-                  {r.notes}
+                <td className="px-4 py-2 text-neutral-500 max-w-[16rem]">
+                  {r.links && (
+                    <div className="flex flex-col gap-0.5 mb-1">
+                      {r.links.split("\n").filter(Boolean).map((link, i) => (
+                        <a
+                          key={i}
+                          href={link.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline truncate block max-w-[16rem]"
+                        >
+                          {link.trim()}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  {r.notes && <div className="truncate">{r.notes}</div>}
                 </td>
                 <td className="px-4 py-2 text-right">
                   <form

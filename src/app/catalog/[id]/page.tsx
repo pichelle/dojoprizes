@@ -20,10 +20,17 @@ export default async function EditPrizePage({
 
   if (!prize) notFound();
 
+  const { data: filaments } = await supabase
+    .from("filaments")
+    .select("id, color_name")
+    .order("color_name");
+
   const { data: links } = await supabase
     .from("prize_filament")
-    .select("filament:filaments(id, color_name, material_type)")
+    .select("filament_id")
     .eq("prize_id", id);
+
+  const linkedFilamentIds = links?.map((l) => l.filament_id) ?? [];
 
   const boundUpdate = updatePrize.bind(null, id);
   const boundDelete = deletePrize.bind(null, id);
@@ -38,36 +45,13 @@ export default async function EditPrizePage({
       </div>
 
       <div className="bg-white border border-neutral-200 rounded-xl p-6">
-        <PrizeForm action={boundUpdate} initial={prize} submitLabel="Save changes" />
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-xl p-6">
-        <h2 className="font-medium mb-2">Filament colors this prize needs</h2>
-        {links && links.length > 0 ? (
-          <ul className="flex flex-wrap gap-2">
-            {links.map((l, i) => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const f = l.filament as any;
-              return (
-                <li
-                  key={i}
-                  className="text-xs px-2 py-1 rounded-full bg-neutral-100 text-neutral-700"
-                >
-                  {f?.color_name}
-                  {f?.material_type ? ` (${f.material_type})` : ""}
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="text-sm text-neutral-500">No filament colors linked yet.</p>
-        )}
-        <Link
-          href="/filament"
-          className="mt-3 inline-block text-sm text-neutral-600 hover:underline"
-        >
-          Manage filament links →
-        </Link>
+        <PrizeForm
+          action={boundUpdate}
+          initial={prize}
+          allFilaments={filaments ?? []}
+          linkedFilamentIds={linkedFilamentIds}
+          submitLabel="Save changes"
+        />
       </div>
 
       <form

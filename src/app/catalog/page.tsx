@@ -40,6 +40,10 @@ export default async function CatalogPage({
   }
 
   const { data: prizes, error } = await query;
+  const { data: filaments } = await supabase
+    .from("filaments")
+    .select("id, color_name")
+    .order("color_name");
 
   return (
     <div className="space-y-6">
@@ -89,7 +93,11 @@ export default async function CatalogPage({
       {params.add && (
         <div className="bg-white border border-neutral-200 rounded-xl p-6">
           <h2 className="font-medium mb-4">Add a new prize</h2>
-          <PrizeForm action={createPrize} submitLabel="Add prize" />
+          <PrizeForm
+            action={createPrize}
+            allFilaments={filaments ?? []}
+            submitLabel="Add prize"
+          />
         </div>
       )}
 
@@ -143,14 +151,11 @@ export default async function CatalogPage({
                     {COIN_TIER_LABELS[prize.coin_tier]}
                   </span>
                 )}
-                {prize.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600"
-                  >
-                    {tag}
+                {prize.coin_price != null && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                    {prize.coin_price} coins listed
                   </span>
-                ))}
+                )}
               </div>
               <div className="text-sm text-neutral-600">
                 Stock: <span className="font-medium">{prize.stock_count}</span>
