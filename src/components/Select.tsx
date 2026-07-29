@@ -2,11 +2,15 @@
 
 import * as RadixSelect from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
+import { NONE_VALUE } from "@/lib/constants";
 
 // Radix disallows an empty-string item value (it's reserved for "cleared").
 // Use this sentinel for "All" / "Not specified" style options, and translate
 // it back to "" wherever the raw value is actually needed.
-export const NONE_VALUE = "__none__";
+// Re-exported here (defined in lib/constants.ts, not this "use client" file)
+// so Server Actions can import the real string instead of an opaque client
+// reference -- see lib/constants.ts for why that matters.
+export { NONE_VALUE };
 
 export type SelectOption = { value: string; label: string; swatch?: string | null };
 

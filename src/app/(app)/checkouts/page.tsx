@@ -2,7 +2,8 @@ import { createServerClient } from "@/lib/supabase/server";
 import type { Checkout } from "@/lib/types";
 import { createCheckout, deleteCheckout } from "./actions";
 import ActionButton from "@/components/ActionButton";
-import Select, { NONE_VALUE } from "@/components/Select";
+import Select from "@/components/Select";
+import { NONE_VALUE } from "@/lib/constants";
 import ErrorNote from "@/components/ErrorNote";
 
 // Always fetch fresh data -- this page has no searchParams/cookies to force

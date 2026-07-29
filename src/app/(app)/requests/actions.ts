@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
-import { NONE_VALUE } from "@/components/Select";
+import { NONE_VALUE } from "@/lib/constants";
 import type { RequestSize, RequestStatus } from "@/lib/types";
 
 export type RequestFormState = { error: string | null; success?: boolean };

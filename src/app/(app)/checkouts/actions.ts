@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { NONE_VALUE } from "@/components/Select";
+import { NONE_VALUE } from "@/lib/constants";
 
 export async function createCheckout(formData: FormData) {
   const supabase = createServerClient();
