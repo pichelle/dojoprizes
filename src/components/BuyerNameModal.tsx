@@ -14,7 +14,7 @@ export default function BuyerNameModal({
   const [name, setName] = useState("");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 z-50 flex items-center justify-center p-4 rounded-xl overflow-hidden">
       <div
         className="absolute inset-0 bg-ink/30"
         onClick={onCancel}
@@ -22,11 +22,9 @@ export default function BuyerNameModal({
       />
       <div className="modal-in relative bg-card border border-border-warm rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
         <div>
-          <p className="font-serif text-lg font-bold text-ink">
-            Nice! Who&apos;s taking home the {prizeName}?
-          </p>
-          <p className="text-sm text-muted mt-1">
-            Just their name so we can keep track of who scored it.
+          <p className="font-serif text-lg font-bold text-ink">Yay!</p>
+          <p className="text-sm text-ink mt-1">
+            Who&apos;s taking home {prizeName}?
           </p>
         </div>
         <input

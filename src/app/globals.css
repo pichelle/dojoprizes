@@ -39,7 +39,7 @@
   --color-taupe: var(--color-taupe);
   --color-border-hover: var(--color-border-hover);
   --font-sans: var(--font-figtree);
-  --font-serif: var(--font-space-grotesk);
+  --font-serif: var(--font-lora);
 }
 
 body {
@@ -221,4 +221,17 @@ textarea:hover {
 
 .field-error {
   border-color: var(--color-rust) !important;
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.slide-in-right {
+  animation: slide-in-right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusSelect from "./StatusSelect";
@@ -25,6 +26,7 @@ export default function RequestsTable({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const active = requests.find((r) => r.id === activeId) ?? null;
+  const router = useRouter();
 
   return (
     <>
@@ -124,7 +126,7 @@ export default function RequestsTable({
             onClick={() => setActiveId(null)}
             aria-hidden="true"
           />
-          <div className="relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-xl text-ink">Edit request</h2>
               <button
@@ -140,7 +142,10 @@ export default function RequestsTable({
               key={active.id}
               action={updateRequestInline.bind(null, active.id)}
               onCancel={() => setActiveId(null)}
-              onSuccess={() => setActiveId(null)}
+              onSuccess={() => {
+                setActiveId(null);
+                router.refresh();
+              }}
               initial={active}
               initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
               initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}

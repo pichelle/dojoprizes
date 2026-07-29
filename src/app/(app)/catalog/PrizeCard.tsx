@@ -42,7 +42,7 @@ export default function PrizeCard({
       onKeyDown={(e) => {
         if (e.key === "Enter") router.push(`/catalog/${prize.id}`);
       }}
-      className="card-hover bg-card border border-border-warm rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-border-warm-strong"
+      className="card-hover relative bg-card border border-border-warm rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-border-warm-strong"
     >
       <div className="h-44 bg-page flex items-center justify-center">
         {prize.photo_url ? (

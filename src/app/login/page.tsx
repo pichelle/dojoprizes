@@ -1,4 +1,5 @@
 import PasswordField from "./PasswordField";
+import { WORDMARK_DATA_URI } from "./wordmarkDataUri";
 
 export default async function LoginPage({
   searchParams,
@@ -11,11 +12,17 @@ export default async function LoginPage({
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-page bg-dot-grid px-4">
-      <div className="w-full max-w-sm bg-card border border-border-warm rounded-xl p-8">
+      <div className="w-full max-w-sm bg-card border border-border-warm rounded-xl p-8 text-center">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/wordmark.png" alt="DojoPrizes" className="h-11 w-auto" />
+        <img
+          src={WORDMARK_DATA_URI}
+          alt="DojoPrizes"
+          className="h-11 w-auto mx-auto"
+        />
         <p className="mt-3 text-sm text-muted">
           Welcome to Code Ninjas Yorba Linda&apos;s prize tracker, DojoPrizes :)
+        </p>
+        <p className="text-sm text-muted">
           Ask Sensei Michelle if you forgot the password.
         </p>
 

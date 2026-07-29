@@ -13,7 +13,7 @@ export function showToast(message: string, options?: { onUndo?: () => void }) {
   listeners.forEach((l) => l(message, options));
 }
 
-const TOAST_DURATION_MS = 3000;
+const TOAST_DURATION_MS = 5000;
 
 export default function ToastHost() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);

@@ -25,6 +25,19 @@ export default function AppLayout({
             <SidebarNav />
           </div>
           <div className="flex flex-col items-center gap-2">
+            <a
+              href="mailto:michelleepak@gmail.com?subject=DojoPrizes%20bug%2Ffeature"
+              className="flex items-center gap-2 text-sm text-muted hover:text-ink"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/icons/nav-feedback.png"
+                alt=""
+                className="w-5 h-5 object-contain shrink-0"
+                aria-hidden="true"
+              />
+              Report a bug / feature
+            </a>
             <form action="/api/logout" method="POST">
               <button
                 type="submit"

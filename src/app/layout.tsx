@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Figtree, Space_Grotesk } from "next/font/google";
+import { Figtree, Lora } from "next/font/google";
 import "./globals.css";
 import ToastHost from "@/components/ToastHost";
 
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
-const spaceGrotesk = Space_Grotesk({
+const lora = Lora({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-lora",
 });
 
 export const metadata: Metadata = {
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${spaceGrotesk.variable}`}>
+    <html lang="en" className={`${figtree.variable} ${lora.variable}`}>
       <body className="antialiased bg-page text-ink min-h-screen">
         {children}
         <ToastHost />

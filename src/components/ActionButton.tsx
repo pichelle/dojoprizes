@@ -8,7 +8,7 @@ import ConfirmDialog from "./ConfirmDialog";
 // Destructive actions are undoable for a short grace period: the actual
 // server action is delayed rather than fired immediately, so clicking Undo
 // on the toast can cancel it before anything actually happens.
-const UNDO_WINDOW_MS = 3000;
+const UNDO_WINDOW_MS = 5000;
 
 export default function ActionButton({
   action,

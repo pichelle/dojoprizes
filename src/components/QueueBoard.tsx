@@ -107,7 +107,7 @@ export default function QueueBoard({
             className="absolute inset-0 bg-ink/20"
             onClick={() => setOpenId(null)}
           />
-          <div className="relative w-full max-w-sm bg-card border-l border-border-warm h-full overflow-y-auto p-6 space-y-4">
+          <div className="slide-in-right relative w-full max-w-sm bg-card border-l border-border-warm h-full overflow-y-auto p-6 space-y-4">
             <div className="flex items-start justify-between">
               <h2 className="font-serif text-xl text-ink pr-4">
                 {openRequest.student_name}
