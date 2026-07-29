@@ -11,11 +11,13 @@ export default function MultiSelect({
   options,
   initialValues = [],
   placeholder = "Select...",
+  onChange,
 }: {
   name: string;
   options: { value: string; label: string; swatch?: string | null }[];
   initialValues?: string[];
   placeholder?: string;
+  onChange?: (values: string[]) => void;
 }) {
   const [selected, setSelected] = useState<string[]>(initialValues);
   const [query, setQuery] = useState("");
@@ -32,12 +34,20 @@ export default function MultiSelect({
     .filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()));
 
   function addValue(value: string) {
-    setSelected((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setSelected((prev) => {
+      const next = prev.includes(value) ? prev : [...prev, value];
+      onChange?.(next);
+      return next;
+    });
     setQuery("");
   }
 
   function removeValue(value: string) {
-    setSelected((prev) => prev.filter((v) => v !== value));
+    setSelected((prev) => {
+      const next = prev.filter((v) => v !== value);
+      onChange?.(next);
+      return next;
+    });
   }
 
   function handleBlur() {

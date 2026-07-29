@@ -76,29 +76,29 @@ export default function FilterSidebar({
   const hasAny = Object.values(selected).some((v) => v.length > 0);
 
   return (
-    <div className="bg-card border border-border-warm rounded-xl p-4 space-y-5 h-fit">
+    <div className="bg-card border border-border-warm rounded-xl p-4 space-y-5 h-fit min-w-0">
       {groups.map((g) => (
-        <div key={g.key}>
+        <div key={g.key} className="min-w-0">
           <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
             {g.label}
           </div>
           {g.options.length === 0 ? (
             <p className="text-xs text-muted">Nothing to filter by yet.</p>
           ) : (
-            <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+            <div className="scroll-warm space-y-1.5 max-h-44 overflow-y-auto overflow-x-hidden pr-1">
               {g.options.map((opt) => {
                 const checked = (selected[g.key] ?? []).includes(opt.value);
                 return (
                   <label
                     key={opt.value}
-                    className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page"
+                    className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
                   >
                     <input
                       type={g.type}
                       name={g.key}
                       checked={checked}
                       onChange={() => toggle(g, opt.value)}
-                      className="accent-sage"
+                      className="accent-sage shrink-0"
                     />
                     {opt.swatch && (
                       <span
@@ -107,7 +107,7 @@ export default function FilterSidebar({
                         aria-hidden="true"
                       />
                     )}
-                    {opt.label}
+                    <span className="truncate">{opt.label}</span>
                   </label>
                 );
               })}

@@ -19,12 +19,19 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
+function FieldError({ show }: { show?: boolean }) {
+  if (!show) return null;
+  return <p className="mt-1 text-xs text-rust">Please fill out this field.</p>;
+}
+
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
 ];
+
+type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
 
 export default function RequestForm({
   prizes,
@@ -49,10 +56,31 @@ export default function RequestForm({
 }) {
   const router = useRouter();
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? NONE_VALUE);
+  const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
+
+  function validate(form: HTMLFormElement): boolean {
+    const fd = new FormData(form);
+    const next: Partial<Record<RequiredField, boolean>> = {};
+
+    if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
+    if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
+    const size = String(fd.get("size") ?? "");
+    if (!size || size === NONE_VALUE) next.size = true;
+    if (fd.getAll("color_filament_ids").length === 0) next.color_filament_ids = true;
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!validate(e.currentTarget)) {
+      e.preventDefault();
+    }
+  }
 
   return (
-    <form action={action}>
-      <div className="py-0 pb-5">
+    <form action={action} onSubmit={handleSubmit} noValidate>
+      <div className="pb-6">
         <SectionLabel>Basics</SectionLabel>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -61,10 +89,13 @@ export default function RequestForm({
             </label>
             <input
               name="student_name"
-              required
               defaultValue={initial?.student_name ?? ""}
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+              onChange={() => setErrors((prev) => ({ ...prev, student_name: false }))}
+              className={`mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
+                errors.student_name ? "field-error" : "border-border-warm-strong"
+              }`}
             />
+            <FieldError show={errors.student_name} />
           </div>
 
           <div>
@@ -73,11 +104,14 @@ export default function RequestForm({
             </label>
             <input
               name="requested_by"
-              required
               placeholder="Your name"
               defaultValue={initial?.requested_by ?? ""}
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+              onChange={() => setErrors((prev) => ({ ...prev, requested_by: false }))}
+              className={`mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
+                errors.requested_by ? "field-error" : "border-border-warm-strong"
+              }`}
             />
+            <FieldError show={errors.requested_by} />
           </div>
 
           <div className="sm:col-span-2 sm:max-w-[15rem]">
@@ -94,7 +128,7 @@ export default function RequestForm({
         </div>
       </div>
 
-      <div className="py-5 border-t border-border-warm">
+      <div className="py-6 border-t border-border-warm">
         <SectionLabel>Details</SectionLabel>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -142,26 +176,27 @@ export default function RequestForm({
             <label className="block text-sm font-medium text-ink">
               Size <Req />
             </label>
-            <div className="mt-1">
+            <div className={`mt-1 ${errors.size ? "rounded-md ring-2 ring-rust" : ""}`}>
               <Select
                 name="size"
                 defaultValue={initial?.size ?? undefined}
                 placeholder="Select a size..."
-                required
                 className="w-full"
                 options={SIZE_OPTIONS}
+                onValueChange={() => setErrors((prev) => ({ ...prev, size: false }))}
               />
             </div>
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1.5 text-sm text-muted">
               Remind students that larger prints take more time.
             </p>
+            <FieldError show={errors.size} />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-ink">
               Color requested <Req />
             </label>
-            <div className="mt-1">
+            <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
               <MultiSelect
                 name="color_filament_ids"
                 initialValues={initialColorFilamentIds}
@@ -171,16 +206,18 @@ export default function RequestForm({
                   label: f.color_name,
                   swatch: f.swatch_hex,
                 }))}
+                onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
               />
             </div>
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1.5 text-sm text-muted">
               Try to keep it at 1-2 colors.
             </p>
             {filaments.length === 0 && (
-              <p className="mt-1 text-xs text-muted">
+              <p className="mt-1.5 text-sm text-muted">
                 Add colors on the Filament page to select one here.
               </p>
             )}
+            <FieldError show={errors.color_filament_ids} />
           </div>
 
           <div className="sm:col-span-2">
@@ -208,14 +245,14 @@ export default function RequestForm({
               placeholder="https://makerworld.com/..."
               className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
-            <p className="mt-1 text-xs text-muted">
+            <p className="mt-1.5 text-sm text-muted">
               Highly recommended, and much appreciated. It&apos;s the most helpful thing you can add.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="pt-5 border-t border-border-warm">
+      <div className="pt-6 border-t border-border-warm">
         <SectionLabel>Notes</SectionLabel>
         <div>
           <label className="block text-sm font-medium text-ink">

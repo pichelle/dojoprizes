@@ -48,6 +48,11 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+h1.font-serif,
+h2.font-serif {
+  font-weight: 700;
+}
+
 .bg-dot-grid {
   background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
   background-size: 18px 18px;
@@ -187,4 +192,33 @@ textarea:hover {
 .chip-hover:hover {
   background: color-mix(in srgb, var(--color-sage) 16%, transparent);
   color: #4c5638;
+}
+
+/* Warm, thin scrollbar for scrollable panels (filter lists, etc.) instead
+   of the system default. */
+.scroll-warm {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-warm-strong) transparent;
+}
+
+.scroll-warm::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scroll-warm::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-warm::-webkit-scrollbar-thumb {
+  background: var(--color-border-warm-strong);
+  border-radius: 999px;
+}
+
+.scroll-warm::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
+}
+
+.field-error {
+  border-color: var(--color-rust) !important;
 }

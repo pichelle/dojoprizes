@@ -26,8 +26,8 @@ export default function RootLayout({
     <html lang="en" className={`${figtree.variable} ${spaceGrotesk.variable}`}>
       <body className="antialiased bg-page text-ink min-h-screen">
         <div className="min-h-screen flex flex-col sm:flex-row bg-dot-grid">
-          <aside className="sm:w-60 shrink-0 self-start border-b sm:border-b-0 border-border-warm bg-card sm:m-4 sm:rounded-xl sm:border sm:overflow-hidden sm:sticky sm:top-4">
-            <div className="flex flex-col items-center gap-4 p-5">
+          <aside className="sm:w-60 shrink-0 self-start sm:h-[calc(100vh-2rem)] border-b sm:border-b-0 border-border-warm bg-card sm:m-4 sm:rounded-xl sm:border sm:sticky sm:top-4">
+            <div className="flex flex-col items-center h-full p-5">
               <Link href="/" className="block">
                 <Image
                   src="/ninja.png"
@@ -38,8 +38,10 @@ export default function RootLayout({
                   priority
                 />
               </Link>
-              <SidebarNav />
-              <div className="flex flex-col items-center gap-2 pt-1">
+              <div className="flex-1 flex flex-col justify-center w-full">
+                <SidebarNav />
+              </div>
+              <div className="flex flex-col items-center gap-2">
                 <form action="/api/logout" method="POST">
                   <button
                     type="submit"
