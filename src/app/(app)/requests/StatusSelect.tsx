@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@/lib/types";
 import { showToast } from "@/components/ToastHost";
 import Select from "@/components/Select";
@@ -22,6 +23,7 @@ export default function StatusSelect({
   onChange: (requestId: string, status: RequestStatus) => Promise<void>;
 }) {
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   return (
     <Select
@@ -29,8 +31,9 @@ export default function StatusSelect({
       disabled={isPending}
       onValueChange={(next) => {
         showToast("Status updated");
-        startTransition(() => {
-          onChange(requestId, next as RequestStatus);
+        startTransition(async () => {
+          await onChange(requestId, next as RequestStatus);
+          router.refresh();
         });
       }}
       className="text-xs px-2 py-1"

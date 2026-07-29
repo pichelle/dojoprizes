@@ -21,31 +21,33 @@ export default function AppLayout({
               priority
             />
           </Link>
-          <div className="flex-1 flex flex-col justify-center w-full">
+          <div className="w-full mt-4">
             <SidebarNav />
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <a
-              href="mailto:michelleepak@gmail.com?subject=DojoPrizes%20bug%2Ffeature"
-              className="flex items-center gap-2 text-sm text-muted hover:text-ink"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/icons/nav-feedback.png"
-                alt=""
-                className="w-5 h-5 object-contain shrink-0"
-                aria-hidden="true"
-              />
-              Report a bug / feature
-            </a>
-            <form action="/api/logout" method="POST">
-              <button
-                type="submit"
-                className="text-sm text-muted hover:text-ink"
+          <div className="mt-auto w-full flex flex-col items-center gap-3">
+            <div className="flex flex-col items-start gap-2 w-full">
+              <a
+                href="mailto:michelleepak@gmail.com?subject=DojoPrizes%20bug%2Ffeature"
+                className="flex items-center gap-2 text-sm text-muted hover:text-ink"
               >
-                Log out
-              </button>
-            </form>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/icons/nav-feedback.png"
+                  alt=""
+                  className="w-5 h-5 object-contain shrink-0"
+                  aria-hidden="true"
+                />
+                Report a bug / feature
+              </a>
+              <form action="/api/logout" method="POST">
+                <button
+                  type="submit"
+                  className="text-sm text-muted hover:text-ink"
+                >
+                  Log out
+                </button>
+              </form>
+            </div>
             <Image
               src="/signature.png"
               alt="by sensei michelle"

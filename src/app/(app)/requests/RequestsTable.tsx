@@ -95,7 +95,17 @@ export default function RequestsTable({
                 </td>
                 <td className="px-4 py-2 text-muted whitespace-nowrap">{r.date_requested}</td>
                 <td className="px-4 py-2" onClick={(e) => e.stopPropagation()}>
-                  <StatusSelect requestId={r.id} status={r.status} onChange={onStatusChange} />
+                  {/* Keyed on status so this remounts (and drops its
+                      uncontrolled Radix internal value) whenever the
+                      underlying status changes from any source -- a plain
+                      prop update alone wouldn't resync it, since Select
+                      is uncontrolled (defaultValue, not value). */}
+                  <StatusSelect
+                    key={`${r.id}-${r.status}`}
+                    requestId={r.id}
+                    status={r.status}
+                    onChange={onStatusChange}
+                  />
                 </td>
                 <td className="px-4 py-2 text-muted max-w-[220px] truncate">
                   {r.links ?? r.notes ?? "—"}

@@ -7,6 +7,11 @@ import StatusTabs from "@/components/StatusTabs";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsTable from "./RequestsTable";
 
+// Force dynamic rendering (belt-and-suspenders alongside reading
+// searchParams below) so this page always reflects the latest requests
+// instead of any build-time snapshot.
+export const dynamic = "force-dynamic";
+
 export default async function RequestsPage({
   searchParams,
 }: {
