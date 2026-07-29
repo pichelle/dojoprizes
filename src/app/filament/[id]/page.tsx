@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import FilamentForm from "../FilamentForm";
 import { updateFilament, deleteFilament } from "../actions";
+import ActionButton from "@/components/ActionButton";
 
 export default async function EditFilamentPage({
   params,
@@ -54,16 +55,14 @@ export default async function EditFilamentPage({
         />
       </div>
 
-      <form
-        action={async () => {
-          "use server";
-          await boundDelete();
-        }}
+      <ActionButton
+        action={boundDelete}
+        toastMessage="Filament color deleted"
+        confirmMessage={`Delete ${filament.color_name}? This can't be undone.`}
+        className="text-sm text-rust hover:underline"
       >
-        <button type="submit" className="text-sm text-rust hover:underline">
-          Delete this filament color
-        </button>
-      </form>
+        Delete this filament color
+      </ActionButton>
     </div>
   );
 }

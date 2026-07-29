@@ -2,12 +2,14 @@
 
 import { useTransition } from "react";
 import type { RequestStatus } from "@/lib/types";
+import { showToast } from "@/components/ToastHost";
+import Select from "@/components/Select";
 
-const STATUS_OPTIONS: RequestStatus[] = [
-  "pending",
-  "printed",
-  "fulfilled",
-  "cancelled",
+const STATUS_OPTIONS: { value: RequestStatus; label: string }[] = [
+  { value: "pending", label: "Pending" },
+  { value: "printed", label: "Printed" },
+  { value: "fulfilled", label: "Fulfilled" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 export default function StatusSelect({
@@ -22,22 +24,17 @@ export default function StatusSelect({
   const [isPending, startTransition] = useTransition();
 
   return (
-    <select
+    <Select
       defaultValue={status}
       disabled={isPending}
-      onChange={(e) => {
-        const next = e.target.value as RequestStatus;
+      onValueChange={(next) => {
+        showToast("Status updated");
         startTransition(() => {
-          onChange(requestId, next);
+          onChange(requestId, next as RequestStatus);
         });
       }}
-      className="text-xs rounded-md border border-border-warm-strong px-2 py-1 bg-card capitalize"
-    >
-      {STATUS_OPTIONS.map((s) => (
-        <option key={s} value={s} className="capitalize">
-          {s}
-        </option>
-      ))}
-    </select>
+      className="text-xs px-2 py-1"
+      options={STATUS_OPTIONS}
+    />
   );
 }

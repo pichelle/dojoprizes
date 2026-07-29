@@ -71,7 +71,7 @@ export default function TagInput({
       {selected.map((t) => (
         <input key={t} type="hidden" name={name} value={t} />
       ))}
-      <div className="flex flex-wrap gap-1 items-center rounded-md border border-border-warm-strong bg-card px-2 py-1.5 focus-within:ring-2 focus-within:ring-clay">
+      <div className="flex flex-wrap gap-1 items-center rounded-md border border-border-warm-strong bg-card px-2 py-1.5 focus-within:ring-2 focus-within:ring-sage">
         {selected.map((t) => (
           <span
             key={t}

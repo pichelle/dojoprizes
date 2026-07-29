@@ -75,6 +75,7 @@ create table if not exists prize_filament (
 create table if not exists requests (
   id uuid primary key default gen_random_uuid(),
   student_name text not null,
+  requested_by text,
   prize_id uuid references prizes (id) on delete set null,
   free_text_prize text,
   size text check (size in ('small', 'medium', 'large', 'xlarge')),

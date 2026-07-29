@@ -1,6 +1,8 @@
 import { createServerClient } from "@/lib/supabase/server";
 import type { Checkout } from "@/lib/types";
 import { createCheckout, deleteCheckout } from "./actions";
+import ActionButton from "@/components/ActionButton";
+import Select, { NONE_VALUE } from "@/components/Select";
 
 // Always fetch fresh data -- this page has no searchParams/cookies to force
 // dynamic rendering on its own, and without this it can get statically
@@ -62,18 +64,15 @@ export default async function CheckoutsPage() {
             <label className="block text-sm font-medium text-ink">
               Prize
             </label>
-            <select
+            <Select
               name="prize_id"
-              required
-              className="mt-1 rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card min-w-[16rem]"
-            >
-              <option value="">Select a prize...</option>
-              {prizes?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              defaultValue={NONE_VALUE}
+              className="min-w-[16rem]"
+              options={[
+                { value: NONE_VALUE, label: "Select a prize..." },
+                ...(prizes ?? []).map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-ink">
@@ -83,7 +82,7 @@ export default async function CheckoutsPage() {
               type="date"
               name="date_checked_out"
               defaultValue={new Date().toISOString().slice(0, 10)}
-              className="mt-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="mt-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
           <button
@@ -137,19 +136,13 @@ export default async function CheckoutsPage() {
                   {c.date_checked_out}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <form
-                    action={async () => {
-                      "use server";
-                      await deleteCheckout(c.id);
-                    }}
+                  <ActionButton
+                    action={deleteCheckout.bind(null, c.id)}
+                    toastMessage="Checkout removed"
+                    className="text-xs text-rust hover:underline"
                   >
-                    <button
-                      type="submit"
-                      className="text-xs text-rust hover:underline"
-                    >
-                      Remove
-                    </button>
-                  </form>
+                    Remove
+                  </ActionButton>
                 </td>
               </tr>
             ))}

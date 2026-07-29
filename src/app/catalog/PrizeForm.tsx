@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Filament, FranchiseTag, Prize } from "@/lib/types";
 import { coinPriceToBreakdown } from "@/lib/coins";
 import TagInput from "@/components/TagInput";
+import Select from "@/components/Select";
 
 const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
   { value: "in_stock", label: "In stock" },
@@ -73,7 +74,7 @@ export default function PrizeForm({
             name="name"
             required
             defaultValue={initial?.name ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -87,7 +88,7 @@ export default function PrizeForm({
               placeholder="https://makerworld.com/... or design name"
               value={makerworldLink}
               onChange={(e) => setMakerworldLink(e.target.value)}
-              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
             <button
               type="button"
@@ -118,7 +119,7 @@ export default function PrizeForm({
               placeholder="https://..."
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
-              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
             {photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -155,32 +156,32 @@ export default function PrizeForm({
           <label className="block text-sm font-medium text-ink">
             Coin tier
           </label>
-          <select
-            name="coin_tier"
-            defaultValue={initial?.coin_tier ?? "silver"}
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            <option value="silver">Silver</option>
-            <option value="gold">Gold</option>
-            <option value="obsidian">Obsidian</option>
-          </select>
+          <div className="mt-1">
+            <Select
+              name="coin_tier"
+              defaultValue={initial?.coin_tier ?? "silver"}
+              className="w-full"
+              options={[
+                { value: "silver", label: "Silver" },
+                { value: "gold", label: "Gold" },
+                { value: "obsidian", label: "Obsidian" },
+              ]}
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-ink">
             Status
           </label>
-          <select
-            name="status"
-            defaultValue={initial?.status ?? "in_stock"}
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <Select
+              name="status"
+              defaultValue={initial?.status ?? "in_stock"}
+              className="w-full"
+              options={STATUS_OPTIONS}
+            />
+          </div>
         </div>
 
         <div>
@@ -192,7 +193,7 @@ export default function PrizeForm({
             min={0}
             name="stock_count"
             defaultValue={initial?.stock_count ?? 0}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
       </div>
@@ -211,7 +212,7 @@ export default function PrizeForm({
               name="coin_price_silver"
               defaultValue={priceBreakdown.silver || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
           <div>
@@ -223,7 +224,7 @@ export default function PrizeForm({
               name="coin_price_gold"
               defaultValue={priceBreakdown.gold || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
           <div>
@@ -235,7 +236,7 @@ export default function PrizeForm({
               name="coin_price_obsidian"
               defaultValue={priceBreakdown.obsidian || ""}
               placeholder="0"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
         </div>

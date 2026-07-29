@@ -17,7 +17,7 @@ export default function PasswordField() {
           type={visible ? "text" : "password"}
           required
           autoFocus
-          className="w-full rounded-md border border-border-warm-strong bg-card pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+          className="w-full rounded-md border border-border-warm-strong bg-card pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
         />
         <button
           type="button"

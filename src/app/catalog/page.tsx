@@ -4,6 +4,14 @@ import type { Prize } from "@/lib/types";
 import { quickCheckout } from "./actions";
 import PrizeCard from "./PrizeCard";
 import CatalogFilterBar from "./CatalogFilterBar";
+import FilterSidebar from "@/components/FilterSidebar";
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "in_stock", label: "In stock" },
+  { value: "low_stock", label: "Low stock" },
+  { value: "out_of_stock", label: "Out of stock" },
+  { value: "print_on_request", label: "Print-on-request" },
+];
 
 export default async function CatalogPage({
   searchParams,
@@ -11,12 +19,15 @@ export default async function CatalogPage({
   searchParams: Promise<{
     status?: string;
     q?: string;
-    franchise?: string;
+    theme?: string;
     color?: string;
     sort?: string;
   }>;
 }) {
   const params = await searchParams;
+  const selectedThemes = params.theme ? params.theme.split(",").filter(Boolean) : [];
+  const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
+  const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
   // Stats row is always computed across ALL prizes/checkouts, independent
@@ -69,29 +80,28 @@ export default async function CatalogPage({
 
   // Main filtered/sorted query
   let prizeIdsForColor: string[] | null = null;
-  if (params.color) {
+  if (selectedColors.length > 0) {
     const { data: links } = await supabase
       .from("prize_filament")
       .select("prize_id")
-      .eq("filament_id", params.color);
+      .in("filament_id", selectedColors);
     prizeIdsForColor = (links ?? []).map((l) => l.prize_id);
   }
 
   let prizeIdsForFranchise: string[] | null = null;
-  if (params.franchise) {
-    const tag = (franchiseTagRows ?? []).find(
-      (t) => t.name.toLowerCase() === params.franchise!.toLowerCase(),
-    );
-    prizeIdsForFranchise = tag
-      ? Array.from(tagsByPrizeId.entries())
-          .filter(([, tags]) => tags.some((t) => t.id === tag.id))
-          .map(([prizeId]) => prizeId)
-      : [];
+  if (selectedThemes.length > 0) {
+    const selectedLower = selectedThemes.map((t) => t.toLowerCase());
+    const tagIds = (franchiseTagRows ?? [])
+      .filter((t) => selectedLower.includes(t.name.toLowerCase()))
+      .map((t) => t.id);
+    prizeIdsForFranchise = Array.from(tagsByPrizeId.entries())
+      .filter(([, tags]) => tags.some((t) => tagIds.includes(t.id)))
+      .map(([prizeId]) => prizeId);
   }
 
   let query = supabase.from("prizes").select("*");
 
-  if (params.status) query = query.eq("status", params.status);
+  if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
   if (params.q) query = query.ilike("name", `%${params.q}%`);
   if (prizeIdsForColor) query = query.in("id", prizeIdsForColor);
   if (prizeIdsForFranchise) query = query.in("id", prizeIdsForFranchise);
@@ -132,33 +142,62 @@ export default async function CatalogPage({
         </Link>
       </div>
 
-      <CatalogFilterBar
-        franchiseOptions={franchiseOptions}
-        colorOptions={(filamentOptions ?? []).map((f) => ({ id: f.id, name: f.color_name }))}
-      />
+      <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
+        <FilterSidebar
+          basePath="/catalog"
+          extraParams={["q", "sort"]}
+          groups={[
+            {
+              key: "theme",
+              label: "Theme",
+              type: "checkbox",
+              options: franchiseOptions.map((f) => ({ value: f, label: f })),
+            },
+            {
+              key: "color",
+              label: "Color",
+              type: "checkbox",
+              options: (filamentOptions ?? []).map((f) => ({
+                value: f.id,
+                label: f.color_name,
+              })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              type: "checkbox",
+              options: STATUS_FILTER_OPTIONS,
+            },
+          ]}
+        />
 
-      {error && (
-        <p className="text-sm text-rust">
-          Couldn&apos;t load prizes: {error.message}. Have you run
-          supabase/schema.sql in your Supabase project yet?
-        </p>
-      )}
+        <div className="space-y-6 min-w-0">
+          <CatalogFilterBar />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {prizes.map((prize) => (
-          <PrizeCard
-            key={prize.id}
-            prize={prize as Prize}
-            onCheckout={handleCheckout}
-          />
-        ))}
+          {error && (
+            <p className="text-sm text-rust">
+              Couldn&apos;t load prizes: {error.message}. Have you run
+              supabase/schema.sql in your Supabase project yet?
+            </p>
+          )}
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {prizes.map((prize) => (
+              <PrizeCard
+                key={prize.id}
+                prize={prize as Prize}
+                onCheckout={handleCheckout}
+              />
+            ))}
+          </div>
+
+          {prizes.length === 0 && !error && (
+            <p className="text-sm text-muted">
+              Nothing here yet — add your first prize to get started.
+            </p>
+          )}
+        </div>
       </div>
-
-      {prizes.length === 0 && !error && (
-        <p className="text-sm text-muted">
-          Nothing here yet — add your first prize to get started.
-        </p>
-      )}
     </div>
   );
 }

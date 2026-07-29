@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import PrizeForm from "../PrizeForm";
 import { updatePrize, deletePrize } from "../actions";
+import ActionButton from "@/components/ActionButton";
 
 export default async function EditPrizePage({
   params,
@@ -72,19 +73,14 @@ export default async function EditPrizePage({
         />
       </div>
 
-      <form
-        action={async () => {
-          "use server";
-          await boundDelete();
-        }}
+      <ActionButton
+        action={boundDelete}
+        toastMessage="Prize deleted"
+        confirmMessage={`Delete ${prize.name}? This can't be undone.`}
+        className="text-sm text-rust hover:underline"
       >
-        <button
-          type="submit"
-          className="text-sm text-rust hover:underline"
-        >
-          Delete this prize
-        </button>
-      </form>
+        Delete this prize
+      </ActionButton>
     </div>
   );
 }

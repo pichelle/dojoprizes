@@ -4,6 +4,15 @@ import type { RequestSize, RequestStatus } from "@/lib/types";
 import { updateRequestStatus, deleteRequest } from "./actions";
 import StatusSelect from "./StatusSelect";
 import RequestsFilterBar from "./RequestsFilterBar";
+import ActionButton from "@/components/ActionButton";
+import FilterSidebar from "@/components/FilterSidebar";
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "printed", label: "Printed" },
+  { value: "fulfilled", label: "Fulfilled" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 const STATUS_STYLES: Record<RequestStatus, string> = {
   pending: "bg-amber/10 text-amber",
@@ -24,12 +33,15 @@ export default async function RequestsPage({
 }: {
   searchParams: Promise<{
     status?: string;
-    franchise?: string;
+    theme?: string;
     color?: string;
     sort?: string;
   }>;
 }) {
   const params = await searchParams;
+  const selectedThemes = params.theme ? params.theme.split(",").filter(Boolean) : [];
+  const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
+  const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
   const { data: filaments } = await supabase
@@ -74,15 +86,14 @@ export default async function RequestsPage({
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
 
   let requestIdsForFranchise: string[] | null = null;
-  if (params.franchise) {
-    const tag = (franchiseTagRows ?? []).find(
-      (t) => t.name.toLowerCase() === params.franchise!.toLowerCase(),
-    );
-    requestIdsForFranchise = tag
-      ? Array.from(tagsByRequestId.entries())
-          .filter(([, tags]) => tags.some((t) => t.id === tag.id))
-          .map(([requestId]) => requestId)
-      : [];
+  if (selectedThemes.length > 0) {
+    const selectedLower = selectedThemes.map((t) => t.toLowerCase());
+    const tagIds = (franchiseTagRows ?? [])
+      .filter((t) => selectedLower.includes(t.name.toLowerCase()))
+      .map((t) => t.id);
+    requestIdsForFranchise = Array.from(tagsByRequestId.entries())
+      .filter(([, tags]) => tags.some((t) => tagIds.includes(t.id)))
+      .map(([requestId]) => requestId);
   }
 
   let query = supabase
@@ -93,8 +104,8 @@ export default async function RequestsPage({
     .order("date_requested", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (params.status) query = query.eq("status", params.status);
-  if (params.color) query = query.eq("color_filament_id", params.color);
+  if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
+  if (selectedColors.length > 0) query = query.in("color_filament_id", selectedColors);
   if (requestIdsForFranchise) query = query.in("id", requestIdsForFranchise);
 
   const { data: requestsRaw, error } = await query;
@@ -133,22 +144,50 @@ export default async function RequestsPage({
         </Link>
       </div>
 
-      <RequestsFilterBar
-        franchiseOptions={franchiseOptions}
-        colorOptions={(filaments ?? []).map((f) => ({ id: f.id, name: f.color_name }))}
-      />
+      <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
+        <FilterSidebar
+          basePath="/requests"
+          extraParams={["sort"]}
+          groups={[
+            {
+              key: "theme",
+              label: "Theme",
+              type: "checkbox",
+              options: franchiseOptions.map((f) => ({ value: f, label: f })),
+            },
+            {
+              key: "color",
+              label: "Color",
+              type: "checkbox",
+              options: (filaments ?? []).map((f) => ({
+                value: f.id,
+                label: f.color_name,
+              })),
+            },
+            {
+              key: "status",
+              label: "Status",
+              type: "checkbox",
+              options: STATUS_FILTER_OPTIONS,
+            },
+          ]}
+        />
 
-      {error && (
-        <p className="text-sm text-rust">
-          Couldn&apos;t load requests: {error.message}
-        </p>
-      )}
+        <div className="space-y-6 min-w-0">
+          <RequestsFilterBar />
 
-      <div className="bg-card border border-border-warm rounded-xl overflow-x-auto">
-        <table className="w-full text-sm">
+          {error && (
+            <p className="text-sm text-rust">
+              Couldn&apos;t load requests: {error.message}
+            </p>
+          )}
+
+          <div className="bg-card border border-border-warm rounded-xl overflow-x-auto">
+            <table className="w-full text-sm">
           <thead className="bg-page text-muted text-left">
             <tr>
               <th className="px-4 py-2 font-medium">Student</th>
+              <th className="px-4 py-2 font-medium">Requested by</th>
               <th className="px-4 py-2 font-medium">Prize</th>
               <th className="px-4 py-2 font-medium">Theme</th>
               <th className="px-4 py-2 font-medium">Size</th>
@@ -164,6 +203,9 @@ export default async function RequestsPage({
               <tr key={r.id} className="border-t border-border-warm align-top">
                 <td className="px-4 py-2 font-medium text-ink whitespace-nowrap">
                   {r.student_name}
+                </td>
+                <td className="px-4 py-2 text-muted whitespace-nowrap">
+                  {r.requested_by ?? "—"}
                 </td>
                 <td className="px-4 py-2 text-ink">
                   {r.prize?.name ?? r.free_text_prize ?? (
@@ -216,7 +258,7 @@ export default async function RequestsPage({
                           href={link.trim()}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-clay hover:underline truncate block max-w-[16rem]"
+                          className="text-sage hover:underline truncate block max-w-[16rem]"
                         >
                           {link.trim()}
                         </a>
@@ -226,27 +268,23 @@ export default async function RequestsPage({
                   {r.notes && <div className="truncate">{r.notes}</div>}
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <form
-                    action={async () => {
-                      "use server";
-                      await deleteRequest(r.id);
-                    }}
+                  <ActionButton
+                    action={deleteRequest.bind(null, r.id)}
+                    toastMessage="Request deleted"
+                    className="text-xs text-rust hover:underline"
                   >
-                    <button
-                      type="submit"
-                      className="text-xs text-rust hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </form>
+                    Delete
+                  </ActionButton>
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
-        {requests.length === 0 && !error && (
-          <p className="p-4 text-sm text-muted">Nothing logged yet — add the first request.</p>
-        )}
+            </table>
+            {requests.length === 0 && !error && (
+              <p className="p-4 text-sm text-muted">Nothing logged yet — add the first request.</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

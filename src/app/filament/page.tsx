@@ -85,7 +85,7 @@ export default async function FilamentPage({
             <Link
               href={`/filament/${f.id}`}
               key={f.id}
-              className="bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
+              className="card-hover bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-medium text-ink">{f.color_name}</span>

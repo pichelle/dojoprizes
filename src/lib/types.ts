@@ -42,6 +42,7 @@ export interface Prize {
 export interface PrizeRequest {
   id: string;
   student_name: string;
+  requested_by: string | null;
   prize_id: string | null;
   free_text_prize: string | null;
   size: RequestSize | null;

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Filament, Prize } from "@/lib/types";
+import Select from "@/components/Select";
 
 export default function FilamentForm({
   action,
@@ -27,7 +28,7 @@ export default function FilamentForm({
             required
             placeholder="Obsidian Black, Sakura Pink..."
             defaultValue={initial?.color_name ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -39,7 +40,7 @@ export default function FilamentForm({
             name="material_type"
             placeholder="PLA, PETG..."
             defaultValue={initial?.material_type ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -52,7 +53,7 @@ export default function FilamentForm({
             step="0.1"
             name="stock_level"
             defaultValue={initial?.stock_level ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -60,15 +61,18 @@ export default function FilamentForm({
           <label className="block text-sm font-medium text-ink">
             Unit
           </label>
-          <select
-            name="stock_unit"
-            defaultValue={initial?.stock_unit ?? "spools"}
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            <option value="spools">Spools</option>
-            <option value="percent">% remaining</option>
-            <option value="grams">Grams</option>
-          </select>
+          <div className="mt-1">
+            <Select
+              name="stock_unit"
+              defaultValue={initial?.stock_unit ?? "spools"}
+              className="w-full"
+              options={[
+                { value: "spools", label: "Spools" },
+                { value: "percent", label: "% remaining" },
+                { value: "grams", label: "Grams" },
+              ]}
+            />
+          </div>
         </div>
 
         <div>
@@ -80,7 +84,7 @@ export default function FilamentForm({
             step="0.1"
             name="low_stock_threshold"
             defaultValue={initial?.low_stock_threshold ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
       </div>

@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
+import { NONE_VALUE } from "@/components/Select";
 
 export async function createCheckout(formData: FormData) {
   const supabase = createServerClient();
-  const prizeId = String(formData.get("prize_id") ?? "");
+  const rawPrizeId = String(formData.get("prize_id") ?? "");
+  const prizeId = rawPrizeId === NONE_VALUE ? "" : rawPrizeId;
   const date =
     String(formData.get("date_checked_out") ?? "").trim() ||
     new Date().toISOString().slice(0, 10);

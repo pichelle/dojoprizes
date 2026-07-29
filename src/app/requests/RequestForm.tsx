@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Filament, FranchiseTag, Prize, RequestSize } from "@/lib/types";
 import TagInput from "@/components/TagInput";
+import Select, { NONE_VALUE } from "@/components/Select";
 
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "small", label: "Small" },
@@ -22,7 +23,7 @@ export default function RequestForm({
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   action: (formData: FormData) => void;
 }) {
-  const [prizeId, setPrizeId] = useState("");
+  const [prizeId, setPrizeId] = useState(NONE_VALUE);
 
   return (
     <form action={action} className="space-y-4">
@@ -34,7 +35,18 @@ export default function RequestForm({
           <input
             name="student_name"
             required
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-ink">
+            Requested by (sensei)
+          </label>
+          <input
+            name="requested_by"
+            placeholder="Your name"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -46,7 +58,7 @@ export default function RequestForm({
             type="date"
             name="date_requested"
             defaultValue={new Date().toISOString().slice(0, 10)}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -54,19 +66,18 @@ export default function RequestForm({
           <label className="block text-sm font-medium text-ink">
             Prize (from catalog)
           </label>
-          <select
-            name="prize_id"
-            value={prizeId}
-            onChange={(e) => setPrizeId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            <option value="">Not catalogued yet / other</option>
-            {prizes.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <Select
+              name="prize_id"
+              value={prizeId}
+              onValueChange={setPrizeId}
+              className="w-full"
+              options={[
+                { value: NONE_VALUE, label: "Not catalogued yet / other" },
+                ...prizes.map((p) => ({ value: p.id, label: p.name })),
+              ]}
+            />
+          </div>
         </div>
 
         <div>
@@ -75,9 +86,9 @@ export default function RequestForm({
           </label>
           <input
             name="free_text_prize"
-            disabled={!!prizeId}
+            disabled={prizeId !== NONE_VALUE}
             placeholder="e.g. custom Bulbasaur keychain"
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay disabled:bg-page"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
           />
         </div>
 
@@ -85,36 +96,34 @@ export default function RequestForm({
           <label className="block text-sm font-medium text-ink">
             Size
           </label>
-          <select
-            name="size"
-            defaultValue=""
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            <option value="">Not specified</option>
-            {SIZE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <Select
+              name="size"
+              defaultValue={NONE_VALUE}
+              className="w-full"
+              options={[
+                { value: NONE_VALUE, label: "Not specified" },
+                ...SIZE_OPTIONS,
+              ]}
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-ink">
             Color requested/needed
           </label>
-          <select
-            name="color_filament_id"
-            defaultValue=""
-            className="mt-1 w-full rounded-md border border-border-warm-strong px-3 py-2 text-sm bg-card"
-          >
-            <option value="">Not specified</option>
-            {filaments.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.color_name}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <Select
+              name="color_filament_id"
+              defaultValue={NONE_VALUE}
+              className="w-full"
+              options={[
+                { value: NONE_VALUE, label: "Not specified" },
+                ...filaments.map((f) => ({ value: f.id, label: f.color_name })),
+              ]}
+            />
+          </div>
           {filaments.length === 0 && (
             <p className="mt-1 text-xs text-muted">
               Add colors on the Filament page to select one here.
@@ -143,7 +152,7 @@ export default function RequestForm({
             name="links"
             rows={2}
             placeholder={"https://makerworld.com/...\nhttps://pinterest.com/..."}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm font-mono text-xs focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
 
@@ -154,7 +163,7 @@ export default function RequestForm({
           <textarea
             name="notes"
             rows={2}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-clay"
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
       </div>

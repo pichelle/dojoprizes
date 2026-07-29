@@ -8,8 +8,10 @@
   --color-border-warm: #e8e0d0;
   --color-border-warm-strong: #ddd4c0;
   --color-ink: #3a342a;
+  --color-ink-soft: #6b6250;
   --color-muted: #8a7f6e;
   --color-clay: #c1673e;
+  --color-tape: #d9cba8;
 
   /* Status dots -- used across prize status and request status */
   --color-sage: #7c8a5e;
@@ -25,8 +27,10 @@
   --color-border-warm: var(--color-border-warm);
   --color-border-warm-strong: var(--color-border-warm-strong);
   --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
   --color-muted: var(--color-muted);
   --color-clay: var(--color-clay);
+  --color-tape: var(--color-tape);
   --color-sage: var(--color-sage);
   --color-amber: var(--color-amber);
   --color-rust: var(--color-rust);
@@ -45,4 +49,67 @@ body {
 .bg-dot-grid {
   background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
   background-size: 18px 18px;
+}
+
+.sticky-note {
+  background: #fdf9ee;
+  background-image:
+    linear-gradient(var(--color-border-warm) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-border-warm) 1px, transparent 1px);
+  background-size: 14px 14px;
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  position: relative;
+}
+
+.sticky-note::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 60px;
+  height: 20px;
+  background: var(--color-tape);
+  opacity: 0.75;
+  border-radius: 2px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) rotate(1deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(1deg);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) rotate(1deg);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px) rotate(1deg);
+  }
+}
+
+.toast-enter {
+  animation: toast-in 0.18s ease-out;
+}
+
+.toast-exit {
+  animation: toast-out 0.18s ease-in forwards;
+}
+
+.card-hover {
+  transition: transform 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
