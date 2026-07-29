@@ -50,6 +50,7 @@ export interface PrizeRequest {
   links: string | null;
   date_requested: string;
   status: RequestStatus;
+  is_print_club: boolean;
   notes: string | null;
   created_at: string;
   // populated via join
@@ -69,6 +70,7 @@ export interface Checkout {
 export interface Filament {
   id: string;
   color_name: string;
+  swatch_hex: string | null;
   material_type: string | null;
   stock_level: number | null;
   stock_unit: string;

@@ -6,6 +6,7 @@ import StatusSelect from "./StatusSelect";
 import RequestsFilterBar from "./RequestsFilterBar";
 import ActionButton from "@/components/ActionButton";
 import FilterSidebar from "@/components/FilterSidebar";
+import ErrorNote from "@/components/ErrorNote";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -36,6 +37,7 @@ export default async function RequestsPage({
     theme?: string;
     color?: string;
     sort?: string;
+    q?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -46,7 +48,7 @@ export default async function RequestsPage({
 
   const { data: filaments } = await supabase
     .from("filaments")
-    .select("id, color_name")
+    .select("id, color_name, swatch_hex")
     .order("color_name");
 
   // Stats -- always across ALL requests, independent of filters below.
@@ -115,6 +117,22 @@ export default async function RequestsPage({
     franchiseTags: tagsByRequestId.get(r.id) ?? [],
   }));
 
+  if (params.q) {
+    const term = params.q.toLowerCase();
+    requests = requests.filter((r) => {
+      const haystack = [
+        r.student_name,
+        r.requested_by,
+        r.prize?.name,
+        r.free_text_prize,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }
+
   if (params.sort === "price_asc" || params.sort === "price_desc") {
     const dir = params.sort === "price_asc" ? 1 : -1;
     requests = [...requests].sort((a, b) => {
@@ -147,7 +165,7 @@ export default async function RequestsPage({
       <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
         <FilterSidebar
           basePath="/requests"
-          extraParams={["sort"]}
+          extraParams={["sort", "q"]}
           groups={[
             {
               key: "theme",
@@ -162,6 +180,7 @@ export default async function RequestsPage({
               options: (filaments ?? []).map((f) => ({
                 value: f.id,
                 label: f.color_name,
+                swatch: f.swatch_hex,
               })),
             },
             {
@@ -177,16 +196,14 @@ export default async function RequestsPage({
           <RequestsFilterBar />
 
           {error && (
-            <p className="text-sm text-rust">
-              Couldn&apos;t load requests: {error.message}
-            </p>
+            <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>
           )}
 
           <div className="bg-card border border-border-warm rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
           <thead className="bg-page text-muted text-left">
             <tr>
-              <th className="px-4 py-2 font-medium">Student</th>
+              <th className="px-4 py-2 font-medium">Ninja name</th>
               <th className="px-4 py-2 font-medium">Requested by</th>
               <th className="px-4 py-2 font-medium">Prize</th>
               <th className="px-4 py-2 font-medium">Theme</th>
@@ -194,7 +211,7 @@ export default async function RequestsPage({
               <th className="px-4 py-2 font-medium">Color</th>
               <th className="px-4 py-2 font-medium">Date</th>
               <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">Links / Notes</th>
+              <th className="px-4 py-2 font-medium">MakerWorld / Notes</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
@@ -205,11 +222,11 @@ export default async function RequestsPage({
                   {r.student_name}
                 </td>
                 <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.requested_by ?? "—"}
+                  {r.requested_by ?? "-"}
                 </td>
                 <td className="px-4 py-2 text-ink">
                   {r.prize?.name ?? r.free_text_prize ?? (
-                    <span className="text-muted">—</span>
+                    <span className="text-muted">-</span>
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted">
@@ -225,14 +242,14 @@ export default async function RequestsPage({
                       ))}
                     </div>
                   ) : (
-                    "—"
+                    "-"
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.size ? SIZE_LABELS[r.size as RequestSize] : "—"}
+                  {r.size ? SIZE_LABELS[r.size as RequestSize] : "-"}
                 </td>
                 <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.color_filament?.color_name ?? "—"}
+                  {r.color_filament?.color_name ?? "-"}
                 </td>
                 <td className="px-4 py-2 text-muted whitespace-nowrap">
                   {r.date_requested}
@@ -267,7 +284,13 @@ export default async function RequestsPage({
                   )}
                   {r.notes && <div className="truncate">{r.notes}</div>}
                 </td>
-                <td className="px-4 py-2 text-right">
+                <td className="px-4 py-2 text-right whitespace-nowrap">
+                  <Link
+                    href={`/requests/${r.id}`}
+                    className="text-xs text-ink hover:underline mr-3"
+                  >
+                    Edit
+                  </Link>
                   <ActionButton
                     action={deleteRequest.bind(null, r.id)}
                     toastMessage="Request deleted"
@@ -281,7 +304,7 @@ export default async function RequestsPage({
           </tbody>
             </table>
             {requests.length === 0 && !error && (
-              <p className="p-4 text-sm text-muted">Nothing logged yet — add the first request.</p>
+              <p className="p-4 text-sm text-muted">Nothing logged yet. Add the first request to get started.</p>
             )}
           </div>
         </div>

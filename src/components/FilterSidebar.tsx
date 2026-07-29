@@ -7,7 +7,7 @@ export type FilterGroup = {
   key: string;
   label: string;
   type: "checkbox" | "radio";
-  options: { value: string; label: string }[];
+  options: { value: string; label: string; swatch?: string | null }[];
 };
 
 export default function FilterSidebar({
@@ -100,6 +100,13 @@ export default function FilterSidebar({
                       onChange={() => toggle(g, opt.value)}
                       className="accent-sage"
                     />
+                    {opt.swatch && (
+                      <span
+                        className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
+                        style={{ background: opt.swatch }}
+                        aria-hidden="true"
+                      />
+                    )}
                     {opt.label}
                   </label>
                 );

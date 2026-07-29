@@ -58,7 +58,8 @@ body {
     linear-gradient(90deg, var(--color-border-warm) 1px, transparent 1px);
   background-size: 14px 14px;
   border-radius: 10px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-border-warm-strong);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 

@@ -40,8 +40,11 @@ export default async function EditFilamentPage({
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl text-ink">Edit filament</h1>
-        <Link href="/filament" className="text-sm text-muted hover:text-ink hover:underline">
-          ← Back to filament
+        <Link
+          href="/filament"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+        >
+          Back to filament
         </Link>
       </div>
 

@@ -5,11 +5,11 @@ import { usePathname } from "next/navigation";
 import { ListTodo, Gift, ClipboardList, CheckSquare, Palette } from "lucide-react";
 
 const NAV_LINKS = [
-  { href: "/", label: "Prizes in queue", icon: ListTodo, exact: true },
-  { href: "/catalog", label: "Prize catalog", icon: Gift },
-  { href: "/requests", label: "Request log", icon: ClipboardList },
+  { href: "/", label: "Queue", icon: ListTodo, exact: true },
+  { href: "/catalog", label: "Prize Catalog", icon: Gift },
+  { href: "/requests", label: "Requests", icon: ClipboardList },
   { href: "/checkouts", label: "Checkouts", icon: CheckSquare },
-  { href: "/filament", label: "Filament", icon: Palette },
+  { href: "/filament", label: "Filaments", icon: Palette },
 ];
 
 export default function SidebarNav() {

@@ -22,9 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${lora.variable}`}>
       <body className="antialiased bg-page text-ink min-h-screen">
-        <div className="min-h-screen flex flex-col sm:flex-row">
-          <aside className="sm:w-60 shrink-0 border-b sm:border-b-0 sm:border-r border-border-warm bg-card">
-            <div className="sm:h-screen sm:sticky sm:top-0 flex flex-col p-6">
+        <div className="min-h-screen flex flex-col sm:flex-row bg-dot-grid">
+          <aside className="sm:w-60 shrink-0 border-b sm:border-b-0 border-border-warm bg-card sm:m-4 sm:rounded-xl sm:border sm:overflow-hidden">
+            <div className="sm:sticky sm:top-4 sm:h-[calc(100vh-2rem)] flex flex-col p-6">
               <Link href="/" className="block mb-8 mx-auto">
                 <Image
                   src="/ninja.png"
@@ -35,8 +35,10 @@ export default function RootLayout({
                   priority
                 />
               </Link>
-              <SidebarNav />
-              <div className="mt-auto pt-8 flex flex-col items-center gap-2">
+              <div className="flex-1 flex flex-col justify-center">
+                <SidebarNav />
+              </div>
+              <div className="flex flex-col items-center gap-2">
                 <form action="/api/logout" method="POST">
                   <button
                     type="submit"
@@ -45,14 +47,18 @@ export default function RootLayout({
                     Log out
                   </button>
                 </form>
-                <span className="font-serif italic text-xs text-muted">
-                  by sensei michelle
-                </span>
+                <Image
+                  src="/signature.png"
+                  alt="by sensei michelle"
+                  width={110}
+                  height={32}
+                  className="opacity-70"
+                />
               </div>
             </div>
           </aside>
-          <main className="flex-1 min-w-0 bg-dot-grid">
-            <div className="px-4 sm:px-10 py-8 max-w-5xl">{children}</div>
+          <main className="flex-1 min-w-0">
+            <div className="px-6 sm:px-16 py-10 sm:py-12 max-w-5xl">{children}</div>
           </main>
         </div>
         <ToastHost />

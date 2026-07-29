@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { createFilament } from "./actions";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
+import ErrorNote from "@/components/ErrorNote";
 
 export default async function FilamentPage({
   searchParams,
@@ -42,9 +43,9 @@ export default async function FilamentPage({
         <div>
           <h1 className="font-serif text-2xl text-ink">Filament inventory</h1>
           <p className="text-sm text-muted max-w-2xl mt-1">
-            Standalone-but-linked to the prize catalog — see which prizes a
-            color affects before you run out, and which colors are actually
-            worth restocking.
+            Linked to the prize catalog, so you can see which prizes a color
+            affects before you run out, and which colors are actually worth
+            restocking.
           </p>
         </div>
         <Link
@@ -67,9 +68,7 @@ export default async function FilamentPage({
       )}
 
       {error && (
-        <p className="text-sm text-rust">
-          Couldn&apos;t load filament: {error.message}
-        </p>
+        <ErrorNote>Couldn&apos;t load filament: {error.message}</ErrorNote>
       )}
 
       <SortSelect sort={sort} />
@@ -88,7 +87,14 @@ export default async function FilamentPage({
               className="card-hover bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-ink">{f.color_name}</span>
+                <span className="font-medium text-ink flex items-center gap-2">
+                  <span
+                    className="inline-block w-3 h-3 rounded-full border border-border-warm-strong shrink-0"
+                    style={{ background: f.swatch_hex ?? "#c9c2b3" }}
+                    aria-hidden="true"
+                  />
+                  {f.color_name}
+                </span>
                 <div className="flex flex-col items-end gap-1">
                   {isLow && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-rust/10 text-rust whitespace-nowrap">
@@ -105,7 +111,7 @@ export default async function FilamentPage({
                 {f.material_type ?? "Material not set"}
               </div>
               <div className="text-sm text-ink">
-                {f.stock_level ?? "—"} {f.stock_unit}
+                {f.stock_level ?? "-"} {f.stock_unit}
                 {f.low_stock_threshold != null && (
                   <span className="text-muted">
                     {" "}
@@ -135,7 +141,7 @@ export default async function FilamentPage({
 
       {filaments.length === 0 && !error && (
         <p className="text-sm text-muted">
-          No filament colors yet — add your first one to get started.
+          No filament colors yet. Add your first one to get started.
         </p>
       )}
     </div>

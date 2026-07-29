@@ -15,6 +15,7 @@ export async function createFilament(formData: FormData) {
     .from("filaments")
     .insert({
       color_name: String(formData.get("color_name") ?? "").trim(),
+      swatch_hex: String(formData.get("swatch_hex") ?? "").trim() || null,
       material_type: String(formData.get("material_type") ?? "").trim() || null,
       stock_level: formData.get("stock_level")
         ? Number(formData.get("stock_level"))
@@ -48,6 +49,7 @@ export async function updateFilament(filamentId: string, formData: FormData) {
     .from("filaments")
     .update({
       color_name: String(formData.get("color_name") ?? "").trim(),
+      swatch_hex: String(formData.get("swatch_hex") ?? "").trim() || null,
       material_type: String(formData.get("material_type") ?? "").trim() || null,
       stock_level: formData.get("stock_level")
         ? Number(formData.get("stock_level"))

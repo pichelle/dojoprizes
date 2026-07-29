@@ -8,7 +8,7 @@ import { Check, ChevronDown } from "lucide-react";
 // it back to "" wherever the raw value is actually needed.
 export const NONE_VALUE = "__none__";
 
-export type SelectOption = { value: string; label: string };
+export type SelectOption = { value: string; label: string; swatch?: string | null };
 
 export default function Select({
   name,
@@ -19,6 +19,7 @@ export default function Select({
   options,
   className = "",
   disabled,
+  required,
 }: {
   name?: string;
   defaultValue?: string;
@@ -28,6 +29,7 @@ export default function Select({
   options: SelectOption[];
   className?: string;
   disabled?: boolean;
+  required?: boolean;
 }) {
   return (
     <RadixSelect.Root
@@ -36,6 +38,7 @@ export default function Select({
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
+      required={required}
     >
       <RadixSelect.Trigger
         className={`flex items-center justify-between gap-2 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink outline-none data-[placeholder]:text-muted focus:ring-2 focus:ring-sage disabled:opacity-50 ${className}`}
@@ -58,6 +61,13 @@ export default function Select({
                 value={opt.value}
                 className="relative flex items-center gap-2 rounded-md pl-2.5 pr-6 py-1.5 text-sm text-ink outline-none cursor-pointer data-[highlighted]:bg-page"
               >
+                {opt.swatch && (
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
+                    style={{ background: opt.swatch }}
+                    aria-hidden="true"
+                  />
+                )}
                 <RadixSelect.ItemText>{opt.label}</RadixSelect.ItemText>
                 <RadixSelect.ItemIndicator className="absolute right-2 inline-flex items-center">
                   <Check size={14} className="text-sage" aria-hidden="true" />

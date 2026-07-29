@@ -16,29 +16,53 @@ function fromFormSelect(formData: FormData, key: string): string | null {
   return raw && raw !== NONE_VALUE ? raw : null;
 }
 
-export async function createRequest(formData: FormData) {
-  const supabase = createServerClient();
+async function syncRequestFranchiseTagLinks(
+  supabase: ReturnType<typeof createServerClient>,
+  requestId: string,
+  tagIds: string[],
+) {
+  const { error: deleteError } = await supabase
+    .from("request_franchise_tags")
+    .delete()
+    .eq("request_id", requestId);
+  if (deleteError) throw new Error(deleteError.message);
 
+  if (tagIds.length > 0) {
+    const { error: linkError } = await supabase
+      .from("request_franchise_tags")
+      .insert(tagIds.map((tag_id) => ({ request_id: requestId, tag_id })));
+    if (linkError) throw new Error(linkError.message);
+  }
+}
+
+function requestFieldsFromForm(formData: FormData) {
   const prizeId = fromFormSelect(formData, "prize_id");
   const freeText = String(formData.get("free_text_prize") ?? "").trim() || null;
-  const size = fromFormSelect(formData, "size") as RequestSize | null;
-  const colorFilamentId = fromFormSelect(formData, "color_filament_id");
+
+  return {
+    student_name: String(formData.get("student_name") ?? "").trim(),
+    requested_by: String(formData.get("requested_by") ?? "").trim() || null,
+    prize_id: prizeId,
+    free_text_prize: prizeId ? null : freeText,
+    size: fromFormSelect(formData, "size") as RequestSize | null,
+    color_filament_id: fromFormSelect(formData, "color_filament_id"),
+    links: String(formData.get("makerworld_link") ?? "").trim() || null,
+    is_print_club: formData.get("is_print_club") === "on",
+    notes: String(formData.get("notes") ?? "").trim() || null,
+  };
+}
+
+export async function createRequest(formData: FormData) {
+  const supabase = createServerClient();
 
   const { data: request, error } = await supabase
     .from("requests")
     .insert({
-      student_name: String(formData.get("student_name") ?? "").trim(),
-      requested_by: String(formData.get("requested_by") ?? "").trim() || null,
-      prize_id: prizeId,
-      free_text_prize: prizeId ? null : freeText,
-      size,
-      color_filament_id: colorFilamentId,
-      links: String(formData.get("links") ?? "").trim() || null,
+      ...requestFieldsFromForm(formData),
       date_requested:
         String(formData.get("date_requested") ?? "").trim() ||
         new Date().toISOString().slice(0, 10),
       status: "pending" as RequestStatus,
-      notes: String(formData.get("notes") ?? "").trim() || null,
     })
     .select("id")
     .single();
@@ -59,6 +83,28 @@ export async function createRequest(formData: FormData) {
   }
 
   revalidatePath("/requests");
+  revalidatePath("/");
+  redirect("/requests");
+}
+
+export async function updateRequest(requestId: string, formData: FormData) {
+  const supabase = createServerClient();
+
+  const { error } = await supabase
+    .from("requests")
+    .update(requestFieldsFromForm(formData))
+    .eq("id", requestId);
+
+  if (error) throw new Error(error.message);
+
+  const tagIds = await resolveFranchiseTagIds(
+    supabase,
+    parseFranchiseTagNames(formData),
+  );
+  await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
+
+  revalidatePath("/requests");
+  revalidatePath("/");
   redirect("/requests");
 }
 
@@ -73,6 +119,7 @@ export async function updateRequestStatus(
     .eq("id", requestId);
   if (error) throw new Error(error.message);
   revalidatePath("/requests");
+  revalidatePath("/");
 }
 
 export async function deleteRequest(requestId: string) {
@@ -80,4 +127,5 @@ export async function deleteRequest(requestId: string) {
   const { error } = await supabase.from("requests").delete().eq("id", requestId);
   if (error) throw new Error(error.message);
   revalidatePath("/requests");
+  revalidatePath("/");
 }

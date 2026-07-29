@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus } from "./requests/actions";
 import StickyNote from "@/components/StickyNote";
@@ -45,6 +46,7 @@ export default async function HomePage() {
       "*, prize:prizes(id, name, photo_url, coin_price), color_filament:filaments(id, color_name)",
     )
     .in("status", ["pending", "printed"])
+    .order("is_print_club", { ascending: false })
     .order("date_requested", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -104,7 +106,7 @@ export default async function HomePage() {
         <div>
           <h1 className="font-serif text-2xl text-ink">Prizes in queue</h1>
           <p className="text-sm text-muted mt-1 max-w-md">
-            What needs printing right now — the most important view in the shop.
+            What to print next, sorted by priority.
           </p>
         </div>
         <StickyNote rotate={-1} className="text-[13px] text-ink whitespace-nowrap">
@@ -113,11 +115,17 @@ export default async function HomePage() {
       </div>
 
       <div className="flex flex-wrap gap-3">
+        <Link
+          href="/requests/new"
+          className="rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
+        >
+          Add a request
+        </Link>
         <a
           href="https://makerworld.com/en"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-border-warm-strong px-4 py-2 text-sm text-ink hover:bg-card"
+          className="rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page"
         >
           Search MakerWorld
         </a>
@@ -125,7 +133,7 @@ export default async function HomePage() {
           href="https://www.tinkercad.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-border-warm-strong px-4 py-2 text-sm text-ink hover:bg-card"
+          className="rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page"
         >
           Open Tinkercad
         </a>

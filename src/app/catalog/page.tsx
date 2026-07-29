@@ -5,6 +5,7 @@ import { quickCheckout } from "./actions";
 import PrizeCard from "./PrizeCard";
 import CatalogFilterBar from "./CatalogFilterBar";
 import FilterSidebar from "@/components/FilterSidebar";
+import ErrorNote from "@/components/ErrorNote";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "in_stock", label: "In stock" },
@@ -75,7 +76,7 @@ export default async function CatalogPage({
 
   const { data: filamentOptions } = await supabase
     .from("filaments")
-    .select("id, color_name")
+    .select("id, color_name, swatch_hex")
     .order("color_name");
 
   // Main filtered/sorted query
@@ -160,6 +161,7 @@ export default async function CatalogPage({
               options: (filamentOptions ?? []).map((f) => ({
                 value: f.id,
                 label: f.color_name,
+                swatch: f.swatch_hex,
               })),
             },
             {
@@ -175,10 +177,10 @@ export default async function CatalogPage({
           <CatalogFilterBar />
 
           {error && (
-            <p className="text-sm text-rust">
+            <ErrorNote>
               Couldn&apos;t load prizes: {error.message}. Have you run
               supabase/schema.sql in your Supabase project yet?
-            </p>
+            </ErrorNote>
           )}
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -193,7 +195,7 @@ export default async function CatalogPage({
 
           {prizes.length === 0 && !error && (
             <p className="text-sm text-muted">
-              Nothing here yet — add your first prize to get started.
+              Nothing here yet. Add your first prize to get started.
             </p>
           )}
         </div>

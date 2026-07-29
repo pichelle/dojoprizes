@@ -17,7 +17,7 @@ export default async function NewRequestPage() {
 
   const { data: filaments } = await supabase
     .from("filaments")
-    .select("id, color_name")
+    .select("id, color_name, swatch_hex")
     .order("color_name");
 
   const { data: franchiseTags } = await supabase
@@ -29,8 +29,11 @@ export default async function NewRequestPage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl text-ink">Log a request</h1>
-        <Link href="/requests" className="text-sm text-muted hover:text-ink hover:underline">
-          ← Back to requests
+        <Link
+          href="/requests"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-card"
+        >
+          Back to requests
         </Link>
       </div>
 

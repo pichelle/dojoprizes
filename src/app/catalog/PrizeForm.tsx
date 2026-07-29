@@ -241,7 +241,7 @@ export default function PrizeForm({
           </div>
         </div>
         <p className="mt-1 text-xs text-muted">
-          Tracking only — not used anywhere else. Handy for checking what a
+          Tracking only, not used anywhere else. Handy for checking what a
           prize sold for against what it was meant to cost.
         </p>
       </div>

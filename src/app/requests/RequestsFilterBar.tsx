@@ -1,11 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Select from "@/components/Select";
 
 export default function RequestsFilterBar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [q, setQ] = useState(searchParams.get("q") ?? "");
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -15,7 +17,18 @@ export default function RequestsFilterBar() {
   }
 
   return (
-    <div className="flex items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <input
+        type="text"
+        placeholder="Search by ninja or prize..."
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") updateParam("q", q);
+        }}
+        onBlur={() => updateParam("q", q)}
+        className="rounded-md border border-border-warm-strong px-3 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
+      />
       <Select
         value={searchParams.get("sort") ?? "date"}
         onValueChange={(v) => updateParam("sort", v === "date" ? "" : v)}

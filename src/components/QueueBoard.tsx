@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { X } from "lucide-react";
 import Select from "@/components/Select";
 import { showToast } from "@/components/ToastHost";
@@ -42,7 +43,7 @@ export default function QueueBoard({
   if (requests.length === 0) {
     return (
       <p className="text-sm text-muted">
-        Nothing in the queue right now — logged requests will show up here.
+        Nothing in the queue right now. Logged requests will show up here.
       </p>
     );
   }
@@ -65,6 +66,11 @@ export default function QueueBoard({
               />
             )}
             <div className="p-3 flex flex-col gap-1.5">
+              {r.is_print_club && (
+                <span className="self-start text-xs px-2 py-0.5 rounded-full bg-amber/10 text-amber">
+                  3D Print Club
+                </span>
+              )}
               <span className="text-sm font-medium text-ink">{r.student_name}</span>
               <span className="text-xs text-muted">
                 {r.prize?.name ?? r.free_text_prize ?? "Prize not specified"}
@@ -115,6 +121,13 @@ export default function QueueBoard({
               </button>
             </div>
 
+            <Link
+              href={`/requests/${openRequest.id}`}
+              className="inline-block text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+            >
+              Edit details
+            </Link>
+
             {openRequest.prize?.photo_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -129,7 +142,7 @@ export default function QueueBoard({
                 label="Prize"
                 value={openRequest.prize?.name ?? openRequest.free_text_prize ?? "Not specified"}
               />
-              <Detail label="Requested by" value={openRequest.requested_by ?? "—"} />
+              <Detail label="Requested by" value={openRequest.requested_by ?? "-"} />
               <Detail
                 label="Size"
                 value={openRequest.size ? SIZE_LABELS[openRequest.size] : "Not specified"}

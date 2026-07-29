@@ -23,13 +23,22 @@ export default function FilamentForm({
           <label className="block text-sm font-medium text-ink">
             Color name
           </label>
-          <input
-            name="color_name"
-            required
-            placeholder="Obsidian Black, Sakura Pink..."
-            defaultValue={initial?.color_name ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-          />
+          <div className="mt-1 flex items-center gap-2">
+            <input
+              type="color"
+              name="swatch_hex"
+              defaultValue={initial?.swatch_hex ?? "#c9c2b3"}
+              className="h-9 w-9 rounded-md border border-border-warm-strong bg-card p-1 shrink-0"
+              title="Swatch color, shown next to the name"
+            />
+            <input
+              name="color_name"
+              required
+              placeholder="Obsidian Black, Sakura Pink..."
+              defaultValue={initial?.color_name ?? ""}
+              className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+            />
+          </div>
         </div>
 
         <div>

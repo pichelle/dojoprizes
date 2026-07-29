@@ -55,6 +55,7 @@ create table if not exists prize_franchise_tags (
 create table if not exists filaments (
   id uuid primary key default gen_random_uuid(),
   color_name text not null,
+  swatch_hex text,
   material_type text,
   stock_level numeric,
   stock_unit text not null default 'spools',
@@ -84,6 +85,7 @@ create table if not exists requests (
   date_requested date not null default current_date,
   status text not null default 'pending'
     check (status in ('pending', 'printed', 'fulfilled', 'cancelled')),
+  is_print_club boolean not null default false,
   notes text,
   created_at timestamptz not null default now()
 );

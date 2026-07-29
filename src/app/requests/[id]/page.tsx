@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import PrizeForm from "../PrizeForm";
-import { updatePrize, deletePrize } from "../actions";
+import RequestForm from "../RequestForm";
+import { updateRequest, deleteRequest } from "../actions";
 import ActionButton from "@/components/ActionButton";
 
-export default async function EditPrizePage({
+export const dynamic = "force-dynamic";
+
+export default async function EditRequestPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -13,25 +15,23 @@ export default async function EditPrizePage({
   const { id } = await params;
   const supabase = createServerClient();
 
-  const { data: prize } = await supabase
-    .from("prizes")
+  const { data: request } = await supabase
+    .from("requests")
     .select("*")
     .eq("id", id)
     .single();
 
-  if (!prize) notFound();
+  if (!request) notFound();
+
+  const { data: prizes } = await supabase
+    .from("prizes")
+    .select("id, name")
+    .order("name");
 
   const { data: filaments } = await supabase
     .from("filaments")
-    .select("id, color_name")
+    .select("id, color_name, swatch_hex")
     .order("color_name");
-
-  const { data: links } = await supabase
-    .from("prize_filament")
-    .select("filament_id")
-    .eq("prize_id", id);
-
-  const linkedFilamentIds = links?.map((l) => l.filament_id) ?? [];
 
   const { data: franchiseTags } = await supabase
     .from("franchise_tags")
@@ -39,9 +39,9 @@ export default async function EditPrizePage({
     .order("name");
 
   const { data: tagLinks } = await supabase
-    .from("prize_franchise_tags")
+    .from("request_franchise_tags")
     .select("tag:franchise_tags(name)")
-    .eq("prize_id", id);
+    .eq("request_id", id);
 
   const initialFranchiseTags = (
     (tagLinks as { tag: { name: string } | null }[] | null) ?? []
@@ -49,40 +49,40 @@ export default async function EditPrizePage({
     .map((l) => l.tag?.name)
     .filter((n): n is string => !!n);
 
-  const boundUpdate = updatePrize.bind(null, id);
-  const boundDelete = deletePrize.bind(null, id);
+  const boundUpdate = updateRequest.bind(null, id);
+  const boundDelete = deleteRequest.bind(null, id);
 
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
-        <h1 className="font-serif text-2xl text-ink">Edit prize</h1>
+        <h1 className="font-serif text-2xl text-ink">Edit request</h1>
         <Link
-          href="/catalog"
-          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+          href="/requests"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-card"
         >
-          Back to catalog
+          Back to requests
         </Link>
       </div>
 
       <div className="bg-card border border-border-warm rounded-xl p-6">
-        <PrizeForm
+        <RequestForm
           action={boundUpdate}
-          initial={prize}
-          allFilaments={filaments ?? []}
-          linkedFilamentIds={linkedFilamentIds}
-          allFranchiseTags={franchiseTags ?? []}
+          initial={request}
           initialFranchiseTags={initialFranchiseTags}
+          prizes={prizes ?? []}
+          filaments={filaments ?? []}
+          allFranchiseTags={franchiseTags ?? []}
           submitLabel="Save changes"
         />
       </div>
 
       <ActionButton
         action={boundDelete}
-        toastMessage="Prize deleted"
-        confirmMessage={`Delete ${prize.name}? This can't be undone.`}
+        toastMessage="Request deleted"
+        confirmMessage={`Delete ${request.student_name}'s request? This can't be undone.`}
         className="text-sm text-rust hover:underline"
       >
-        Delete this prize
+        Delete this request
       </ActionButton>
     </div>
   );

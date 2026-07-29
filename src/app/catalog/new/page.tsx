@@ -23,8 +23,11 @@ export default async function NewPrizePage() {
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="font-serif text-2xl text-ink">Add a prize</h1>
-        <Link href="/catalog" className="text-sm text-muted hover:text-ink hover:underline">
-          ← Back to catalog
+        <Link
+          href="/catalog"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+        >
+          Back to catalog
         </Link>
       </div>
 

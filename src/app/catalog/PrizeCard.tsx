@@ -88,12 +88,12 @@ export default function PrizeCard({
             onClick={(e) => {
               e.stopPropagation();
               onCheckout(prize.id);
-              showToast("Bought!");
+              showToast("Sold!");
             }}
             className="text-xs rounded-md border border-border-warm-strong px-3 py-1.5 text-ink hover:bg-page shrink-0"
             title="Log that a student took this off the shelf"
           >
-            Bought!
+            Sold!
           </button>
         </div>
       </div>

@@ -3,6 +3,7 @@ import type { Checkout } from "@/lib/types";
 import { createCheckout, deleteCheckout } from "./actions";
 import ActionButton from "@/components/ActionButton";
 import Select, { NONE_VALUE } from "@/components/Select";
+import ErrorNote from "@/components/ErrorNote";
 
 // Always fetch fresh data -- this page has no searchParams/cookies to force
 // dynamic rendering on its own, and without this it can get statically
@@ -51,7 +52,7 @@ export default async function CheckoutsPage() {
       <div>
         <h1 className="font-serif text-2xl text-ink">Checkouts</h1>
         <p className="text-sm text-muted max-w-2xl mt-1">
-          Separate from requests — this captures what actually leaves the
+          Separate from requests. This captures what actually leaves the
           shelf, including grab-and-go prizes that run out without ever
           generating a request.
         </p>
@@ -95,9 +96,7 @@ export default async function CheckoutsPage() {
       </div>
 
       {error && (
-        <p className="text-sm text-rust">
-          Couldn&apos;t load checkouts: {error.message}
-        </p>
+        <ErrorNote>Couldn&apos;t load checkouts: {error.message}</ErrorNote>
       )}
 
       <div className="bg-card border border-border-warm rounded-xl overflow-hidden">
@@ -129,7 +128,7 @@ export default async function CheckoutsPage() {
                       ))}
                     </div>
                   ) : (
-                    "—"
+                    "-"
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted">
