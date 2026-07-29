@@ -23,6 +23,7 @@ const SIZE_LABELS: Record<RequestSize, string> = {
 
 export type QueueRequest = PrizeRequest & {
   franchiseTags: { id: string; name: string }[];
+  colorFilaments: { id: string; color_name: string; swatch_hex: string | null }[];
 };
 
 export default function QueueBoard({
@@ -149,7 +150,11 @@ export default function QueueBoard({
               />
               <Detail
                 label="Color"
-                value={openRequest.color_filament?.color_name ?? "Not specified"}
+                value={
+                  openRequest.colorFilaments.length > 0
+                    ? openRequest.colorFilaments.map((c) => c.color_name).join(", ")
+                    : "Not specified"
+                }
               />
               <Detail label="Date requested" value={openRequest.date_requested} />
               {openRequest.franchiseTags.length > 0 && (

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Prize } from "@/lib/types";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
+import { burstConfetti } from "@/lib/confetti";
 
 const STATUS_DOT: Record<Prize["status"], string> = {
   in_stock: "bg-sage",
@@ -87,10 +88,11 @@ export default function PrizeCard({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              burstConfetti(e.currentTarget);
               onCheckout(prize.id);
               showToast("Sold!");
             }}
-            className="text-xs rounded-md border border-border-warm-strong px-3 py-1.5 text-ink hover:bg-page shrink-0"
+            className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-page shrink-0 transition-colors"
             title="Log that a student took this off the shelf"
           >
             Sold!

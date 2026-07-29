@@ -1,12 +1,11 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
-import type { RequestSize, RequestStatus } from "@/lib/types";
-import { updateRequestStatus, deleteRequest } from "./actions";
-import StatusSelect from "./StatusSelect";
+import { updateRequestStatus, updateRequest, deleteRequest } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
-import ActionButton from "@/components/ActionButton";
 import FilterSidebar from "@/components/FilterSidebar";
 import ErrorNote from "@/components/ErrorNote";
+import RequestsTable from "./RequestsTable";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "pending", label: "Pending" },
@@ -14,20 +13,6 @@ const STATUS_FILTER_OPTIONS = [
   { value: "fulfilled", label: "Fulfilled" },
   { value: "cancelled", label: "Cancelled" },
 ];
-
-const STATUS_STYLES: Record<RequestStatus, string> = {
-  pending: "bg-amber/10 text-amber",
-  printed: "bg-slate/10 text-slate",
-  fulfilled: "bg-sage/10 text-sage",
-  cancelled: "bg-taupe/10 text-taupe",
-};
-
-const SIZE_LABELS: Record<RequestSize, string> = {
-  small: "Small",
-  medium: "Medium",
-  large: "Large",
-  xlarge: "X-Large",
-};
 
 export default async function RequestsPage({
   searchParams,
@@ -46,25 +31,23 @@ export default async function RequestsPage({
   const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
-  const { data: filaments } = await supabase
-    .from("filaments")
-    .select("id, color_name, swatch_hex")
-    .order("color_name");
-
-  // Stats -- always across ALL requests, independent of filters below.
-  const { count: pendingCount } = await supabase
-    .from("requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending");
-
-  const { count: fulfilledCount } = await supabase
-    .from("requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "fulfilled");
-
-  const { data: allTagLinks } = await supabase
-    .from("request_franchise_tags")
-    .select("request_id, tag:franchise_tags(id, name)");
+  const [
+    { data: filaments },
+    { count: pendingCount },
+    { count: fulfilledCount },
+    { data: allTagLinks },
+    { data: franchiseTagRows },
+    { data: prizes },
+    { data: allFilamentLinks },
+  ] = await Promise.all([
+    supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
+    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
+    supabase.from("request_franchise_tags").select("request_id, tag:franchise_tags(id, name)"),
+    supabase.from("franchise_tags").select("id, name").order("name"),
+    supabase.from("prizes").select("id, name").order("name"),
+    supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
+  ]);
 
   const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
   for (const link of (allTagLinks ?? []) as unknown as {
@@ -77,14 +60,24 @@ export default async function RequestsPage({
     tagsByRequestId.set(link.request_id, list);
   }
 
+  const filamentsByRequestId = new Map<
+    string,
+    { id: string; color_name: string; swatch_hex: string | null }[]
+  >();
+  for (const link of (allFilamentLinks ?? []) as unknown as {
+    request_id: string;
+    filament: { id: string; color_name: string; swatch_hex: string | null } | null;
+  }[]) {
+    if (!link.filament) continue;
+    const list = filamentsByRequestId.get(link.request_id) ?? [];
+    list.push(link.filament);
+    filamentsByRequestId.set(link.request_id, list);
+  }
+
   const mostRequestedFranchise = mostCommon(
     Array.from(tagsByRequestId.values()).flatMap((tags) => tags.map((t) => t.name)),
   );
 
-  const { data: franchiseTagRows } = await supabase
-    .from("franchise_tags")
-    .select("id, name")
-    .order("name");
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
 
   let requestIdsForFranchise: string[] | null = null;
@@ -98,16 +91,21 @@ export default async function RequestsPage({
       .map(([requestId]) => requestId);
   }
 
+  let requestIdsForColor: string[] | null = null;
+  if (selectedColors.length > 0) {
+    requestIdsForColor = Array.from(filamentsByRequestId.entries())
+      .filter(([, colors]) => colors.some((c) => selectedColors.includes(c.id)))
+      .map(([requestId]) => requestId);
+  }
+
   let query = supabase
     .from("requests")
-    .select(
-      "*, prize:prizes(id, name, photo_url, coin_price), color_filament:filaments(id, color_name)",
-    )
+    .select("*, prize:prizes(id, name, photo_url, coin_price)")
     .order("date_requested", { ascending: false })
     .order("created_at", { ascending: false });
 
   if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
-  if (selectedColors.length > 0) query = query.in("color_filament_id", selectedColors);
+  if (requestIdsForColor) query = query.in("id", requestIdsForColor);
   if (requestIdsForFranchise) query = query.in("id", requestIdsForFranchise);
 
   const { data: requestsRaw, error } = await query;
@@ -115,6 +113,7 @@ export default async function RequestsPage({
   let requests = (requestsRaw ?? []).map((r) => ({
     ...r,
     franchiseTags: tagsByRequestId.get(r.id) ?? [],
+    colorFilaments: filamentsByRequestId.get(r.id) ?? [],
   }));
 
   if (params.q) {
@@ -147,6 +146,11 @@ export default async function RequestsPage({
 
   const statLine = `${pendingCount ?? 0} pending · ${fulfilledCount ?? 0} fulfilled · ${mostRequestedFranchise ?? "no requests yet"}`;
 
+  async function handleUpdate(requestId: string, formData: FormData) {
+    "use server";
+    await updateRequest(requestId, formData);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -156,8 +160,9 @@ export default async function RequestsPage({
         </div>
         <Link
           href="/requests/new"
-          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
         >
+          <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Log a request
         </Link>
       </div>
@@ -199,114 +204,15 @@ export default async function RequestsPage({
             <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>
           )}
 
-          <div className="bg-card border border-border-warm rounded-xl overflow-x-auto">
-            <table className="w-full text-sm">
-          <thead className="bg-page text-muted text-left">
-            <tr>
-              <th className="px-4 py-2 font-medium">Ninja name</th>
-              <th className="px-4 py-2 font-medium">Requested by</th>
-              <th className="px-4 py-2 font-medium">Prize</th>
-              <th className="px-4 py-2 font-medium">Theme</th>
-              <th className="px-4 py-2 font-medium">Size</th>
-              <th className="px-4 py-2 font-medium">Color</th>
-              <th className="px-4 py-2 font-medium">Date</th>
-              <th className="px-4 py-2 font-medium">Status</th>
-              <th className="px-4 py-2 font-medium">MakerWorld / Notes</th>
-              <th className="px-4 py-2"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {requests.map((r) => (
-              <tr key={r.id} className="border-t border-border-warm align-top">
-                <td className="px-4 py-2 font-medium text-ink whitespace-nowrap">
-                  {r.student_name}
-                </td>
-                <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.requested_by ?? "-"}
-                </td>
-                <td className="px-4 py-2 text-ink">
-                  {r.prize?.name ?? r.free_text_prize ?? (
-                    <span className="text-muted">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-2 text-muted">
-                  {r.franchiseTags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1 max-w-[10rem]">
-                      {r.franchiseTags.map((t: { id: string; name: string }) => (
-                        <span
-                          key={t.id}
-                          className="text-xs px-2 py-0.5 rounded-full bg-page text-muted whitespace-nowrap"
-                        >
-                          {t.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    "-"
-                  )}
-                </td>
-                <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.size ? SIZE_LABELS[r.size as RequestSize] : "-"}
-                </td>
-                <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.color_filament?.color_name ?? "-"}
-                </td>
-                <td className="px-4 py-2 text-muted whitespace-nowrap">
-                  {r.date_requested}
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <span
-                    className={`inline-block mr-2 text-xs px-2 py-0.5 rounded-full capitalize ${STATUS_STYLES[r.status as RequestStatus]}`}
-                  >
-                    {r.status}
-                  </span>
-                  <StatusSelect
-                    requestId={r.id}
-                    status={r.status as RequestStatus}
-                    onChange={updateRequestStatus}
-                  />
-                </td>
-                <td className="px-4 py-2 text-muted max-w-[16rem]">
-                  {r.links && (
-                    <div className="flex flex-col gap-0.5 mb-1">
-                      {r.links.split("\n").filter(Boolean).map((link: string, i: number) => (
-                        <a
-                          key={i}
-                          href={link.trim()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sage hover:underline truncate block max-w-[16rem]"
-                        >
-                          {link.trim()}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                  {r.notes && <div className="truncate">{r.notes}</div>}
-                </td>
-                <td className="px-4 py-2 text-right whitespace-nowrap">
-                  <Link
-                    href={`/requests/${r.id}`}
-                    className="text-xs text-ink hover:underline mr-3"
-                  >
-                    Edit
-                  </Link>
-                  <ActionButton
-                    action={deleteRequest.bind(null, r.id)}
-                    toastMessage="Request deleted"
-                    className="text-xs text-rust hover:underline"
-                  >
-                    Delete
-                  </ActionButton>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-            </table>
-            {requests.length === 0 && !error && (
-              <p className="p-4 text-sm text-muted">Nothing logged yet. Add the first request to get started.</p>
-            )}
-          </div>
+          <RequestsTable
+            requests={requests}
+            prizes={prizes ?? []}
+            filaments={filaments ?? []}
+            allFranchiseTags={franchiseTagRows ?? []}
+            onStatusChange={updateRequestStatus}
+            onUpdate={handleUpdate}
+            onDelete={deleteRequest}
+          />
         </div>
       </div>
     </div>

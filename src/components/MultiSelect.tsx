@@ -1,0 +1,126 @@
+"use client";
+
+import { useMemo, useRef, useState } from "react";
+
+// Multiselect picker with chips, restricted to a fixed set of options (no
+// creating new ones -- for that, see TagInput). Selected options are
+// submitted as multiple hidden inputs sharing the same `name`, using each
+// option's value.
+export default function MultiSelect({
+  name,
+  options,
+  initialValues = [],
+  placeholder = "Select...",
+}: {
+  name: string;
+  options: { value: string; label: string; swatch?: string | null }[];
+  initialValues?: string[];
+  placeholder?: string;
+}) {
+  const [selected, setSelected] = useState<string[]>(initialValues);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const closeTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const selectedOptions = useMemo(
+    () => selected.map((v) => options.find((o) => o.value === v)).filter(Boolean) as typeof options,
+    [selected, options],
+  );
+
+  const filtered = options
+    .filter((o) => !selected.includes(o.value))
+    .filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()));
+
+  function addValue(value: string) {
+    setSelected((prev) => (prev.includes(value) ? prev : [...prev, value]));
+    setQuery("");
+  }
+
+  function removeValue(value: string) {
+    setSelected((prev) => prev.filter((v) => v !== value));
+  }
+
+  function handleBlur() {
+    closeTimeout.current = setTimeout(() => setOpen(false), 150);
+  }
+
+  function handleFocus() {
+    if (closeTimeout.current) clearTimeout(closeTimeout.current);
+    setOpen(true);
+  }
+
+  return (
+    <div className="relative">
+      {selected.map((v) => (
+        <input key={v} type="hidden" name={name} value={v} />
+      ))}
+      <div className="flex flex-wrap gap-1 items-center rounded-md border border-border-warm-strong bg-card px-2 py-1.5 transition-colors hover:border-border-hover focus-within:ring-2 focus-within:ring-sage">
+        {selectedOptions.map((o) => (
+          <span
+            key={o.value}
+            className="chip-hover inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-page text-ink"
+          >
+            {o.swatch && (
+              <span
+                className="inline-block w-2 h-2 rounded-full border border-border-warm-strong shrink-0"
+                style={{ background: o.swatch }}
+                aria-hidden="true"
+              />
+            )}
+            {o.label}
+            <button
+              type="button"
+              onClick={() => removeValue(o.value)}
+              className="text-muted hover:text-ink"
+              aria-label={`Remove ${o.label}`}
+            >
+              ×
+            </button>
+          </span>
+        ))}
+        <input
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (filtered[0]) addValue(filtered[0].value);
+            } else if (e.key === "Backspace" && query === "" && selected.length > 0) {
+              removeValue(selected[selected.length - 1]);
+            }
+          }}
+          placeholder={selected.length === 0 ? placeholder : ""}
+          className="flex-1 min-w-[8rem] text-sm outline-none py-0.5 bg-transparent"
+        />
+      </div>
+
+      {open && filtered.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full bg-card border border-border-warm rounded-md shadow-md max-h-48 overflow-y-auto text-sm">
+          {filtered.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => addValue(o.value)}
+              className="w-full text-left px-3 py-1.5 text-ink hover:bg-page flex items-center gap-2"
+            >
+              {o.swatch && (
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
+                  style={{ background: o.swatch }}
+                  aria-hidden="true"
+                />
+              )}
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -100,6 +100,15 @@ create table if not exists request_franchise_tags (
   primary key (request_id, tag_id)
 );
 
+-- Multiselect: a request can ask for more than one color. The older
+-- requests.color_filament_id single-FK column above is kept for backward
+-- compatibility but is no longer written to by the app.
+create table if not exists request_filaments (
+  request_id uuid not null references requests (id) on delete cascade,
+  filament_id uuid not null references filaments (id) on delete cascade,
+  primary key (request_id, filament_id)
+);
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- Checkouts
 -- ─────────────────────────────────────────────────────────────────────────
@@ -149,6 +158,7 @@ alter table prize_filament enable row level security;
 alter table franchise_tags enable row level security;
 alter table prize_franchise_tags enable row level security;
 alter table request_franchise_tags enable row level security;
+alter table request_filaments enable row level security;
 
 drop policy if exists "anon full access" on prizes;
 create policy "anon full access" on prizes for all
@@ -180,4 +190,8 @@ create policy "anon full access" on prize_franchise_tags for all
 
 drop policy if exists "anon full access" on request_franchise_tags;
 create policy "anon full access" on request_franchise_tags for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on request_filaments;
+create policy "anon full access" on request_filaments for all
   using (true) with check (true);

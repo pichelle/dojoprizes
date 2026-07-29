@@ -13,17 +13,15 @@ export const dynamic = "force-dynamic";
 export default async function CheckoutsPage() {
   const supabase = createServerClient();
 
-  const { data: prizes } = await supabase
-    .from("prizes")
-    .select("id, name")
-    .order("name");
-
-  const { data: checkouts, error } = await supabase
-    .from("checkouts")
-    .select("*, prize:prizes(id, name, photo_url)")
-    .order("date_checked_out", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(200);
+  const [{ data: prizes }, { data: checkouts, error }] = await Promise.all([
+    supabase.from("prizes").select("id, name").order("name"),
+    supabase
+      .from("checkouts")
+      .select("*, prize:prizes(id, name, photo_url)")
+      .order("date_checked_out", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(200),
+  ]);
 
   const prizeIds = Array.from(
     new Set((checkouts ?? []).map((c) => c.prize_id).filter(Boolean)),

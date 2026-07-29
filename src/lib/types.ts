@@ -57,6 +57,7 @@ export interface PrizeRequest {
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
   color_filament?: Pick<Filament, "id" | "color_name"> | null;
   franchiseTags?: FranchiseTag[];
+  colorFilaments?: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
 }
 
 export interface Checkout {

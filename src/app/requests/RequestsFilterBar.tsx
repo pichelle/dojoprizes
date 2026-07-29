@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { Search } from "lucide-react";
 import Select from "@/components/Select";
 
 export default function RequestsFilterBar() {
@@ -18,17 +19,24 @@ export default function RequestsFilterBar() {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <input
-        type="text"
-        placeholder="Search by ninja or prize..."
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") updateParam("q", q);
-        }}
-        onBlur={() => updateParam("q", q)}
-        className="rounded-md border border-border-warm-strong px-3 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
-      />
+      <div className="relative">
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
+          placeholder="Search by ninja or prize..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") updateParam("q", q);
+          }}
+          onBlur={() => updateParam("q", q)}
+          className="rounded-md border border-border-warm-strong pl-8 pr-3 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
+        />
+      </div>
       <Select
         value={searchParams.get("sort") ?? "date"}
         onValueChange={(v) => updateParam("sort", v === "date" ? "" : v)}

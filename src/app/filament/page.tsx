@@ -14,15 +14,13 @@ export default async function FilamentPage({
   const sort = params.sort ?? "name";
   const supabase = createServerClient();
 
-  const { data: prizes } = await supabase
-    .from("prizes")
-    .select("id, name")
-    .order("name");
-
-  const { data: filamentsRaw, error } = await supabase
-    .from("filaments")
-    .select("*, prize_filament(prize:prizes(id, name))")
-    .order("color_name");
+  const [{ data: prizes }, { data: filamentsRaw, error }] = await Promise.all([
+    supabase.from("prizes").select("id, name").order("name"),
+    supabase
+      .from("filaments")
+      .select("*, prize_filament(prize:prizes(id, name))")
+      .order("color_name"),
+  ]);
 
   const filaments = (filamentsRaw ?? []).map((f) => ({
     ...f,

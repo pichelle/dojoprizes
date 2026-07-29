@@ -32,20 +32,23 @@ export default async function CatalogPage({
   const supabase = createServerClient();
 
   // Stats row is always computed across ALL prizes/checkouts, independent
-  // of whatever filters are currently applied below.
-  const { count: totalPrizes } = await supabase
-    .from("prizes")
-    .select("*", { count: "exact", head: true });
-
-  const { count: totalCheckedOut } = await supabase
-    .from("checkouts")
-    .select("*", { count: "exact", head: true });
-
-  // All prize <-> franchise tag links, used both for the "most popular
-  // franchise" stat and to decorate each card below.
-  const { data: allTagLinks } = await supabase
-    .from("prize_franchise_tags")
-    .select("prize_id, tag:franchise_tags(id, name)");
+  // of whatever filters are currently applied below. These queries don't
+  // depend on each other, so fetch them together.
+  const [
+    { count: totalPrizes },
+    { count: totalCheckedOut },
+    { data: allTagLinks },
+    { data: checkoutRows },
+    { data: franchiseTagRows },
+    { data: filamentOptions },
+  ] = await Promise.all([
+    supabase.from("prizes").select("*", { count: "exact", head: true }),
+    supabase.from("checkouts").select("*", { count: "exact", head: true }),
+    supabase.from("prize_franchise_tags").select("prize_id, tag:franchise_tags(id, name)"),
+    supabase.from("checkouts").select("prize_id"),
+    supabase.from("franchise_tags").select("id, name").order("name"),
+    supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
+  ]);
 
   const tagsByPrizeId = new Map<string, { id: string; name: string }[]>();
   for (const link of (allTagLinks ?? []) as unknown as {
@@ -58,9 +61,6 @@ export default async function CatalogPage({
     tagsByPrizeId.set(link.prize_id, list);
   }
 
-  const { data: checkoutRows } = await supabase
-    .from("checkouts")
-    .select("prize_id");
   const franchiseOccurrences: string[] = [];
   for (const row of checkoutRows ?? []) {
     const tags = tagsByPrizeId.get(row.prize_id) ?? [];
@@ -68,16 +68,7 @@ export default async function CatalogPage({
   }
   const mostPopularFranchise = mostCommon(franchiseOccurrences);
 
-  const { data: franchiseTagRows } = await supabase
-    .from("franchise_tags")
-    .select("id, name")
-    .order("name");
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
-
-  const { data: filamentOptions } = await supabase
-    .from("filaments")
-    .select("id, color_name, swatch_hex")
-    .order("color_name");
 
   // Main filtered/sorted query
   let prizeIdsForColor: string[] | null = null;

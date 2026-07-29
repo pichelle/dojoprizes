@@ -19,6 +19,7 @@
   --color-rust: #b54b3a;
   --color-slate: #7a8699;
   --color-taupe: #aba396;
+  --color-border-hover: #c9bfa3;
 }
 
 @theme inline {
@@ -36,8 +37,9 @@
   --color-rust: var(--color-rust);
   --color-slate: var(--color-slate);
   --color-taupe: var(--color-taupe);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-lora);
+  --color-border-hover: var(--color-border-hover);
+  --font-sans: var(--font-figtree);
+  --font-serif: var(--font-space-grotesk);
 }
 
 body {
@@ -113,4 +115,76 @@ body {
 .card-hover:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-fade-in {
+  animation: page-fade-in 0.35s ease-out;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-in {
+  animation: modal-in 0.15s ease-out;
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate(var(--confetti-x-start, 0), 0) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--confetti-x-end, 0), var(--confetti-y-end, 90px)) rotate(var(--confetti-rotate, 180deg));
+  }
+}
+
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+  z-index: 60;
+  animation: confetti-fall 0.7s ease-out forwards;
+}
+
+/* Consistent hover feedback for native text-ish form controls sitewide. */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  transition: border-color 0.12s ease-out, box-shadow 0.12s ease-out;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):hover,
+textarea:hover {
+  border-color: var(--color-border-hover);
+}
+
+.chip-hover {
+  transition: background-color 0.12s ease-out, color 0.12s ease-out;
+}
+
+.chip-hover:hover {
+  background: color-mix(in srgb, var(--color-sage) 16%, transparent);
+  color: #4c5638;
 }

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus } from "./requests/actions";
 import StickyNote from "@/components/StickyNote";
@@ -10,19 +12,34 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const supabase = createServerClient();
 
-  const { count: pendingCount } = await supabase
-    .from("requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "pending");
-
-  const { count: fulfilledCount } = await supabase
-    .from("requests")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "fulfilled");
-
-  const { data: allTagLinks } = await supabase
-    .from("request_franchise_tags")
-    .select("request_id, tag:franchise_tags(id, name)");
+  const [
+    { count: pendingCount },
+    { count: fulfilledCount },
+    { data: allTagLinks },
+    { data: allFilamentLinks },
+    { data: queueRaw },
+    { data: recentCheckouts },
+    { data: allCheckoutPrizeIds },
+  ] = await Promise.all([
+    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
+    supabase.from("request_franchise_tags").select("request_id, tag:franchise_tags(id, name)"),
+    supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
+    supabase
+      .from("requests")
+      .select("*, prize:prizes(id, name, photo_url, coin_price)")
+      .in("status", ["pending", "printed"])
+      .order("is_print_club", { ascending: false })
+      .order("date_requested", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("checkouts")
+      .select("id, date_checked_out, prize:prizes(id, name)")
+      .order("date_checked_out", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("checkouts").select("prize_id"),
+  ]);
 
   const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
   for (const link of (allTagLinks ?? []) as unknown as {
@@ -35,36 +52,31 @@ export default async function HomePage() {
     tagsByRequestId.set(link.request_id, list);
   }
 
+  const filamentsByRequestId = new Map<
+    string,
+    { id: string; color_name: string; swatch_hex: string | null }[]
+  >();
+  for (const link of (allFilamentLinks ?? []) as unknown as {
+    request_id: string;
+    filament: { id: string; color_name: string; swatch_hex: string | null } | null;
+  }[]) {
+    if (!link.filament) continue;
+    const list = filamentsByRequestId.get(link.request_id) ?? [];
+    list.push(link.filament);
+    filamentsByRequestId.set(link.request_id, list);
+  }
+
   const mostRequestedFranchise = topCounts(
     Array.from(tagsByRequestId.values()).flatMap((tags) => tags.map((t) => t.name)),
     1,
   )[0]?.[0];
 
-  const { data: queueRaw } = await supabase
-    .from("requests")
-    .select(
-      "*, prize:prizes(id, name, photo_url, coin_price), color_filament:filaments(id, color_name)",
-    )
-    .in("status", ["pending", "printed"])
-    .order("is_print_club", { ascending: false })
-    .order("date_requested", { ascending: true })
-    .order("created_at", { ascending: true });
-
   const queue = (queueRaw ?? []).map((r) => ({
     ...r,
     franchiseTags: tagsByRequestId.get(r.id) ?? [],
+    colorFilaments: filamentsByRequestId.get(r.id) ?? [],
   }));
 
-  const { data: recentCheckouts } = await supabase
-    .from("checkouts")
-    .select("id, date_checked_out, prize:prizes(id, name)")
-    .order("date_checked_out", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const { data: allCheckoutPrizeIds } = await supabase
-    .from("checkouts")
-    .select("prize_id");
   const checkoutPrizeIds = (allCheckoutPrizeIds ?? []).map((c) => c.prize_id);
 
   let themeOccurrences: string[] = [];
@@ -109,7 +121,7 @@ export default async function HomePage() {
             What to print next, sorted by priority.
           </p>
         </div>
-        <StickyNote rotate={-1} className="text-[13px] text-ink whitespace-nowrap">
+        <StickyNote rotate={-1} className="text-[15px] text-ink whitespace-nowrap">
           {statLine}
         </StickyNote>
       </div>
@@ -117,24 +129,27 @@ export default async function HomePage() {
       <div className="flex flex-wrap gap-3">
         <Link
           href="/requests/new"
-          className="rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
+          className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
         >
+          <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a request
         </Link>
         <a
           href="https://makerworld.com/en"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page"
+          className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
         >
+          <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
           Search MakerWorld
         </a>
         <a
           href="https://www.tinkercad.com/"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page"
+          className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
         >
+          <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
           Open Tinkercad
         </a>
       </div>

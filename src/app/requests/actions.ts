@@ -11,6 +11,10 @@ function parseFranchiseTagNames(formData: FormData): string[] {
   return formData.getAll("franchise_tag_names").map(String).filter(Boolean);
 }
 
+function parseColorFilamentIds(formData: FormData): string[] {
+  return formData.getAll("color_filament_ids").map(String).filter(Boolean);
+}
+
 function fromFormSelect(formData: FormData, key: string): string | null {
   const raw = String(formData.get(key) ?? "").trim();
   return raw && raw !== NONE_VALUE ? raw : null;
@@ -35,6 +39,25 @@ async function syncRequestFranchiseTagLinks(
   }
 }
 
+async function syncRequestFilamentLinks(
+  supabase: ReturnType<typeof createServerClient>,
+  requestId: string,
+  filamentIds: string[],
+) {
+  const { error: deleteError } = await supabase
+    .from("request_filaments")
+    .delete()
+    .eq("request_id", requestId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (filamentIds.length > 0) {
+    const { error: linkError } = await supabase
+      .from("request_filaments")
+      .insert(filamentIds.map((filament_id) => ({ request_id: requestId, filament_id })));
+    if (linkError) throw new Error(linkError.message);
+  }
+}
+
 function requestFieldsFromForm(formData: FormData) {
   const prizeId = fromFormSelect(formData, "prize_id");
   const freeText = String(formData.get("free_text_prize") ?? "").trim() || null;
@@ -45,7 +68,6 @@ function requestFieldsFromForm(formData: FormData) {
     prize_id: prizeId,
     free_text_prize: prizeId ? null : freeText,
     size: fromFormSelect(formData, "size") as RequestSize | null,
-    color_filament_id: fromFormSelect(formData, "color_filament_id"),
     links: String(formData.get("makerworld_link") ?? "").trim() || null,
     is_print_club: formData.get("is_print_club") === "on",
     notes: String(formData.get("notes") ?? "").trim() || null,
@@ -80,6 +102,14 @@ export async function createRequest(formData: FormData) {
         .insert(tagIds.map((tag_id) => ({ request_id: request.id, tag_id })));
       if (linkError) throw new Error(linkError.message);
     }
+
+    const filamentIds = parseColorFilamentIds(formData);
+    if (filamentIds.length > 0) {
+      const { error: filamentLinkError } = await supabase
+        .from("request_filaments")
+        .insert(filamentIds.map((filament_id) => ({ request_id: request.id, filament_id })));
+      if (filamentLinkError) throw new Error(filamentLinkError.message);
+    }
   }
 
   revalidatePath("/requests");
@@ -102,6 +132,7 @@ export async function updateRequest(requestId: string, formData: FormData) {
     parseFranchiseTagNames(formData),
   );
   await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
+  await syncRequestFilamentLinks(supabase, requestId, parseColorFilamentIds(formData));
 
   revalidatePath("/requests");
   revalidatePath("/");

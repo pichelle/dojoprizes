@@ -91,7 +91,7 @@ export default function FilterSidebar({
                 return (
                   <label
                     key={opt.value}
-                    className="flex items-center gap-2 text-sm text-ink cursor-pointer"
+                    className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page"
                   >
                     <input
                       type={g.type}

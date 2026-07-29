@@ -49,6 +49,15 @@ export default async function EditRequestPage({
     .map((l) => l.tag?.name)
     .filter((n): n is string => !!n);
 
+  const { data: filamentLinks } = await supabase
+    .from("request_filaments")
+    .select("filament_id")
+    .eq("request_id", id);
+
+  const initialColorFilamentIds = (
+    (filamentLinks as { filament_id: string }[] | null) ?? []
+  ).map((l) => l.filament_id);
+
   const boundUpdate = updateRequest.bind(null, id);
   const boundDelete = deleteRequest.bind(null, id);
 
@@ -69,6 +78,7 @@ export default async function EditRequestPage({
           action={boundUpdate}
           initial={request}
           initialFranchiseTags={initialFranchiseTags}
+          initialColorFilamentIds={initialColorFilamentIds}
           prizes={prizes ?? []}
           filaments={filaments ?? []}
           allFranchiseTags={franchiseTags ?? []}

@@ -4,7 +4,20 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestSize } from "@/lib/types";
 import TagInput from "@/components/TagInput";
+import MultiSelect from "@/components/MultiSelect";
 import Select, { NONE_VALUE } from "@/components/Select";
+
+function Req() {
+  return <span className="text-rust">*</span>;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="font-serif text-xs font-semibold uppercase tracking-wide text-muted mb-3">
+      {children}
+    </p>
+  );
+}
 
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "small", label: "Small" },
@@ -20,7 +33,9 @@ export default function RequestForm({
   action,
   initial,
   initialFranchiseTags = [],
+  initialColorFilamentIds = [],
   submitLabel = "Log request",
+  onCancel,
 }: {
   prizes: Pick<Prize, "id" | "name">[];
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
@@ -28,170 +43,181 @@ export default function RequestForm({
   action: (formData: FormData) => void;
   initial?: Partial<PrizeRequest>;
   initialFranchiseTags?: string[];
+  initialColorFilamentIds?: string[];
   submitLabel?: string;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? NONE_VALUE);
 
   return (
-    <form action={action} className="space-y-5">
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Ninja name
-          </label>
-          <input
-            name="student_name"
-            required
-            defaultValue={initial?.student_name ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Requested by (sensei)
-          </label>
-          <input
-            name="requested_by"
-            required
-            placeholder="Your name"
-            defaultValue={initial?.requested_by ?? ""}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Date requested
-          </label>
-          <input
-            type="date"
-            name="date_requested"
-            defaultValue={initial?.date_requested ?? new Date().toISOString().slice(0, 10)}
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-          />
-        </div>
-
-        <label className="flex items-center gap-2 text-sm text-ink self-end pb-2">
-          <input
-            type="checkbox"
-            name="is_print_club"
-            defaultChecked={initial?.is_print_club ?? false}
-            className="accent-sage"
-          />
-          3D Print Club (top priority)
-        </label>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Prize (from catalog)
-          </label>
-          <div className="mt-1">
-            <Select
-              name="prize_id"
-              value={prizeId}
-              onValueChange={setPrizeId}
-              className="w-full"
-              options={[
-                { value: NONE_VALUE, label: "Not catalogued yet / other" },
-                ...prizes.map((p) => ({ value: p.id, label: p.name })),
-              ]}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            If not catalogued, describe it
-          </label>
-          <input
-            name="free_text_prize"
-            disabled={prizeId !== NONE_VALUE}
-            defaultValue={initial?.free_text_prize ?? ""}
-            placeholder="e.g. custom Bulbasaur keychain"
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Size
-          </label>
-          <div className="mt-1">
-            <Select
-              name="size"
-              defaultValue={initial?.size ?? undefined}
-              placeholder="Select a size..."
+    <form action={action}>
+      <div className="py-0 pb-5">
+        <SectionLabel>Basics</SectionLabel>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Ninja name <Req />
+            </label>
+            <input
+              name="student_name"
               required
-              className="w-full"
-              options={SIZE_OPTIONS}
+              defaultValue={initial?.student_name ?? ""}
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
-          <p className="mt-1 text-xs text-muted">
-            Remind students that larger prints take more time.
-          </p>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-ink">
-            Color requested
-          </label>
-          <div className="mt-1">
-            <Select
-              name="color_filament_id"
-              defaultValue={initial?.color_filament_id ?? undefined}
-              placeholder="Select a color..."
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Requested by (sensei) <Req />
+            </label>
+            <input
+              name="requested_by"
               required
-              className="w-full"
-              options={filaments.map((f) => ({
-                value: f.id,
-                label: f.color_name,
-                swatch: f.swatch_hex,
-              }))}
+              placeholder="Your name"
+              defaultValue={initial?.requested_by ?? ""}
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
-          <p className="mt-1 text-xs text-muted">
-            Try to keep it at 1-2 colors.
-          </p>
-          {filaments.length === 0 && (
+
+          <div className="sm:col-span-2 sm:max-w-[15rem]">
+            <label className="block text-sm font-medium text-ink">
+              Date requested
+            </label>
+            <input
+              type="date"
+              name="date_requested"
+              defaultValue={initial?.date_requested ?? new Date().toISOString().slice(0, 10)}
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="py-5 border-t border-border-warm">
+        <SectionLabel>Details</SectionLabel>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Prize (from catalog)
+            </label>
+            <div className="mt-1">
+              <Select
+                name="prize_id"
+                value={prizeId}
+                onValueChange={setPrizeId}
+                className="w-full"
+                options={[
+                  { value: NONE_VALUE, label: "Not catalogued yet / other" },
+                  ...prizes.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              If not catalogued, describe it
+            </label>
+            <input
+              name="free_text_prize"
+              disabled={prizeId !== NONE_VALUE}
+              defaultValue={initial?.free_text_prize ?? ""}
+              placeholder="e.g. custom Bulbasaur keychain"
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
+            />
+          </div>
+
+          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              name="is_print_club"
+              defaultChecked={initial?.is_print_club ?? false}
+              className="accent-sage"
+            />
+            3D Print Club
+          </label>
+
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Size <Req />
+            </label>
+            <div className="mt-1">
+              <Select
+                name="size"
+                defaultValue={initial?.size ?? undefined}
+                placeholder="Select a size..."
+                required
+                className="w-full"
+                options={SIZE_OPTIONS}
+              />
+            </div>
             <p className="mt-1 text-xs text-muted">
-              Add colors on the Filament page to select one here.
+              Remind students that larger prints take more time.
             </p>
-          )}
-        </div>
+          </div>
 
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-ink">
-            Theme / franchise tags
-          </label>
-          <div className="mt-1">
-            <TagInput
-              name="franchise_tag_names"
-              allTags={allFranchiseTags}
-              initialTags={initialFranchiseTags}
-              placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Color requested <Req />
+            </label>
+            <div className="mt-1">
+              <MultiSelect
+                name="color_filament_ids"
+                initialValues={initialColorFilamentIds}
+                placeholder="Select colors..."
+                options={filaments.map((f) => ({
+                  value: f.id,
+                  label: f.color_name,
+                  swatch: f.swatch_hex,
+                }))}
+              />
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              Try to keep it at 1-2 colors.
+            </p>
+            {filaments.length === 0 && (
+              <p className="mt-1 text-xs text-muted">
+                Add colors on the Filament page to select one here.
+              </p>
+            )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-ink">
+              Theme / franchise tags
+            </label>
+            <div className="mt-1">
+              <TagInput
+                name="franchise_tag_names"
+                allTags={allFranchiseTags}
+                initialTags={initialFranchiseTags}
+                placeholder="Pokémon, Hello Kitty, Minecraft, custom..."
+              />
+            </div>
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-ink">
+              MakerWorld link
+            </label>
+            <input
+              name="makerworld_link"
+              type="url"
+              defaultValue={initial?.links ?? ""}
+              placeholder="https://makerworld.com/..."
+              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
+            <p className="mt-1 text-xs text-muted">
+              Highly recommended, and much appreciated. It&apos;s the most helpful thing you can add.
+            </p>
           </div>
         </div>
+      </div>
 
-        <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-ink">
-            MakerWorld link
-          </label>
-          <input
-            name="makerworld_link"
-            type="url"
-            defaultValue={initial?.links ?? ""}
-            placeholder="https://makerworld.com/..."
-            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-          />
-          <p className="mt-1 text-xs text-muted">
-            Highly recommended, and much appreciated. It&apos;s the most helpful thing you can add.
-          </p>
-        </div>
-
-        <div className="sm:col-span-2">
+      <div className="pt-5 border-t border-border-warm">
+        <SectionLabel>Notes</SectionLabel>
+        <div>
           <label className="block text-sm font-medium text-ink">
             Notes (optional)
           </label>
@@ -202,27 +228,27 @@ export default function RequestForm({
             className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
-      </div>
 
-      <p className="text-sm text-muted bg-page rounded-md px-3 py-2">
-        Most requests take 1 to 4 weeks. Please remind the ninja to be patient
-        as other projects print too!
-      </p>
+        <p className="mt-4 text-sm text-muted bg-page rounded-md px-3 py-2">
+          Most requests take 1 to 4 weeks. Please remind the ninja to be patient
+          as other projects print too!
+        </p>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
-        >
-          {submitLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.push("/requests")}
-          className="text-sm text-muted hover:text-ink"
-        >
-          Cancel
-        </button>
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="submit"
+            className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
+          >
+            {submitLabel}
+          </button>
+          <button
+            type="button"
+            onClick={() => (onCancel ? onCancel() : router.push("/requests"))}
+            className="text-sm text-muted hover:text-ink"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );
