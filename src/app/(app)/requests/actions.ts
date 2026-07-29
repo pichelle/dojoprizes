@@ -7,6 +7,8 @@ import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
 import { NONE_VALUE } from "@/components/Select";
 import type { RequestSize, RequestStatus } from "@/lib/types";
 
+export type RequestFormState = { error: string | null; success?: boolean };
+
 function parseFranchiseTagNames(formData: FormData): string[] {
   return formData.getAll("franchise_tag_names").map(String).filter(Boolean);
 }
@@ -71,72 +73,120 @@ function requestFieldsFromForm(formData: FormData) {
     links: String(formData.get("makerworld_link") ?? "").trim() || null,
     is_print_club: formData.get("is_print_club") === "on",
     notes: String(formData.get("notes") ?? "").trim() || null,
+    photo_url: String(formData.get("photo_url") ?? "").trim() || null,
   };
 }
 
-export async function createRequest(formData: FormData) {
+// Core logic shared by the redirecting (dedicated page) and non-redirecting
+// (side peek) variants below. Never throws -- DB errors are caught and
+// returned as form state instead of crashing the page.
+
+async function performCreateRequest(formData: FormData): Promise<RequestFormState> {
   const supabase = createServerClient();
+  try {
+    const { data: request, error } = await supabase
+      .from("requests")
+      .insert({
+        ...requestFieldsFromForm(formData),
+        date_requested:
+          String(formData.get("date_requested") ?? "").trim() ||
+          new Date().toISOString().slice(0, 10),
+        status: "pending" as RequestStatus,
+      })
+      .select("id")
+      .single();
 
-  const { data: request, error } = await supabase
-    .from("requests")
-    .insert({
-      ...requestFieldsFromForm(formData),
-      date_requested:
-        String(formData.get("date_requested") ?? "").trim() ||
-        new Date().toISOString().slice(0, 10),
-      status: "pending" as RequestStatus,
-    })
-    .select("id")
-    .single();
+    if (error) return { error: error.message };
 
-  if (error) throw new Error(error.message);
+    if (request) {
+      const tagIds = await resolveFranchiseTagIds(
+        supabase,
+        parseFranchiseTagNames(formData),
+      );
+      if (tagIds.length > 0) {
+        const { error: linkError } = await supabase
+          .from("request_franchise_tags")
+          .insert(tagIds.map((tag_id) => ({ request_id: request.id, tag_id })));
+        if (linkError) return { error: linkError.message };
+      }
 
-  if (request) {
+      const filamentIds = parseColorFilamentIds(formData);
+      if (filamentIds.length > 0) {
+        const { error: filamentLinkError } = await supabase
+          .from("request_filaments")
+          .insert(filamentIds.map((filament_id) => ({ request_id: request.id, filament_id })));
+        if (filamentLinkError) return { error: filamentLinkError.message };
+      }
+    }
+
+    revalidatePath("/requests");
+    revalidatePath("/");
+    return { error: null, success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
+  }
+}
+
+async function performUpdateRequest(
+  requestId: string,
+  formData: FormData,
+): Promise<RequestFormState> {
+  const supabase = createServerClient();
+  try {
+    const { error } = await supabase
+      .from("requests")
+      .update(requestFieldsFromForm(formData))
+      .eq("id", requestId);
+
+    if (error) return { error: error.message };
+
     const tagIds = await resolveFranchiseTagIds(
       supabase,
       parseFranchiseTagNames(formData),
     );
-    if (tagIds.length > 0) {
-      const { error: linkError } = await supabase
-        .from("request_franchise_tags")
-        .insert(tagIds.map((tag_id) => ({ request_id: request.id, tag_id })));
-      if (linkError) throw new Error(linkError.message);
-    }
+    await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
+    await syncRequestFilamentLinks(supabase, requestId, parseColorFilamentIds(formData));
 
-    const filamentIds = parseColorFilamentIds(formData);
-    if (filamentIds.length > 0) {
-      const { error: filamentLinkError } = await supabase
-        .from("request_filaments")
-        .insert(filamentIds.map((filament_id) => ({ request_id: request.id, filament_id })));
-      if (filamentLinkError) throw new Error(filamentLinkError.message);
-    }
+    revalidatePath("/requests");
+    revalidatePath("/");
+    return { error: null, success: true };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
   }
+}
 
-  revalidatePath("/requests");
-  revalidatePath("/");
+// Dedicated-page variants: redirect back to /requests on success.
+
+export async function createRequest(
+  _prevState: RequestFormState | null,
+  formData: FormData,
+): Promise<RequestFormState> {
+  const result = await performCreateRequest(formData);
+  if (result.error) return result;
   redirect("/requests");
 }
 
-export async function updateRequest(requestId: string, formData: FormData) {
-  const supabase = createServerClient();
-
-  const { error } = await supabase
-    .from("requests")
-    .update(requestFieldsFromForm(formData))
-    .eq("id", requestId);
-
-  if (error) throw new Error(error.message);
-
-  const tagIds = await resolveFranchiseTagIds(
-    supabase,
-    parseFranchiseTagNames(formData),
-  );
-  await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
-  await syncRequestFilamentLinks(supabase, requestId, parseColorFilamentIds(formData));
-
-  revalidatePath("/requests");
-  revalidatePath("/");
+export async function updateRequest(
+  requestId: string,
+  _prevState: RequestFormState | null,
+  formData: FormData,
+): Promise<RequestFormState> {
+  const result = await performUpdateRequest(requestId, formData);
+  if (result.error) return result;
   redirect("/requests");
+}
+
+// Side-peek variant: no redirect, since the user never leaves /requests.
+export async function updateRequestInline(
+  requestId: string,
+  _prevState: RequestFormState | null,
+  formData: FormData,
+): Promise<RequestFormState> {
+  return performUpdateRequest(requestId, formData);
 }
 
 export async function updateRequestStatus(

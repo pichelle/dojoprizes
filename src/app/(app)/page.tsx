@@ -34,7 +34,7 @@ export default async function HomePage() {
       .order("created_at", { ascending: true }),
     supabase
       .from("checkouts")
-      .select("id, date_checked_out, prize:prizes(id, name)")
+      .select("id, date_checked_out, bought_by, prize:prizes(id, name)")
       .order("date_checked_out", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5),
@@ -163,6 +163,9 @@ export default async function HomePage() {
                 <div key={c.id} className="text-sm text-ink flex items-baseline justify-between gap-2">
                   <span className="truncate">
                     {(c.prize as unknown as { name: string } | null)?.name ?? "(deleted prize)"}
+                    {c.bought_by && (
+                      <span className="text-muted"> · {c.bought_by}</span>
+                    )}
                   </span>
                   <span className="text-xs text-muted whitespace-nowrap">
                     {c.date_checked_out}

@@ -58,11 +58,11 @@ export default function QueueBoard({
             onClick={() => setOpenId(r.id)}
             className="card-hover break-inside-avoid mb-3 bg-card border border-border-warm rounded-xl overflow-hidden cursor-pointer"
           >
-            {r.prize?.photo_url && (
+            {(r.photo_url || r.prize?.photo_url) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={r.prize.photo_url}
-                alt={r.prize.name}
+                src={r.photo_url || r.prize?.photo_url || ""}
+                alt={r.prize?.name ?? r.student_name}
                 className="w-full object-cover"
               />
             )}
@@ -129,11 +129,11 @@ export default function QueueBoard({
               Edit details
             </Link>
 
-            {openRequest.prize?.photo_url && (
+            {(openRequest.photo_url || openRequest.prize?.photo_url) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={openRequest.prize.photo_url}
-                alt={openRequest.prize.name}
+                src={openRequest.photo_url || openRequest.prize?.photo_url || ""}
+                alt={openRequest.prize?.name ?? openRequest.student_name}
                 className="w-full rounded-lg object-cover"
               />
             )}

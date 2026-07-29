@@ -112,9 +112,9 @@ export default async function CatalogPage({
     franchiseTags: tagsByPrizeId.get(p.id) ?? [],
   }));
 
-  async function handleCheckout(prizeId: string) {
+  async function handleCheckout(prizeId: string, boughtBy: string | null) {
     "use server";
-    await quickCheckout(prizeId);
+    await quickCheckout(prizeId, boughtBy);
   }
 
   const statLine = `${totalPrizes ?? 0} prize${totalPrizes === 1 ? "" : "s"} · ${totalCheckedOut ?? 0} bought · ${mostPopularFranchise ?? "no checkouts yet"}`;

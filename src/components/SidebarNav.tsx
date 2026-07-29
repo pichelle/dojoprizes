@@ -16,7 +16,7 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex flex-row sm:flex-col gap-1.5 flex-wrap w-full">
+    <nav className="flex flex-row sm:flex-col items-center gap-1.5 flex-wrap">
       {NAV_LINKS.map((link) => {
         const isActive = link.exact
           ? pathname === link.href

@@ -3,9 +3,13 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Search } from "lucide-react";
-import Select from "@/components/Select";
+import ColorFilterDropdown from "@/components/ColorFilterDropdown";
 
-export default function RequestsFilterBar() {
+export default function RequestsFilterBar({
+  colorOptions,
+}: {
+  colorOptions: { value: string; label: string; swatch?: string | null }[];
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get("q") ?? "");
@@ -37,16 +41,7 @@ export default function RequestsFilterBar() {
           className="rounded-md border border-border-warm-strong pl-8 pr-3 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
         />
       </div>
-      <Select
-        value={searchParams.get("sort") ?? "date"}
-        onValueChange={(v) => updateParam("sort", v === "date" ? "" : v)}
-        className="w-52"
-        options={[
-          { value: "date", label: "Sort: Date (newest)" },
-          { value: "price_asc", label: "Price: low to high" },
-          { value: "price_desc", label: "Price: high to low" },
-        ]}
-      />
+      <ColorFilterDropdown basePath="/requests" options={colorOptions} />
     </div>
   );
 }

@@ -1,10 +1,12 @@
 "use client";
 
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Prize } from "@/lib/types";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
 import { burstConfetti } from "@/lib/confetti";
+import BuyerNameModal from "@/components/BuyerNameModal";
 
 const STATUS_DOT: Record<Prize["status"], string> = {
   in_stock: "bg-sage",
@@ -25,10 +27,12 @@ export default function PrizeCard({
   onCheckout,
 }: {
   prize: Prize;
-  onCheckout: (prizeId: string) => Promise<void>;
+  onCheckout: (prizeId: string, boughtBy: string | null) => Promise<void>;
 }) {
   const router = useRouter();
   const priceTag = formatCoinPriceBreakdown(prize.coin_price);
+  const [showBuyerModal, setShowBuyerModal] = useState(false);
+  const soldButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div
@@ -53,7 +57,7 @@ export default function PrizeCard({
         )}
       </div>
       <div className="p-4 flex-1 flex flex-col gap-2">
-        <span className="font-serif text-lg text-ink">{prize.name}</span>
+        <span className="font-serif font-medium text-lg text-ink">{prize.name}</span>
 
         {prize.franchiseTags && prize.franchiseTags.length > 0 && (
           <div className="flex flex-wrap gap-1">
@@ -85,12 +89,11 @@ export default function PrizeCard({
             <span className="text-xs text-muted">No price set</span>
           )}
           <button
+            ref={soldButtonRef}
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              burstConfetti(e.currentTarget);
-              onCheckout(prize.id);
-              showToast("Sold!");
+              setShowBuyerModal(true);
             }}
             className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-page shrink-0 transition-colors"
             title="Log that a student took this off the shelf"
@@ -99,6 +102,21 @@ export default function PrizeCard({
           </button>
         </div>
       </div>
+
+      {showBuyerModal && (
+        <div onClick={(e) => e.stopPropagation()}>
+          <BuyerNameModal
+            prizeName={prize.name}
+            onCancel={() => setShowBuyerModal(false)}
+            onConfirm={(buyerName) => {
+              setShowBuyerModal(false);
+              if (soldButtonRef.current) burstConfetti(soldButtonRef.current);
+              onCheckout(prize.id, buyerName || null);
+              showToast(buyerName ? `Sold to ${buyerName}!` : "Sold!");
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

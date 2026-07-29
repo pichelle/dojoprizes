@@ -1,4 +1,3 @@
-import Image from "next/image";
 import PasswordField from "./PasswordField";
 
 export default async function LoginPage({
@@ -13,9 +12,11 @@ export default async function LoginPage({
   return (
     <div className="min-h-screen flex items-center justify-center bg-page bg-dot-grid px-4">
       <div className="w-full max-w-sm bg-card border border-border-warm rounded-xl p-8">
-        <Image src="/wordmark.png" alt="DojoPrizes" width={160} height={46} priority />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/wordmark.png" alt="DojoPrizes" className="h-11 w-auto" />
         <p className="mt-3 text-sm text-muted">
-          Hey there! Enter the password to get in.
+          Welcome to Code Ninjas Yorba Linda&apos;s prize tracker, DojoPrizes :)
+          Ask Sensei Michelle if you forgot the password.
         </p>
 
         <form action="/api/login" method="POST" className="mt-6 space-y-4">

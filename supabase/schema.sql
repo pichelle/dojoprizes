@@ -87,6 +87,7 @@ create table if not exists requests (
     check (status in ('pending', 'printed', 'fulfilled', 'cancelled')),
   is_print_club boolean not null default false,
   notes text,
+  photo_url text,
   created_at timestamptz not null default now()
 );
 
@@ -116,6 +117,7 @@ create table if not exists checkouts (
   id uuid primary key default gen_random_uuid(),
   prize_id uuid not null references prizes (id) on delete cascade,
   date_checked_out date not null default current_date,
+  bought_by text,
   created_at timestamptz not null default now()
 );
 

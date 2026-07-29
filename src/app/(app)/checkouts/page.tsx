@@ -84,11 +84,21 @@ export default async function CheckoutsPage() {
               className="mt-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-ink">
+              Bought by
+            </label>
+            <input
+              name="bought_by"
+              placeholder="Ninja name"
+              className="mt-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+            />
+          </div>
           <button
             type="submit"
             className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
           >
-            Bought!
+            Sold!
           </button>
         </form>
       </div>
@@ -103,6 +113,7 @@ export default async function CheckoutsPage() {
             <tr>
               <th className="px-4 py-2 font-medium">Prize</th>
               <th className="px-4 py-2 font-medium">Theme</th>
+              <th className="px-4 py-2 font-medium">Bought by</th>
               <th className="px-4 py-2 font-medium">Date checked out</th>
               <th className="px-4 py-2"></th>
             </tr>
@@ -130,12 +141,16 @@ export default async function CheckoutsPage() {
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted">
+                  {c.bought_by ?? "-"}
+                </td>
+                <td className="px-4 py-2 text-muted">
                   {c.date_checked_out}
                 </td>
                 <td className="px-4 py-2 text-right">
                   <ActionButton
                     action={deleteCheckout.bind(null, c.id)}
                     toastMessage="Checkout removed"
+                    confirmMessage={`Remove this checkout of ${c.prize?.name ?? "this prize"}? This can't be undone.`}
                     className="text-xs text-rust hover:underline"
                   >
                     Remove

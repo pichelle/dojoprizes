@@ -1,11 +1,14 @@
 "use client";
 
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestSize } from "@/lib/types";
 import TagInput from "@/components/TagInput";
 import MultiSelect from "@/components/MultiSelect";
 import Select, { NONE_VALUE } from "@/components/Select";
+import ErrorNote from "@/components/ErrorNote";
+import { showToast } from "@/components/ToastHost";
+import type { RequestFormState } from "./actions";
 
 function Req() {
   return <span className="text-rust">*</span>;
@@ -33,6 +36,8 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
 
+const initialState: RequestFormState = { error: null };
+
 export default function RequestForm({
   prizes,
   filaments,
@@ -43,20 +48,61 @@ export default function RequestForm({
   initialColorFilamentIds = [],
   submitLabel = "Log request",
   onCancel,
+  onSuccess,
 }: {
   prizes: Pick<Prize, "id" | "name">[];
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
-  action: (formData: FormData) => void;
+  action: (prevState: RequestFormState | null, formData: FormData) => Promise<RequestFormState>;
   initial?: Partial<PrizeRequest>;
   initialFranchiseTags?: string[];
   initialColorFilamentIds?: string[];
   submitLabel?: string;
   onCancel?: () => void;
+  onSuccess?: () => void;
 }) {
   const router = useRouter();
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? NONE_VALUE);
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
+  const [state, formAction, isPending] = useActionState(action, initialState);
+
+  const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? "");
+  const [makerworldLink, setMakerworldLink] = useState(initial?.links ?? "");
+  const [fetchingImage, setFetchingImage] = useState(false);
+  const [imageFetchError, setImageFetchError] = useState<string | null>(null);
+
+  const successHandled = useRef(false);
+  useEffect(() => {
+    if (state?.success && !successHandled.current) {
+      successHandled.current = true;
+      showToast(submitLabel === "Save changes" ? "Changes saved" : "Request logged");
+      onSuccess?.();
+    }
+  }, [state, submitLabel, onSuccess]);
+
+  async function fetchImageFromMakerworld() {
+    if (!makerworldLink.trim()) {
+      setImageFetchError("Paste a MakerWorld link first.");
+      return;
+    }
+    setFetchingImage(true);
+    setImageFetchError(null);
+    try {
+      const res = await fetch(
+        `/api/makerworld-preview?url=${encodeURIComponent(makerworldLink.trim())}`,
+      );
+      const data = await res.json();
+      if (data.imageUrl) {
+        setPhotoUrl(data.imageUrl);
+      } else {
+        setImageFetchError(data.error ?? "Couldn't find an image on that page.");
+      }
+    } catch {
+      setImageFetchError("Something went wrong fetching that link.");
+    } finally {
+      setFetchingImage(false);
+    }
+  }
 
   function validate(form: HTMLFormElement): boolean {
     const fd = new FormData(form);
@@ -79,7 +125,13 @@ export default function RequestForm({
   }
 
   return (
-    <form action={action} onSubmit={handleSubmit} noValidate>
+    <form action={formAction} onSubmit={handleSubmit} noValidate>
+      {state?.error && (
+        <div className="mb-5">
+          <ErrorNote>{state.error}</ErrorNote>
+        </div>
+      )}
+
       <div className="pb-6">
         <SectionLabel>Basics</SectionLabel>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -238,15 +290,57 @@ export default function RequestForm({
             <label className="block text-sm font-medium text-ink">
               MakerWorld link
             </label>
-            <input
-              name="makerworld_link"
-              type="url"
-              defaultValue={initial?.links ?? ""}
-              placeholder="https://makerworld.com/..."
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                name="makerworld_link"
+                type="url"
+                value={makerworldLink}
+                onChange={(e) => setMakerworldLink(e.target.value)}
+                placeholder="https://makerworld.com/..."
+                className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+              />
+              <button
+                type="button"
+                onClick={fetchImageFromMakerworld}
+                disabled={fetchingImage}
+                className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-page disabled:opacity-50"
+              >
+                {fetchingImage ? "Fetching…" : "Fetch image"}
+              </button>
+            </div>
             <p className="mt-1.5 text-sm text-muted">
               Highly recommended, and much appreciated. It&apos;s the most helpful thing you can add.
+            </p>
+            {imageFetchError && (
+              <p className="mt-1 text-xs text-rust">{imageFetchError}</p>
+            )}
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-ink">
+              Photo URL
+            </label>
+            <div className="mt-1 flex items-start gap-3">
+              <input
+                name="photo_url"
+                placeholder="https://..."
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+              />
+              {photoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={photoUrl}
+                  alt="Preview"
+                  className="h-10 w-10 object-cover rounded-md border border-border-warm shrink-0"
+                  onError={(e) => (e.currentTarget.style.display = "none")}
+                  onLoad={(e) => (e.currentTarget.style.display = "block")}
+                />
+              )}
+            </div>
+            <p className="mt-1.5 text-sm text-muted">
+              Pulled automatically from the MakerWorld link, or paste your own photo URL.
             </p>
           </div>
         </div>
@@ -274,9 +368,10 @@ export default function RequestForm({
         <div className="mt-4 flex items-center gap-3">
           <button
             type="submit"
-            className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
+            disabled={isPending}
+            className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-60"
           >
-            {submitLabel}
+            {isPending ? "Saving…" : submitLabel}
           </button>
           <button
             type="button"

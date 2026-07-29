@@ -1,34 +1,23 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
-import { updateRequestStatus, updateRequest, deleteRequest } from "./actions";
+import { updateRequestStatus, deleteRequest } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
-import FilterSidebar from "@/components/FilterSidebar";
+import StatusTabs from "@/components/StatusTabs";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsTable from "./RequestsTable";
-
-const STATUS_FILTER_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "printed", label: "Printed" },
-  { value: "fulfilled", label: "Fulfilled" },
-  { value: "cancelled", label: "Cancelled" },
-];
 
 export default async function RequestsPage({
   searchParams,
 }: {
   searchParams: Promise<{
     status?: string;
-    theme?: string;
     color?: string;
-    sort?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
-  const selectedThemes = params.theme ? params.theme.split(",").filter(Boolean) : [];
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
-  const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
   const [
@@ -78,19 +67,6 @@ export default async function RequestsPage({
     Array.from(tagsByRequestId.values()).flatMap((tags) => tags.map((t) => t.name)),
   );
 
-  const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
-
-  let requestIdsForFranchise: string[] | null = null;
-  if (selectedThemes.length > 0) {
-    const selectedLower = selectedThemes.map((t) => t.toLowerCase());
-    const tagIds = (franchiseTagRows ?? [])
-      .filter((t) => selectedLower.includes(t.name.toLowerCase()))
-      .map((t) => t.id);
-    requestIdsForFranchise = Array.from(tagsByRequestId.entries())
-      .filter(([, tags]) => tags.some((t) => tagIds.includes(t.id)))
-      .map(([requestId]) => requestId);
-  }
-
   let requestIdsForColor: string[] | null = null;
   if (selectedColors.length > 0) {
     requestIdsForColor = Array.from(filamentsByRequestId.entries())
@@ -104,9 +80,8 @@ export default async function RequestsPage({
     .order("date_requested", { ascending: false })
     .order("created_at", { ascending: false });
 
-  if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
+  if (params.status) query = query.eq("status", params.status);
   if (requestIdsForColor) query = query.in("id", requestIdsForColor);
-  if (requestIdsForFranchise) query = query.in("id", requestIdsForFranchise);
 
   const { data: requestsRaw, error } = await query;
 
@@ -132,24 +107,7 @@ export default async function RequestsPage({
     });
   }
 
-  if (params.sort === "price_asc" || params.sort === "price_desc") {
-    const dir = params.sort === "price_asc" ? 1 : -1;
-    requests = [...requests].sort((a, b) => {
-      const pa = a.prize?.coin_price;
-      const pb = b.prize?.coin_price;
-      if (pa == null && pb == null) return 0;
-      if (pa == null) return 1; // nulls last regardless of direction
-      if (pb == null) return -1;
-      return (pa - pb) * dir;
-    });
-  }
-
   const statLine = `${pendingCount ?? 0} pending · ${fulfilledCount ?? 0} fulfilled · ${mostRequestedFranchise ?? "no requests yet"}`;
-
-  async function handleUpdate(requestId: string, formData: FormData) {
-    "use server";
-    await updateRequest(requestId, formData);
-  }
 
   return (
     <div className="space-y-6">
@@ -167,53 +125,30 @@ export default async function RequestsPage({
         </Link>
       </div>
 
-      <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
-        <FilterSidebar
-          basePath="/requests"
-          extraParams={["sort", "q"]}
-          groups={[
-            {
-              key: "theme",
-              label: "Theme",
-              type: "checkbox",
-              options: franchiseOptions.map((f) => ({ value: f, label: f })),
-            },
-            {
-              key: "color",
-              label: "Color",
-              type: "checkbox",
-              options: (filaments ?? []).map((f) => ({
-                value: f.id,
-                label: f.color_name,
-                swatch: f.swatch_hex,
-              })),
-            },
-            {
-              key: "status",
-              label: "Status",
-              type: "checkbox",
-              options: STATUS_FILTER_OPTIONS,
-            },
-          ]}
-        />
-
-        <div className="space-y-6 min-w-0">
-          <RequestsFilterBar />
-
-          {error && (
-            <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>
-          )}
-
-          <RequestsTable
-            requests={requests}
-            prizes={prizes ?? []}
-            filaments={filaments ?? []}
-            allFranchiseTags={franchiseTagRows ?? []}
-            onStatusChange={updateRequestStatus}
-            onUpdate={handleUpdate}
-            onDelete={deleteRequest}
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <StatusTabs basePath="/requests" />
+          <RequestsFilterBar
+            colorOptions={(filaments ?? []).map((f) => ({
+              value: f.id,
+              label: f.color_name,
+              swatch: f.swatch_hex,
+            }))}
           />
         </div>
+
+        {error && (
+          <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>
+        )}
+
+        <RequestsTable
+          requests={requests}
+          prizes={prizes ?? []}
+          filaments={filaments ?? []}
+          allFranchiseTags={franchiseTagRows ?? []}
+          onStatusChange={updateRequestStatus}
+          onDelete={deleteRequest}
+        />
       </div>
     </div>
   );

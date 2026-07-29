@@ -52,6 +52,7 @@ export interface PrizeRequest {
   status: RequestStatus;
   is_print_club: boolean;
   notes: string | null;
+  photo_url: string | null;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
@@ -64,6 +65,7 @@ export interface Checkout {
   id: string;
   prize_id: string;
   date_checked_out: string;
+  bought_by: string | null;
   created_at: string;
   prize?: Pick<Prize, "id" | "name" | "photo_url"> | null;
 }

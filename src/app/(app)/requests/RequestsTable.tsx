@@ -6,6 +6,7 @@ import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from 
 import StatusSelect from "./StatusSelect";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
+import { updateRequestInline } from "./actions";
 
 export default function RequestsTable({
   requests,
@@ -13,7 +14,6 @@ export default function RequestsTable({
   filaments,
   allFranchiseTags,
   onStatusChange,
-  onUpdate,
   onDelete,
 }: {
   requests: PrizeRequest[];
@@ -21,7 +21,6 @@ export default function RequestsTable({
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   onStatusChange: (requestId: string, status: RequestStatus) => Promise<void>;
-  onUpdate: (requestId: string, formData: FormData) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -138,11 +137,10 @@ export default function RequestsTable({
               </button>
             </div>
             <RequestForm
-              action={async (formData) => {
-                setActiveId(null);
-                await onUpdate(active.id, formData);
-              }}
+              key={active.id}
+              action={updateRequestInline.bind(null, active.id)}
               onCancel={() => setActiveId(null)}
+              onSuccess={() => setActiveId(null)}
               initial={active}
               initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
               initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}

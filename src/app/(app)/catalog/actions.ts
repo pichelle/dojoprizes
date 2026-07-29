@@ -147,12 +147,13 @@ export async function deletePrize(prizeId: string) {
 }
 
 // Quick one-click checkout, callable straight from the catalog grid.
-export async function quickCheckout(prizeId: string) {
+export async function quickCheckout(prizeId: string, boughtBy: string | null) {
   const supabase = createServerClient();
 
   const { error: checkoutError } = await supabase.from("checkouts").insert({
     prize_id: prizeId,
     date_checked_out: new Date().toISOString().slice(0, 10),
+    bought_by: boughtBy || null,
   });
   if (checkoutError) throw new Error(checkoutError.message);
 
