@@ -9,11 +9,13 @@ import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
 import { updateRequestInline } from "./actions";
 
-const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
-  { status: "pending", label: "Pending", dot: "bg-amber" },
-  { status: "printed", label: "Printed", dot: "bg-slate" },
-  { status: "fulfilled", label: "Fulfilled", dot: "bg-sage" },
-  { status: "cancelled", label: "Cancelled", dot: "bg-rust" },
+// Punchier, more distinct dot colors than the shared status palette used
+// elsewhere -- easier to tell the columns apart at a glance.
+const COLUMNS: { status: RequestStatus; label: string; dotColor: string }[] = [
+  { status: "pending", label: "Pending", dotColor: "#c9700f" },
+  { status: "printed", label: "Printed", dotColor: "#2f6fb0" },
+  { status: "fulfilled", label: "Fulfilled", dotColor: "#3f7a2e" },
+  { status: "cancelled", label: "Cancelled", dotColor: "#b54b3a" },
 ];
 
 // Requests carrying a priority sort (pending/printed) show 3D Print Club
@@ -29,6 +31,13 @@ function sortForColumn(requests: PrizeRequest[], status: RequestStatus) {
     if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
     return a.date_requested.localeCompare(b.date_requested);
   });
+}
+
+// "2026-07-29" -> "Jul 29" -- faster to scan than the full ISO date.
+function formatShortDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 export default function RequestsKanban({
@@ -58,35 +67,39 @@ export default function RequestsKanban({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
         {COLUMNS.map((col) => {
           const rows = sortForColumn(requests, col.status);
           return (
             <div key={col.status}>
-              <p className="flex items-center gap-1.5 text-sm font-medium text-ink mb-2">
-                <span className={`inline-block w-1.5 h-1.5 rounded-full ${col.dot}`} aria-hidden="true" />
+              <p className="flex items-center gap-2 text-[15px] font-bold text-ink mb-3">
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ background: col.dotColor }}
+                  aria-hidden="true"
+                />
                 {col.label}
-                <span className="text-muted font-normal">{rows.length}</span>
+                <span className="text-muted font-medium">{rows.length}</span>
               </p>
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {rows.map((r) => (
                   <div
                     key={r.id}
                     onClick={() => setActiveId(r.id)}
-                    className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-3"
+                    className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-[11px] text-muted whitespace-nowrap">
-                        Requested {r.date_requested}
+                      <span className="text-[11px] font-medium text-muted whitespace-nowrap">
+                        Requested {formatShortDate(r.date_requested)}
                       </span>
                       {r.is_print_club && (
-                        <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-sage bg-sage/10 rounded px-1.5 py-0.5">
+                        <span className="shrink-0 text-[11px] font-semibold text-sage bg-sage/15 rounded px-2 py-0.5">
                           Print club
                         </span>
                       )}
                     </div>
-                    <p className="text-sm font-medium text-ink mt-1.5">{r.student_name}</p>
-                    <p className="text-xs text-muted mt-0.5">
+                    <p className="text-[15px] font-bold text-ink mt-2.5">{r.student_name}</p>
+                    <p className="text-xs font-medium text-muted mt-1.5 mb-3.5">
                       {[
                         r.prize?.name ?? r.free_text_prize,
                         r.size,
@@ -96,10 +109,10 @@ export default function RequestsKanban({
                         .join(" · ") || "No details yet"}
                     </p>
                     <div
-                      className="flex items-center justify-between gap-2 mt-2.5"
+                      className="flex items-center justify-between gap-2"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <span className="text-[11px] text-muted truncate">
+                      <span className="text-[11px] font-medium text-muted truncate">
                         {r.requested_by ?? "—"}
                       </span>
                       <StatusSelect

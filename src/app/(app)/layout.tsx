@@ -9,7 +9,7 @@ export default function AppLayout({
 }>) {
   return (
     <div className="min-h-screen flex flex-col sm:flex-row bg-dot-grid">
-      <aside className="sm:w-60 shrink-0 self-start sm:h-[calc(100vh-2rem)] border-b sm:border-b-0 border-border-warm bg-nav sm:m-4 sm:rounded-xl sm:border sm:sticky sm:top-4">
+      <aside className="sm:w-60 shrink-0 self-start sm:h-screen border-b sm:border-b-0 sm:border-r border-border-warm bg-nav sm:sticky sm:top-0">
         <div className="flex flex-col items-center h-full p-5">
           <Link href="/requests" className="block">
             <Image

@@ -153,34 +153,6 @@ export default async function RequestsPage({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-3">
-        <Link
-          href="/requests/new"
-          className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
-        >
-          <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-          Add a request
-        </Link>
-        <a
-          href="https://makerworld.com/en"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
-        >
-          <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-          Search MakerWorld
-        </a>
-        <a
-          href="https://www.tinkercad.com/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
-        >
-          <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-          Open Tinkercad
-        </a>
-      </div>
-
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="bg-card border border-border-warm rounded-xl p-4">
           <div className="text-xs text-muted mb-2">Recently bought</div>
@@ -219,13 +191,42 @@ export default async function RequestsPage({
       </div>
 
       <div className="space-y-4">
-        <RequestsFilterBar
-          colorOptions={(filaments ?? []).map((f) => ({
-            value: f.id,
-            label: f.color_name,
-            swatch: f.swatch_hex,
-          }))}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <RequestsFilterBar
+            colorOptions={(filaments ?? []).map((f) => ({
+              value: f.id,
+              label: f.color_name,
+              swatch: f.swatch_hex,
+            }))}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/requests/new"
+              className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
+            >
+              <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
+              Add a request
+            </Link>
+            <a
+              href="https://makerworld.com/en"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
+            >
+              <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
+              Search MakerWorld
+            </a>
+            <a
+              href="https://www.tinkercad.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
+            >
+              <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
+              Open Tinkercad
+            </a>
+          </div>
+        </div>
 
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
 
