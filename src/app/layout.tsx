@@ -1,13 +1,9 @@
 import type { Metadata } from "next";
-import { Figtree, Lora } from "next/font/google";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import ToastHost from "@/components/ToastHost";
 
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree" });
-const lora = Lora({
-  subsets: ["latin"],
-  variable: "--font-lora",
-});
 
 export const metadata: Metadata = {
   title: "DojoPrizes",
@@ -20,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${lora.variable}`}>
+    <html lang="en" className={figtree.variable}>
       <body className="antialiased bg-page text-ink min-h-screen">
         {children}
         <ToastHost />

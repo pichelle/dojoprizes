@@ -12,6 +12,7 @@
   --color-muted: #8a7f6e;
   --color-clay: #c1673e;
   --color-tape: #d9cba8;
+  --color-nav: #efe6d2;
 
   /* Status dots -- used across prize status and request status */
   --color-sage: #7c8a5e;
@@ -38,8 +39,9 @@
   --color-slate: var(--color-slate);
   --color-taupe: var(--color-taupe);
   --color-border-hover: var(--color-border-hover);
+  --color-nav: var(--color-nav);
   --font-sans: var(--font-figtree);
-  --font-serif: var(--font-lora);
+  --font-serif: var(--font-figtree);
 }
 
 body {
