@@ -10,7 +10,7 @@ export default function AppLayout({
   return (
     <div className="min-h-screen flex flex-col sm:flex-row bg-dot-grid">
       <aside className="sm:w-60 shrink-0 self-start sm:h-screen border-b sm:border-b-0 sm:border-r border-border-warm bg-nav sm:sticky sm:top-0">
-        <div className="flex flex-col items-center h-full p-5">
+        <div className="flex flex-col items-center h-full px-5 py-8">
           <Link href="/requests" className="block">
             <Image
               src="/ninja.png"
@@ -58,7 +58,7 @@ export default function AppLayout({
         </div>
       </aside>
       <main className="flex-1 min-w-0">
-        <div className="page-fade-in px-6 sm:px-16 py-10 sm:py-12 max-w-5xl">{children}</div>
+        <div className="page-fade-in px-6 sm:px-16 py-10 sm:py-12 max-w-none">{children}</div>
       </main>
     </div>
   );

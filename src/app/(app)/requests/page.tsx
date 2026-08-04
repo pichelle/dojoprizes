@@ -214,7 +214,7 @@ export default async function RequestsPage({
               className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
             >
               <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-              Search MakerWorld
+              MakerWorld
             </a>
             <a
               href="https://www.tinkercad.com/"
@@ -223,7 +223,7 @@ export default async function RequestsPage({
               className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
             >
               <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-              Open Tinkercad
+              Tinkercad
             </a>
           </div>
         </div>
