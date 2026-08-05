@@ -4,7 +4,7 @@ import { Resend } from "resend";
 
 export type FeedbackFormState = { error: string | null; success?: boolean };
 
-const FEEDBACK_RECIPIENT = "michelleepak@gmail.com";
+const FEEDBACK_RECIPIENT = process.env.FEEDBACK_RECIPIENT_EMAIL || "michelle.pak@codeninjas.com";
 
 export async function submitFeedback(
   _prevState: FeedbackFormState | null,
