@@ -76,6 +76,7 @@ export default function PrizeCard({
           <span className="flex items-center gap-1.5">
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${STATUS_DOT[prize.status]}`} />
             {STATUS_LABELS[prize.status]}
+            {prize.size && <span className="capitalize">· {prize.size}</span>}
           </span>
           <span>
             Stock: <span className="text-ink">{prize.stock_count}</span>

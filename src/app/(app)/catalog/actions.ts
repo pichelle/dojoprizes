@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { breakdownToCoinPrice, silverEquivalentForTier } from "@/lib/coins";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
-import type { CoinTier, PrizeStatus } from "@/lib/types";
+import { NONE_VALUE } from "@/lib/constants";
+import type { CoinTier, PrizeStatus, RequestSize } from "@/lib/types";
 
 function parseFilamentIds(formData: FormData): string[] {
   return formData.getAll("filament_ids").map(String).filter(Boolean);
@@ -13,6 +14,11 @@ function parseFilamentIds(formData: FormData): string[] {
 
 function parseFranchiseTagNames(formData: FormData): string[] {
   return formData.getAll("franchise_tag_names").map(String).filter(Boolean);
+}
+
+function sizeFromForm(formData: FormData): RequestSize | null {
+  const raw = String(formData.get("size") ?? "").trim();
+  return raw && raw !== NONE_VALUE ? (raw as RequestSize) : null;
 }
 
 function coinPriceFromForm(formData: FormData): number | null {
@@ -78,6 +84,7 @@ export async function createPrize(formData: FormData) {
       makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
       stock_count: Number(formData.get("stock_count") ?? 0),
       status: (formData.get("status") as PrizeStatus) || "in_stock",
+      size: sizeFromForm(formData),
     })
     .select("id")
     .single();
@@ -117,6 +124,7 @@ export async function updatePrize(prizeId: string, formData: FormData) {
         String(formData.get("makerworld_link") ?? "").trim() || null,
       stock_count: Number(formData.get("stock_count") ?? 0),
       status: (formData.get("status") as PrizeStatus) || "in_stock",
+      size: sizeFromForm(formData),
       updated_at: new Date().toISOString(),
     })
     .eq("id", prizeId);

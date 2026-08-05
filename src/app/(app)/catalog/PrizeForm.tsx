@@ -4,13 +4,20 @@ import { useState } from "react";
 import type { Filament, FranchiseTag, Prize } from "@/lib/types";
 import { coinPriceToBreakdown } from "@/lib/coins";
 import TagInput from "@/components/TagInput";
-import Select from "@/components/Select";
+import Select, { NONE_VALUE } from "@/components/Select";
 
 const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
   { value: "in_stock", label: "In stock" },
   { value: "low_stock", label: "Low stock" },
   { value: "out_of_stock", label: "Out of stock" },
   { value: "print_on_request", label: "Print-on-request only" },
+];
+
+const SIZE_OPTIONS: { value: NonNullable<Prize["size"]>; label: string }[] = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+  { value: "xlarge", label: "X-Large" },
 ];
 
 export default function PrizeForm({
@@ -180,6 +187,24 @@ export default function PrizeForm({
               defaultValue={initial?.status ?? "in_stock"}
               className="w-full"
               options={STATUS_OPTIONS}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-ink">
+            Size printed at
+          </label>
+          <div className="mt-1">
+            <Select
+              name="size"
+              defaultValue={initial?.size ?? NONE_VALUE}
+              className="w-full"
+              placeholder="Not set"
+              options={[
+                { value: NONE_VALUE, label: "Not set" },
+                ...SIZE_OPTIONS,
+              ]}
             />
           </div>
         </div>

@@ -254,29 +254,31 @@ export default function RequestsKanban({
                   {col.label}
                   <span className="text-muted font-medium">{rows.length}</span>
                 </p>
-                <div className="flex items-center gap-1">
-                  <Tooltip label="Oldest">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort(col.status, "asc")}
-                      aria-label={`Sort ${col.label} oldest first`}
-                      aria-pressed={override === "asc"}
-                      className={`p-0.5 rounded hover:bg-nav-hover ${override === "asc" ? "text-ink" : "text-muted"}`}
-                    >
-                      <ChevronUp size={14} aria-hidden="true" />
-                    </button>
-                  </Tooltip>
-                  <Tooltip label="Most recent">
-                    <button
-                      type="button"
-                      onClick={() => toggleSort(col.status, "desc")}
-                      aria-label={`Sort ${col.label} newest first`}
-                      aria-pressed={override === "desc"}
-                      className={`p-0.5 rounded hover:bg-nav-hover ${override === "desc" ? "text-ink" : "text-muted"}`}
-                    >
-                      <ChevronDown size={14} aria-hidden="true" />
-                    </button>
-                  </Tooltip>
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-flex flex-col leading-none">
+                    <Tooltip label="Oldest">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(col.status, "asc")}
+                        aria-label={`Sort ${col.label} oldest first`}
+                        aria-pressed={override === "asc"}
+                        className={`hover:text-ink ${override === "asc" ? "text-ink" : "text-muted"}`}
+                      >
+                        <ChevronUp size={12} aria-hidden="true" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip label="Most recent">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(col.status, "desc")}
+                        aria-label={`Sort ${col.label} newest first`}
+                        aria-pressed={override === "desc"}
+                        className={`hover:text-ink ${override === "desc" ? "text-ink" : "text-muted"}`}
+                      >
+                        <ChevronDown size={12} aria-hidden="true" />
+                      </button>
+                    </Tooltip>
+                  </span>
                   <Tooltip label="Expand">
                     <button
                       type="button"

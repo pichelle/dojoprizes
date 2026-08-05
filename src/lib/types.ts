@@ -24,6 +24,7 @@ export interface Prize {
   id: string;
   name: string;
   photo_url: string | null;
+  size: RequestSize | null;
   coin_tier: CoinTier | null;
   coin_value_silver_equivalent: number | null;
   // Informational only -- the coin price staff intended to charge, kept
