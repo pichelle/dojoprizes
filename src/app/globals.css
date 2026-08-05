@@ -4,14 +4,15 @@
   /* White + pastel palette */
   --color-page: #ffffff;
   --color-card: #ffffff;
-  --color-border-warm: #ececea;
-  --color-border-warm-strong: #dcdbd7;
+  --color-border-warm: #ebe7dc;
+  --color-border-warm-strong: #ddd6c4;
   --color-ink: #3a3a38;
   --color-ink-soft: #6b6b66;
   --color-muted: #8c8c86;
   --color-clay: #c1673e;
   --color-tape: #d9cba8;
-  --color-nav: #ffffff;
+  --color-nav: #faf8f2;
+  --color-nav-active: #efebdf;
 
   /* Status dots -- used across prize status and request status */
   --color-sage: #7c8a5e;
@@ -55,6 +56,7 @@
   --color-taupe: var(--color-taupe);
   --color-border-hover: var(--color-border-hover);
   --color-nav: var(--color-nav);
+  --color-nav-active: var(--color-nav-active);
   --font-sans: var(--font-figtree);
   --font-serif: var(--font-figtree);
 }

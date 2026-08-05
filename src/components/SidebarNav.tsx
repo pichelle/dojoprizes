@@ -26,7 +26,7 @@ export default function SidebarNav() {
                 ? "text-ink font-bold"
                 : "text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
             }`}
-            style={isActive ? { background: "var(--color-printed-bg)" } : undefined}
+            style={isActive ? { background: "var(--color-nav-active)" } : undefined}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

@@ -23,6 +23,27 @@ export default function AppLayout({
           </Link>
           <div className="w-full mt-4">
             <SidebarNav />
+            <div className="h-px bg-border-warm my-3" />
+            <nav className="flex flex-col gap-1.5 w-full">
+              <a
+                href="https://makerworld.com/en"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
+              >
+                <Image src="/makerworld-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
+                MakerWorld
+              </a>
+              <a
+                href="https://www.tinkercad.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
+              >
+                <Image src="/tinkercad-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
+                Tinkercad
+              </a>
+            </nav>
           </div>
           <div className="mt-auto w-full flex flex-col items-center gap-3">
             <div className="flex flex-col items-start gap-2 w-full">

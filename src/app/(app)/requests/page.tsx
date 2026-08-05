@@ -1,10 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
-import { Plus } from "lucide-react";
+import { Check, Clock, Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
-import RequestsStats from "./RequestsStats";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsKanban from "./RequestsKanban";
 
@@ -12,6 +10,12 @@ import RequestsKanban from "./RequestsKanban";
 // searchParams below) so this page always reflects the latest requests
 // instead of any build-time snapshot.
 export const dynamic = "force-dynamic";
+
+function daysAgo(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)));
+}
 
 export default async function RequestsPage({
   searchParams,
@@ -29,7 +33,6 @@ export default async function RequestsPage({
 
   const [
     { data: filaments },
-    { count: pendingCount },
     { count: fulfilledCount },
     { data: allTagLinks },
     { data: franchiseTagRows },
@@ -37,7 +40,6 @@ export default async function RequestsPage({
     { data: allFilamentLinks },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
-    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
     supabase.from("request_franchise_tags").select("request_id, tag:franchise_tags(id, name)"),
     supabase.from("franchise_tags").select("id, name").order("name"),
@@ -69,11 +71,6 @@ export default async function RequestsPage({
     list.push(link.filament);
     filamentsByRequestId.set(link.request_id, list);
   }
-
-  const mostRequestedFranchise = topCounts(
-    Array.from(tagsByRequestId.values()).flatMap((tags) => tags.map((t) => t.name)),
-    1,
-  )[0]?.[0];
 
   let requestIdsForColor: string[] | null = null;
   if (selectedColors.length > 0) {
@@ -115,15 +112,40 @@ export default async function RequestsPage({
     });
   }
 
+  const oldestPendingDays = requests
+    .filter((r) => r.status === "pending")
+    .reduce<number | null>((max, r) => {
+      const age = daysAgo(r.date_requested);
+      if (age === null) return max;
+      return max === null || age > max ? age : max;
+    }, null);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Request log</h1>
+          <p className="text-sm text-muted mt-1">Track pending prints and see what to make next.</p>
+        </div>
+        <div className="flex gap-3">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
+              <Check size={13} aria-hidden="true" />
+              Total fulfilled
+            </p>
+            <p className="text-lg font-medium text-ink mt-0.5">{fulfilledCount ?? 0} prints</p>
+          </div>
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+            <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
+              <Clock size={13} aria-hidden="true" />
+              Oldest waiting
+            </p>
+            <p className="text-lg font-medium text-ink mt-0.5">
+              {oldestPendingDays === null ? "—" : `${oldestPendingDays} days`}
+            </p>
+          </div>
         </div>
       </div>
-
-      <RequestsStats requests={requests} />
 
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
@@ -141,24 +163,6 @@ export default async function RequestsPage({
               swatch: f.swatch_hex,
             }))}
           />
-          <a
-            href="https://makerworld.com/en"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors shrink-0"
-          >
-            <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-            MakerWorld
-          </a>
-          <a
-            href="https://www.tinkercad.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors shrink-0"
-          >
-            <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-            Tinkercad
-          </a>
         </div>
 
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
@@ -174,12 +178,4 @@ export default async function RequestsPage({
       </div>
     </div>
   );
-}
-
-function topCounts(values: string[], limit: number): [string, number][] {
-  const counts = new Map<string, number>();
-  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
-  return Array.from(counts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit);
 }

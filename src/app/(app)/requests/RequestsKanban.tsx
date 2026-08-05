@@ -11,11 +11,11 @@ import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 
-const COLUMNS: { status: RequestStatus; label: string; dot: string; bg: string }[] = [
-  { status: "pending", label: "Pending", dot: "var(--color-pending-dot)", bg: "var(--color-pending-bg)" },
-  { status: "printed", label: "Printed", dot: "var(--color-printed-dot)", bg: "var(--color-printed-bg)" },
-  { status: "fulfilled", label: "Fulfilled", dot: "var(--color-fulfilled-dot)", bg: "var(--color-fulfilled-bg)" },
-  { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)", bg: "var(--color-cancelled-bg)" },
+const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
+  { status: "pending", label: "Pending", dot: "var(--color-pending-dot)" },
+  { status: "printed", label: "Printed", dot: "var(--color-printed-dot)" },
+  { status: "fulfilled", label: "Fulfilled", dot: "var(--color-fulfilled-dot)" },
+  { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
 
 // Requests carrying a priority sort (pending/printed) show 3D Print Club
@@ -240,8 +240,8 @@ export default function RequestsKanban({
           return (
             <div
               key={col.status}
-              className="rounded-2xl p-3"
-              style={{ background: col.bg, gridColumn: isExpanded ? "1 / -1" : undefined }}
+              className="rounded-2xl p-3 bg-nav border border-border-warm"
+              style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
             >
               <div className="flex items-center justify-between mb-3 px-1">
                 <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
@@ -260,7 +260,7 @@ export default function RequestsKanban({
                     aria-label={`Sort ${col.label} oldest first`}
                     title="Oldest"
                     aria-pressed={override === "asc"}
-                    className={`p-0.5 rounded hover:bg-white/60 ${override === "asc" ? "text-ink" : "text-muted"}`}
+                    className={`p-0.5 rounded hover:bg-[#f0ede3] ${override === "asc" ? "text-ink" : "text-muted"}`}
                   >
                     <ChevronUp size={14} aria-hidden="true" />
                   </button>
@@ -270,7 +270,7 @@ export default function RequestsKanban({
                     aria-label={`Sort ${col.label} newest first`}
                     title="Most recent"
                     aria-pressed={override === "desc"}
-                    className={`p-0.5 rounded hover:bg-white/60 ${override === "desc" ? "text-ink" : "text-muted"}`}
+                    className={`p-0.5 rounded hover:bg-[#f0ede3] ${override === "desc" ? "text-ink" : "text-muted"}`}
                   >
                     <ChevronDown size={14} aria-hidden="true" />
                   </button>
@@ -280,7 +280,7 @@ export default function RequestsKanban({
                     aria-label={`Expand ${col.label} column`}
                     title="Expand"
                     aria-pressed={isExpanded}
-                    className={`p-0.5 rounded hover:bg-white/60 ml-1 ${isExpanded ? "text-ink" : "text-muted"}`}
+                    className={`p-0.5 rounded hover:bg-[#f0ede3] ml-1 ${isExpanded ? "text-ink" : "text-muted"}`}
                   >
                     <Maximize2 size={13} aria-hidden="true" />
                   </button>
@@ -289,7 +289,7 @@ export default function RequestsKanban({
                     onClick={() => toggleHide(col.status)}
                     aria-label={`Hide ${col.label} column`}
                     title="Hide"
-                    className="p-0.5 rounded text-muted hover:bg-white/60 hover:text-ink"
+                    className="p-0.5 rounded text-muted hover:bg-[#f0ede3] hover:text-ink"
                   >
                     <EyeOff size={14} aria-hidden="true" />
                   </button>
