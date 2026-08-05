@@ -8,7 +8,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen flex flex-col sm:flex-row bg-dot-grid">
+    <div className="min-h-screen flex flex-col sm:flex-row bg-page">
       <aside className="sm:w-60 shrink-0 self-start sm:h-screen border-b sm:border-b-0 sm:border-r border-border-warm bg-nav sm:sticky sm:top-0">
         <div className="flex flex-col items-center h-full px-5 py-8">
           <Link href="/requests" className="block">

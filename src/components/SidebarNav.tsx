@@ -23,9 +23,10 @@ export default function SidebarNav() {
             href={link.href}
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
               isActive
-                ? "bg-page text-ink font-bold"
-                : "text-[#6b6250] font-medium hover:bg-page hover:text-ink"
+                ? "text-ink font-bold"
+                : "text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
             }`}
+            style={isActive ? { background: "var(--color-printed-bg)" } : undefined}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img

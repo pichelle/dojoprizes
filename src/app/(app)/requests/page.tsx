@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
+import RequestsStats from "./RequestsStats";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsKanban from "./RequestsKanban";
 
@@ -17,11 +18,13 @@ export default async function RequestsPage({
 }: {
   searchParams: Promise<{
     color?: string;
+    size?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
+  const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
   const [
@@ -32,8 +35,6 @@ export default async function RequestsPage({
     { data: franchiseTagRows },
     { data: prizes },
     { data: allFilamentLinks },
-    { data: recentCheckouts },
-    { data: allCheckoutPrizeIds },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
@@ -42,13 +43,6 @@ export default async function RequestsPage({
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("prizes").select("id, name").order("name"),
     supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
-    supabase
-      .from("checkouts")
-      .select("id, date_checked_out, bought_by, prize:prizes(id, name)")
-      .order("date_checked_out", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(5),
-    supabase.from("checkouts").select("prize_id"),
   ]);
 
   const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
@@ -81,28 +75,6 @@ export default async function RequestsPage({
     1,
   )[0]?.[0];
 
-  const checkoutPrizeIds = (allCheckoutPrizeIds ?? []).map((c) => c.prize_id);
-  let themeOccurrences: string[] = [];
-  if (checkoutPrizeIds.length > 0) {
-    const { data: prizeTagLinks } = await supabase
-      .from("prize_franchise_tags")
-      .select("prize_id, tag:franchise_tags(name)")
-      .in("prize_id", checkoutPrizeIds);
-
-    const tagNameByPrizeId = new Map<string, string[]>();
-    for (const link of (prizeTagLinks ?? []) as unknown as {
-      prize_id: string;
-      tag: { name: string } | null;
-    }[]) {
-      if (!link.tag) continue;
-      const list = tagNameByPrizeId.get(link.prize_id) ?? [];
-      list.push(link.tag.name);
-      tagNameByPrizeId.set(link.prize_id, list);
-    }
-    themeOccurrences = checkoutPrizeIds.flatMap((id) => tagNameByPrizeId.get(id) ?? []);
-  }
-  const popularThemes = topCounts(themeOccurrences, 3);
-
   let requestIdsForColor: string[] | null = null;
   if (selectedColors.length > 0) {
     requestIdsForColor = Array.from(filamentsByRequestId.entries())
@@ -117,6 +89,7 @@ export default async function RequestsPage({
     .order("created_at", { ascending: false });
 
   if (requestIdsForColor) query = query.in("id", requestIdsForColor);
+  if (selectedSizes.length > 0) query = query.in("size", selectedSizes);
 
   const { data: requestsRaw, error } = await query;
 
@@ -153,45 +126,17 @@ export default async function RequestsPage({
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="bg-card border border-border-warm rounded-xl p-4">
-          <div className="text-xs text-muted mb-2">Recently bought</div>
-          {recentCheckouts && recentCheckouts.length > 0 ? (
-            <div className="space-y-1.5">
-              {recentCheckouts.map((c) => (
-                <div key={c.id} className="text-sm text-ink flex items-baseline justify-between gap-2">
-                  <span className="truncate">
-                    {(c.prize as unknown as { name: string } | null)?.name ?? "(deleted prize)"}
-                    {c.bought_by && <span className="text-muted"> · {c.bought_by}</span>}
-                  </span>
-                  <span className="text-xs text-muted whitespace-nowrap">{c.date_checked_out}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">Nothing bought yet.</p>
-          )}
-        </div>
-
-        <div className="bg-card border border-border-warm rounded-xl p-4">
-          <div className="text-xs text-muted mb-2">Most popular themes</div>
-          {popularThemes.length > 0 ? (
-            <div className="space-y-1.5">
-              {popularThemes.map(([name, count]) => (
-                <div key={name} className="text-sm text-ink flex items-baseline justify-between gap-2">
-                  <span className="truncate">{name}</span>
-                  <span className="text-xs text-sage whitespace-nowrap">{count}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-muted">Not enough data yet.</p>
-          )}
-        </div>
-      </div>
+      <RequestsStats requests={requests} />
 
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/requests/new"
+            className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0"
+          >
+            <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
+            Add a request
+          </Link>
           <RequestsFilterBar
             colorOptions={(filaments ?? []).map((f) => ({
               value: f.id,
@@ -199,33 +144,24 @@ export default async function RequestsPage({
               swatch: f.swatch_hex,
             }))}
           />
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href="/requests/new"
-              className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90"
-            >
-              <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-              Add a request
-            </Link>
-            <a
-              href="https://makerworld.com/en"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
-            >
-              <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-              MakerWorld
-            </a>
-            <a
-              href="https://www.tinkercad.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors"
-            >
-              <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
-              Tinkercad
-            </a>
-          </div>
+          <a
+            href="https://makerworld.com/en"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors shrink-0"
+          >
+            <Image src="/makerworld-icon.png" alt="" width={16} height={16} aria-hidden="true" />
+            MakerWorld
+          </a>
+          <a
+            href="https://www.tinkercad.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 rounded-md border border-border-warm-strong bg-card px-4 py-2 text-sm text-ink hover:bg-page transition-colors shrink-0"
+          >
+            <Image src="/tinkercad-icon.png" alt="" width={16} height={16} aria-hidden="true" />
+            Tinkercad
+          </a>
         </div>
 
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}

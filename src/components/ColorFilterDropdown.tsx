@@ -7,15 +7,19 @@ import { ChevronDown } from "lucide-react";
 export default function ColorFilterDropdown({
   basePath,
   options,
+  paramName = "color",
+  label = "Color",
 }: {
   basePath: string;
   options: { value: string; label: string; swatch?: string | null }[];
+  paramName?: string;
+  label?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const selected = (searchParams.get("color") ?? "").split(",").filter(Boolean);
+  const selected = (searchParams.get(paramName) ?? "").split(",").filter(Boolean);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -30,8 +34,8 @@ export default function ColorFilterDropdown({
       ? selected.filter((v) => v !== value)
       : [...selected, value];
     const params = new URLSearchParams(searchParams.toString());
-    if (next.length > 0) params.set("color", next.join(","));
-    else params.delete("color");
+    if (next.length > 0) params.set(paramName, next.join(","));
+    else params.delete(paramName);
     router.push(`${basePath}?${params.toString()}`);
   }
 
@@ -46,7 +50,7 @@ export default function ColorFilterDropdown({
             : "border-border-warm-strong bg-card text-ink hover:bg-page"
         }`}
       >
-        Color
+        {label}
         {selected.length > 0 && (
           <span className="text-xs bg-sage text-page rounded-full px-1.5 leading-4">
             {selected.length}
@@ -57,7 +61,7 @@ export default function ColorFilterDropdown({
       {open && (
         <div className="scroll-warm absolute z-20 mt-1 w-52 max-h-64 overflow-y-auto bg-card border border-border-warm rounded-md shadow-md p-2">
           {options.length === 0 && (
-            <p className="text-xs text-muted px-2 py-1">No colors yet.</p>
+            <p className="text-xs text-muted px-2 py-1">No options yet.</p>
           )}
           {options.map((o) => (
             <label

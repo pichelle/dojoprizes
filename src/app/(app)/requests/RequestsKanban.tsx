@@ -4,18 +4,16 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
-import StatusSelect from "./StatusSelect";
+import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
 import { updateRequestInline } from "./actions";
 
-// Punchier, more distinct dot colors than the shared status palette used
-// elsewhere -- easier to tell the columns apart at a glance.
-const COLUMNS: { status: RequestStatus; label: string; dotColor: string }[] = [
-  { status: "pending", label: "Pending", dotColor: "#c9700f" },
-  { status: "printed", label: "Printed", dotColor: "#2f6fb0" },
-  { status: "fulfilled", label: "Fulfilled", dotColor: "#3f7a2e" },
-  { status: "cancelled", label: "Cancelled", dotColor: "#b54b3a" },
+const COLUMNS: { status: RequestStatus; label: string; dot: string; bg: string }[] = [
+  { status: "pending", label: "Pending", dot: "var(--color-pending-dot)", bg: "var(--color-pending-bg)" },
+  { status: "printed", label: "Printed", dot: "var(--color-printed-dot)", bg: "var(--color-printed-bg)" },
+  { status: "fulfilled", label: "Fulfilled", dot: "var(--color-fulfilled-dot)", bg: "var(--color-fulfilled-bg)" },
+  { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)", bg: "var(--color-cancelled-bg)" },
 ];
 
 // Requests carrying a priority sort (pending/printed) show 3D Print Club
@@ -50,6 +48,10 @@ function formatShortDate(iso: string) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+function formatPrice(n: number) {
+  return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
+}
+
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -71,7 +73,7 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
   return (
     <span
       aria-hidden="true"
-      className="w-8 h-8 rounded-full shrink-0 bg-tape/60 text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
+      className="w-8 h-8 rounded-full shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
     >
       {initials(name)}
     </span>
@@ -90,7 +92,7 @@ export default function RequestsKanban({
   prizes: Pick<Prize, "id" | "name">[];
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
-  onStatusChange: (requestId: string, status: RequestStatus) => Promise<void>;
+  onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -137,7 +139,7 @@ export default function RequestsKanban({
                   return next;
                 })
               }
-              className="text-xs font-medium text-ink bg-nav rounded px-2.5 py-1 hover:opacity-80"
+              className="text-xs font-medium text-ink bg-[#f3f3f0] rounded px-2.5 py-1 hover:opacity-80"
             >
               + {c.label}
             </button>
@@ -153,12 +155,12 @@ export default function RequestsKanban({
           const override = sortOverrides[col.status] ?? null;
           const rows = sortForColumn(requests, col.status, override);
           return (
-            <div key={col.status}>
-              <div className="flex items-center justify-between mb-3">
+            <div key={col.status} className="rounded-2xl p-3" style={{ background: col.bg }}>
+              <div className="flex items-center justify-between mb-3 px-1">
                 <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
                   <span
                     className="inline-block w-2 h-2 rounded-full"
-                    style={{ background: col.dotColor }}
+                    style={{ background: col.dot }}
                     aria-hidden="true"
                   />
                   {col.label}
@@ -170,7 +172,7 @@ export default function RequestsKanban({
                     onClick={() => toggleSort(col.status, "asc")}
                     aria-label={`Sort ${col.label} oldest first`}
                     aria-pressed={override === "asc"}
-                    className={`p-0.5 rounded hover:bg-page ${override === "asc" ? "text-ink" : "text-muted"}`}
+                    className={`p-0.5 rounded hover:bg-white/60 ${override === "asc" ? "text-ink" : "text-muted"}`}
                   >
                     <ChevronUp size={14} aria-hidden="true" />
                   </button>
@@ -179,7 +181,7 @@ export default function RequestsKanban({
                     onClick={() => toggleSort(col.status, "desc")}
                     aria-label={`Sort ${col.label} newest first`}
                     aria-pressed={override === "desc"}
-                    className={`p-0.5 rounded hover:bg-page ${override === "desc" ? "text-ink" : "text-muted"}`}
+                    className={`p-0.5 rounded hover:bg-white/60 ${override === "desc" ? "text-ink" : "text-muted"}`}
                   >
                     <ChevronDown size={14} aria-hidden="true" />
                   </button>
@@ -187,63 +189,83 @@ export default function RequestsKanban({
                     type="button"
                     onClick={() => setHidden((prev) => new Set(prev).add(col.status))}
                     aria-label={`Hide ${col.label} column`}
-                    className="p-0.5 rounded text-muted hover:bg-page hover:text-ink ml-1"
+                    className="p-0.5 rounded text-muted hover:bg-white/60 hover:text-ink ml-1"
                   >
                     <X size={14} aria-hidden="true" />
                   </button>
                 </div>
               </div>
               <div className="space-y-2.5">
-                {rows.map((r) => (
-                  <div
-                    key={r.id}
-                    onClick={() => setActiveId(r.id)}
-                    className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[11px] font-medium text-muted whitespace-nowrap">
-                        Requested {formatShortDate(r.date_requested)}
-                      </span>
-                      {r.is_print_club && (
-                        <span className="shrink-0 text-[11px] font-semibold text-sage bg-sage/15 rounded px-2 py-0.5">
-                          Print club
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2.5 mt-2.5">
-                      <CardAvatar
-                        photoUrl={r.photo_url || r.prize?.photo_url || null}
-                        name={r.student_name}
-                      />
-                      <p className="text-[15px] font-bold text-ink">{r.student_name}</p>
-                    </div>
-                    <p className="text-xs font-medium text-muted mt-2 mb-3.5">
-                      {[
-                        r.prize?.name ?? r.free_text_prize,
-                        r.size,
-                        (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ") || "No details yet"}
-                    </p>
+                {rows.map((r) => {
+                  const catalogPrice = r.prize?.coin_price ?? null;
+                  return (
                     <div
-                      className="flex items-center justify-between gap-2"
-                      onClick={(e) => e.stopPropagation()}
+                      key={r.id}
+                      onClick={() => setActiveId(r.id)}
+                      className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
-                      <span className="text-[11px] font-medium text-muted truncate">
-                        {r.requested_by ?? "—"}
-                      </span>
-                      <StatusSelect
-                        key={`${r.id}-${r.status}`}
-                        requestId={r.id}
-                        status={r.status}
-                        onChange={onStatusChange}
-                      />
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-[11px] font-medium text-muted whitespace-nowrap">
+                          Requested {formatShortDate(r.date_requested)}
+                        </span>
+                        {r.is_print_club && (
+                          <span
+                            className="shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5"
+                            style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
+                          >
+                            Print club
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2.5 mt-2.5">
+                        <CardAvatar
+                          photoUrl={r.photo_url || r.prize?.photo_url || null}
+                          name={r.student_name}
+                        />
+                        <p className="text-[15px] font-bold text-ink">{r.student_name}</p>
+                      </div>
+                      <p className="text-xs font-medium text-muted mt-2">
+                        {[
+                          r.prize?.name ?? r.free_text_prize,
+                          r.size,
+                          (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ") || "No details yet"}
+                      </p>
+                      {r.status === "fulfilled" ? (
+                        r.sale_price != null && (
+                          <p className="text-xs font-semibold mt-1" style={{ color: "var(--color-fulfilled-text)" }}>
+                            Sold: {formatPrice(r.sale_price)}
+                          </p>
+                        )
+                      ) : (
+                        catalogPrice != null && (
+                          <p className="text-xs font-medium text-muted mt-1">
+                            {formatPrice(catalogPrice)} est.
+                          </p>
+                        )
+                      )}
+                      <div
+                        className="flex items-center justify-between gap-2 mt-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <span className="text-[11px] font-medium text-muted truncate">
+                          {r.requested_by ?? "—"}
+                        </span>
+                        <StatusPill
+                          key={`${r.id}-${r.status}`}
+                          requestId={r.id}
+                          status={r.status}
+                          catalogPrice={catalogPrice}
+                          onChange={onStatusChange}
+                        />
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {rows.length === 0 && (
-                  <p className="text-xs text-muted border border-dashed border-border-warm rounded-xl p-3 text-center">
+                  <p className="text-xs text-muted border border-dashed border-border-warm-strong rounded-xl p-3 text-center bg-card/60">
                     Nothing here
                   </p>
                 )}

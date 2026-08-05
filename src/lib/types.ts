@@ -53,6 +53,7 @@ export interface PrizeRequest {
   is_print_club: boolean;
   notes: string | null;
   photo_url: string | null;
+  sale_price: number | null;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;

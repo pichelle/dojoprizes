@@ -1,18 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm neutral palette */
-  --color-page: #fdfbf6;
-  --color-dot: #e8e0d0;
+  /* White + pastel palette */
+  --color-page: #ffffff;
   --color-card: #ffffff;
-  --color-border-warm: #e8e0d0;
-  --color-border-warm-strong: #ddd4c0;
-  --color-ink: #3a342a;
-  --color-ink-soft: #6b6250;
-  --color-muted: #8a7f6e;
+  --color-border-warm: #ececea;
+  --color-border-warm-strong: #dcdbd7;
+  --color-ink: #3a3a38;
+  --color-ink-soft: #6b6b66;
+  --color-muted: #8c8c86;
   --color-clay: #c1673e;
   --color-tape: #d9cba8;
-  --color-nav: #efe6d2;
+  --color-nav: #ffffff;
 
   /* Status dots -- used across prize status and request status */
   --color-sage: #7c8a5e;
@@ -20,7 +19,23 @@
   --color-rust: #b54b3a;
   --color-slate: #7a8699;
   --color-taupe: #aba396;
-  --color-border-hover: #c9bfa3;
+  --color-border-hover: #c2c1bc;
+
+  /* Pastel accent ramps -- pending/printed/fulfilled/cancelled + print club */
+  --color-pending-bg: #fbf4dc;
+  --color-pending-text: #7a6a12;
+  --color-pending-dot: #e8c34a;
+  --color-printed-bg: #e2f1f6;
+  --color-printed-text: #1f6b7a;
+  --color-printed-dot: #6fb8ce;
+  --color-fulfilled-bg: #e9f4de;
+  --color-fulfilled-text: #3e6b1e;
+  --color-fulfilled-dot: #7fb35a;
+  --color-cancelled-bg: #faeaea;
+  --color-cancelled-text: #8a4f4f;
+  --color-cancelled-dot: #d98a8a;
+  --color-print-club-bg: #e3e4f5;
+  --color-print-club-text: #4a4a8a;
 }
 
 @theme inline {
@@ -53,11 +68,6 @@ body {
 h1.font-serif,
 h2.font-serif {
   font-weight: 700;
-}
-
-.bg-dot-grid {
-  background-image: radial-gradient(var(--color-dot) 1px, transparent 1px);
-  background-size: 18px 18px;
 }
 
 .sticky-note {
@@ -196,7 +206,7 @@ textarea:hover {
   color: #4c5638;
 }
 
-/* Warm, thin scrollbar for scrollable panels (filter lists, etc.) instead
+/* Thin scrollbar for scrollable panels (filter lists, etc.) instead
    of the system default. */
 .scroll-warm {
   scrollbar-width: thin;

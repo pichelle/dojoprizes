@@ -192,11 +192,16 @@ export async function updateRequestInline(
 export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus,
+  salePrice?: number | null,
 ) {
   const supabase = createServerClient();
+  const update: { status: RequestStatus; sale_price?: number | null } = { status };
+  if (status === "fulfilled" && salePrice !== undefined) {
+    update.sale_price = salePrice;
+  }
   const { error } = await supabase
     .from("requests")
-    .update({ status })
+    .update(update)
     .eq("id", requestId);
   if (error) throw new Error(error.message);
   revalidatePath("/requests");
