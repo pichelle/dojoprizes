@@ -115,14 +115,11 @@ export default async function RequestsPage({
     });
   }
 
-  const statLine = `${pendingCount ?? 0} pending · ${fulfilledCount ?? 0} fulfilled · ${mostRequestedFranchise ?? "no requests yet"}`;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Request log</h1>
-          <p className="text-sm text-muted mt-1">{statLine}</p>
         </div>
       </div>
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, X } from "lucide-react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
@@ -24,6 +24,8 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string; bg: string }
 // while it's active.
 const PRIORITY_SORTED: RequestStatus[] = ["pending", "printed"];
 
+const URGENT_DAYS = 14;
+
 type SortOverride = "asc" | "desc" | null;
 
 function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override: SortOverride) {
@@ -41,15 +43,31 @@ function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override
   });
 }
 
-// "2026-07-29" -> "Jul 29" -- faster to scan than the raw ISO date.
-function formatShortDate(iso: string) {
+function daysAgo(iso: string) {
   const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+// "Requested 5 days ago" -- more actionable at a glance than a raw date.
+function formatRequestedAgo(iso: string) {
+  const age = daysAgo(iso);
+  if (age === null) return `Requested ${iso}`;
+  if (age === 0) return "Requested today";
+  if (age === 1) return "Requested 1 day ago";
+  return `Requested ${age} days ago`;
 }
 
 function formatPrice(n: number) {
   return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
+}
+
+// Requests are logged under whichever staff name is on duty -- most people
+// just type their first name, so this prefixes "sensei" for display without
+// changing what's actually stored.
+function formatSensei(name: string | null) {
+  if (!name) return "—";
+  return /^sensei\b/i.test(name.trim()) ? name : `sensei ${name}`;
 }
 
 function initials(name: string) {
@@ -97,6 +115,7 @@ export default function RequestsKanban({
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
+  const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const active = requests.find((r) => r.id === activeId) ?? null;
   const router = useRouter();
@@ -117,6 +136,26 @@ export default function RequestsKanban({
     }));
   }
 
+  function toggleExpand(status: RequestStatus) {
+    if (expanded === status) {
+      setExpanded(null);
+      setHidden(new Set());
+    } else {
+      setExpanded(status);
+      setHidden(new Set(COLUMNS.filter((c) => c.status !== status).map((c) => c.status)));
+    }
+  }
+
+  function toggleHide(status: RequestStatus) {
+    setExpanded(null);
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  }
+
   if (requests.length === 0) {
     return (
       <p className="text-sm text-muted">No requests match yet.</p>
@@ -132,16 +171,11 @@ export default function RequestsKanban({
             <button
               key={c.status}
               type="button"
-              onClick={() =>
-                setHidden((prev) => {
-                  const next = new Set(prev);
-                  next.delete(c.status);
-                  return next;
-                })
-              }
-              className="text-xs font-medium text-ink bg-[#f3f3f0] rounded px-2.5 py-1 hover:opacity-80"
+              onClick={() => toggleHide(c.status)}
+              className="flex items-center gap-1 text-xs font-medium text-ink bg-[#f3f3f0] rounded px-2.5 py-1 hover:opacity-80"
             >
-              + {c.label}
+              <Eye size={12} aria-hidden="true" />
+              {c.label}
             </button>
           ))}
         </div>
@@ -171,6 +205,7 @@ export default function RequestsKanban({
                     type="button"
                     onClick={() => toggleSort(col.status, "asc")}
                     aria-label={`Sort ${col.label} oldest first`}
+                    title="Oldest"
                     aria-pressed={override === "asc"}
                     className={`p-0.5 rounded hover:bg-white/60 ${override === "asc" ? "text-ink" : "text-muted"}`}
                   >
@@ -180,6 +215,7 @@ export default function RequestsKanban({
                     type="button"
                     onClick={() => toggleSort(col.status, "desc")}
                     aria-label={`Sort ${col.label} newest first`}
+                    title="Most recent"
                     aria-pressed={override === "desc"}
                     className={`p-0.5 rounded hover:bg-white/60 ${override === "desc" ? "text-ink" : "text-muted"}`}
                   >
@@ -187,17 +223,31 @@ export default function RequestsKanban({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setHidden((prev) => new Set(prev).add(col.status))}
-                    aria-label={`Hide ${col.label} column`}
-                    className="p-0.5 rounded text-muted hover:bg-white/60 hover:text-ink ml-1"
+                    onClick={() => toggleExpand(col.status)}
+                    aria-label={`Expand ${col.label} column`}
+                    title="Expand"
+                    aria-pressed={expanded === col.status}
+                    className={`p-0.5 rounded hover:bg-white/60 ml-1 ${expanded === col.status ? "text-ink" : "text-muted"}`}
                   >
-                    <X size={14} aria-hidden="true" />
+                    <Maximize2 size={13} aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleHide(col.status)}
+                    aria-label={`Hide ${col.label} column`}
+                    title="Hide"
+                    className="p-0.5 rounded text-muted hover:bg-white/60 hover:text-ink"
+                  >
+                    <EyeOff size={14} aria-hidden="true" />
                   </button>
                 </div>
               </div>
               <div className="space-y-2.5">
                 {rows.map((r) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
+                  const age = daysAgo(r.date_requested);
+                  const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
+                  const printName = r.prize?.name ?? r.free_text_prize ?? "Untitled print";
                   return (
                     <div
                       key={r.id}
@@ -205,8 +255,10 @@ export default function RequestsKanban({
                       className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <span className="text-[11px] font-medium text-muted whitespace-nowrap">
-                          Requested {formatShortDate(r.date_requested)}
+                        <span
+                          className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
+                        >
+                          {formatRequestedAgo(r.date_requested)}
                         </span>
                         {r.is_print_club && (
                           <span
@@ -222,24 +274,23 @@ export default function RequestsKanban({
                           photoUrl={r.photo_url || r.prize?.photo_url || null}
                           name={r.student_name}
                         />
-                        <p className="text-[15px] font-bold text-ink">{r.student_name}</p>
+                        <p className="text-[15px] font-bold text-ink">{printName}</p>
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
-                          r.prize?.name ?? r.free_text_prize,
+                          r.student_name,
                           r.size,
                           (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
                         ]
                           .filter(Boolean)
                           .join(" · ") || "No details yet"}
                       </p>
-                      {r.status === "fulfilled" ? (
-                        r.sale_price != null && (
-                          <p className="text-xs font-semibold mt-1" style={{ color: "var(--color-fulfilled-text)" }}>
-                            Sold: {formatPrice(r.sale_price)}
-                          </p>
-                        )
+                      {(r.status === "printed" || r.status === "fulfilled") && r.sale_price != null ? (
+                        <p className="text-xs font-semibold mt-1" style={{ color: "var(--color-printed-text)" }}>
+                          Price: {formatPrice(r.sale_price)}
+                        </p>
                       ) : (
+                        r.status === "pending" &&
                         catalogPrice != null && (
                           <p className="text-xs font-medium text-muted mt-1">
                             {formatPrice(catalogPrice)} est.
@@ -251,7 +302,7 @@ export default function RequestsKanban({
                         onClick={(e) => e.stopPropagation()}
                       >
                         <span className="text-[11px] font-medium text-muted truncate">
-                          {r.requested_by ?? "—"}
+                          {formatSensei(r.requested_by)}
                         </span>
                         <StatusPill
                           key={`${r.id}-${r.status}`}

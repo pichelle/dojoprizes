@@ -196,7 +196,10 @@ export async function updateRequestStatus(
 ) {
   const supabase = createServerClient();
   const update: { status: RequestStatus; sale_price?: number | null } = { status };
-  if (status === "fulfilled" && salePrice !== undefined) {
+  // Price is locked in when a request moves to Printed (that's when actual
+  // size/color availability is known), and carries forward through
+  // Fulfilled -- so it's only ever set here, not re-asked for later.
+  if (salePrice !== undefined) {
     update.sale_price = salePrice;
   }
   const { error } = await supabase

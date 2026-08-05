@@ -81,7 +81,7 @@ export default function StatusPill({
   }
 
   function pick(next: RequestStatus) {
-    if (next === "fulfilled") {
+    if (next === "printed") {
       setPriceInput(catalogPrice != null ? String(catalogPrice) : "");
       setConfirmingPrice(true);
       return;
@@ -129,7 +129,7 @@ export default function StatusPill({
 
       {open && confirmingPrice && (
         <div className="absolute right-0 z-20 mt-1 w-48 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2">
-          <p className="text-[11px] text-muted">Sold for how much?</p>
+          <p className="text-[11px] text-muted">Price for this print?</p>
           <input
             type="number"
             step="0.01"
@@ -150,10 +150,10 @@ export default function StatusPill({
             <button
               type="button"
               onClick={() =>
-                commit("fulfilled", priceInput.trim() === "" ? null : Number(priceInput))
+                commit("printed", priceInput.trim() === "" ? null : Number(priceInput))
               }
               className="text-[11px] font-medium rounded-md px-2.5 py-1"
-              style={{ background: "var(--color-fulfilled-bg)", color: "var(--color-fulfilled-text)" }}
+              style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
             >
               Confirm
             </button>
