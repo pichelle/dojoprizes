@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { Check, Clock, Loader2, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
-import { showToast } from "@/components/ToastHost";
+import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
 
 const STATUS_META: Record<
   RequestStatus,
@@ -18,32 +17,22 @@ const STATUS_META: Record<
 
 const STATUS_ORDER: RequestStatus[] = ["pending", "printed", "fulfilled", "cancelled"];
 
-// Same undo grace period as delete (ActionButton) -- the actual server
-// update is delayed rather than fired immediately, so Undo on the toast
-// can cancel it. Since the pill shows the new value optimistically the
-// moment it's picked, undoing also has to revert the displayed value, not
-// just cancel the pending request -- that's why this holds its own local
-// state instead of just using the `status` prop directly.
-const UNDO_WINDOW_MS = 5000;
-
+// Pure display + picker -- all the optimistic-move / undo / persist logic
+// lives in RequestsKanban now, since the card's column placement has to
+// react to the pick immediately (not just this pill's own label).
 export default function StatusPill({
-  requestId,
   status,
   catalogPrice,
-  onChange,
+  onPick,
 }: {
-  requestId: string;
   status: RequestStatus;
   catalogPrice: number | null;
-  onChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
+  onPick: (next: RequestStatus, salePrice?: number | null) => void;
 }) {
-  const [displayed, setDisplayed] = useState<RequestStatus>(status);
   const [open, setOpen] = useState(false);
   const [confirmingPrice, setConfirmingPrice] = useState(false);
-  const [priceInput, setPriceInput] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [breakdown, setBreakdown] = useState<CoinBreakdown>({ obsidian: 0, gold: 0, silver: 0 });
   const ref = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -56,49 +45,31 @@ export default function StatusPill({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function commit(next: RequestStatus, salePrice?: number | null) {
-    const previous = displayed;
-    setDisplayed(next);
-    setOpen(false);
-    setConfirmingPrice(false);
-
-    let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (cancelled) return;
-      startTransition(async () => {
-        await onChange(requestId, next, salePrice);
-        router.refresh();
-      });
-    }, UNDO_WINDOW_MS);
-
-    showToast("Status updated", {
-      onUndo: () => {
-        cancelled = true;
-        clearTimeout(timeoutId);
-        setDisplayed(previous);
-      },
-    });
-  }
-
   function pick(next: RequestStatus) {
     if (next === "printed") {
-      setPriceInput(catalogPrice != null ? String(catalogPrice) : "");
+      setBreakdown(coinPriceToBreakdown(catalogPrice));
       setConfirmingPrice(true);
       return;
     }
-    commit(next);
+    setOpen(false);
+    onPick(next);
   }
 
-  const meta = STATUS_META[displayed];
+  function confirmPrice() {
+    setOpen(false);
+    setConfirmingPrice(false);
+    onPick("printed", breakdownToCoinPrice(breakdown));
+  }
+
+  const meta = STATUS_META[status];
   const Icon = meta.icon;
 
   return (
     <div className="relative" ref={ref}>
       <button
         type="button"
-        disabled={isPending}
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 disabled:opacity-60"
+        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1"
         style={{ background: meta.bg, color: meta.text }}
       >
         <Icon size={12} aria-hidden="true" />
@@ -120,7 +91,7 @@ export default function StatusPill({
               >
                 <OptIcon size={12} aria-hidden="true" />
                 {m.label}
-                {s === displayed && <Check size={12} className="ml-auto" aria-hidden="true" />}
+                {s === status && <Check size={12} className="ml-auto" aria-hidden="true" />}
               </button>
             );
           })}
@@ -128,17 +99,26 @@ export default function StatusPill({
       )}
 
       {open && confirmingPrice && (
-        <div className="absolute right-0 z-20 mt-1 w-48 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2">
+        <div className="absolute right-0 z-20 mt-1 w-56 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2">
           <p className="text-[11px] text-muted">Price for this print?</p>
-          <input
-            type="number"
-            step="0.01"
-            autoFocus
-            value={priceInput}
-            onChange={(e) => setPriceInput(e.target.value)}
-            placeholder="0.00"
-            className="w-full rounded-md border border-border-warm-strong px-2 py-1 text-xs"
-          />
+          <div className="grid grid-cols-3 gap-1.5">
+            {(["silver", "gold", "obsidian"] as const).map((tier) => (
+              <div key={tier}>
+                <label className="block text-[10px] text-muted capitalize">{tier}</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="1"
+                  value={breakdown[tier] || ""}
+                  onChange={(e) =>
+                    setBreakdown((prev) => ({ ...prev, [tier]: Number(e.target.value) || 0 }))
+                  }
+                  placeholder="0"
+                  className="w-full rounded-md border border-border-warm-strong px-1.5 py-1 text-xs"
+                />
+              </div>
+            ))}
+          </div>
           <div className="flex justify-end gap-1.5">
             <button
               type="button"
@@ -149,9 +129,7 @@ export default function StatusPill({
             </button>
             <button
               type="button"
-              onClick={() =>
-                commit("printed", priceInput.trim() === "" ? null : Number(priceInput))
-              }
+              onClick={confirmPrice}
               className="text-[11px] font-medium rounded-md px-2.5 py-1"
               style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
             >

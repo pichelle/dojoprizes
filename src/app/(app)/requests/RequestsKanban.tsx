@@ -8,6 +8,8 @@ import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
 import { updateRequestInline } from "./actions";
+import { showToast } from "@/components/ToastHost";
+import { formatCoinPriceBreakdown } from "@/lib/coins";
 
 const COLUMNS: { status: RequestStatus; label: string; dot: string; bg: string }[] = [
   { status: "pending", label: "Pending", dot: "var(--color-pending-dot)", bg: "var(--color-pending-bg)" },
@@ -25,6 +27,7 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string; bg: string }
 const PRIORITY_SORTED: RequestStatus[] = ["pending", "printed"];
 
 const URGENT_DAYS = 14;
+const UNDO_WINDOW_MS = 5000;
 
 type SortOverride = "asc" | "desc" | null;
 
@@ -56,10 +59,6 @@ function formatRequestedAgo(iso: string) {
   if (age === 0) return "Requested today";
   if (age === 1) return "Requested 1 day ago";
   return `Requested ${age} days ago`;
-}
-
-function formatPrice(n: number) {
-  return n % 1 === 0 ? `$${n}` : `$${n.toFixed(2)}`;
 }
 
 // Requests are logged under whichever staff name is on duty -- most people
@@ -98,6 +97,8 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
   );
 }
 
+type Override = { status: RequestStatus; salePrice: number | null };
+
 export default function RequestsKanban({
   requests,
   prizes,
@@ -117,8 +118,23 @@ export default function RequestsKanban({
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
-  const active = requests.find((r) => r.id === activeId) ?? null;
+  const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const router = useRouter();
+
+  // Effective requests: server data with any not-yet-persisted optimistic
+  // status/price changes applied, so cards move columns the instant a new
+  // status is picked instead of waiting for the undo window to elapse.
+  const effectiveRequests = useMemo(
+    () =>
+      requests.map((r) => {
+        const o = overrides[r.id];
+        if (!o) return r;
+        return { ...r, status: o.status, sale_price: o.salePrice };
+      }),
+    [requests, overrides],
+  );
+
+  const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
 
   const visibleColumns = useMemo(
     () => COLUMNS.filter((c) => !hidden.has(c.status)),
@@ -156,7 +172,39 @@ export default function RequestsKanban({
     });
   }
 
-  if (requests.length === 0) {
+  function handlePick(requestId: string, next: RequestStatus, salePrice?: number | null) {
+    const current = effectiveRequests.find((r) => r.id === requestId);
+    if (!current) return;
+    const previous: Override = { status: current.status, salePrice: current.sale_price };
+    const resolvedPrice = salePrice !== undefined ? salePrice : current.sale_price;
+
+    // Move the card to its new column right away.
+    setOverrides((prev) => ({ ...prev, [requestId]: { status: next, salePrice: resolvedPrice } }));
+
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (cancelled) return;
+      (async () => {
+        await onStatusChange(requestId, next, salePrice);
+        router.refresh();
+        setOverrides((prev) => {
+          const rest = { ...prev };
+          delete rest[requestId];
+          return rest;
+        });
+      })();
+    }, UNDO_WINDOW_MS);
+
+    showToast("Status updated", {
+      onUndo: () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+        setOverrides((prev) => ({ ...prev, [requestId]: previous }));
+      },
+    });
+  }
+
+  if (effectiveRequests.length === 0) {
     return (
       <p className="text-sm text-muted">No requests match yet.</p>
     );
@@ -187,9 +235,14 @@ export default function RequestsKanban({
       >
         {visibleColumns.map((col) => {
           const override = sortOverrides[col.status] ?? null;
-          const rows = sortForColumn(requests, col.status, override);
+          const rows = sortForColumn(effectiveRequests, col.status, override);
+          const isExpanded = expanded === col.status;
           return (
-            <div key={col.status} className="rounded-2xl p-3" style={{ background: col.bg }}>
+            <div
+              key={col.status}
+              className="rounded-2xl p-3"
+              style={{ background: col.bg, gridColumn: isExpanded ? "1 / -1" : undefined }}
+            >
               <div className="flex items-center justify-between mb-3 px-1">
                 <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
                   <span
@@ -226,8 +279,8 @@ export default function RequestsKanban({
                     onClick={() => toggleExpand(col.status)}
                     aria-label={`Expand ${col.label} column`}
                     title="Expand"
-                    aria-pressed={expanded === col.status}
-                    className={`p-0.5 rounded hover:bg-white/60 ml-1 ${expanded === col.status ? "text-ink" : "text-muted"}`}
+                    aria-pressed={isExpanded}
+                    className={`p-0.5 rounded hover:bg-white/60 ml-1 ${isExpanded ? "text-ink" : "text-muted"}`}
                   >
                     <Maximize2 size={13} aria-hidden="true" />
                   </button>
@@ -242,9 +295,14 @@ export default function RequestsKanban({
                   </button>
                 </div>
               </div>
-              <div className="space-y-2.5">
+              <div
+                className={isExpanded ? "grid gap-2.5" : "space-y-2.5"}
+                style={isExpanded ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" } : undefined}
+              >
                 {rows.map((r) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
+                  const priceTag = formatCoinPriceBreakdown(r.sale_price);
+                  const estTag = formatCoinPriceBreakdown(catalogPrice);
                   const age = daysAgo(r.date_requested);
                   const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
                   const printName = r.prize?.name ?? r.free_text_prize ?? "Untitled print";
@@ -285,15 +343,15 @@ export default function RequestsKanban({
                           .filter(Boolean)
                           .join(" · ") || "No details yet"}
                       </p>
-                      {(r.status === "printed" || r.status === "fulfilled") && r.sale_price != null ? (
+                      {(r.status === "printed" || r.status === "fulfilled") && priceTag ? (
                         <p className="text-xs font-semibold mt-1" style={{ color: "var(--color-printed-text)" }}>
-                          Price: {formatPrice(r.sale_price)}
+                          {priceTag}
                         </p>
                       ) : (
                         r.status === "pending" &&
-                        catalogPrice != null && (
+                        estTag && (
                           <p className="text-xs font-medium text-muted mt-1">
-                            {formatPrice(catalogPrice)} est.
+                            {estTag} est.
                           </p>
                         )
                       )}
@@ -305,11 +363,9 @@ export default function RequestsKanban({
                           {formatSensei(r.requested_by)}
                         </span>
                         <StatusPill
-                          key={`${r.id}-${r.status}`}
-                          requestId={r.id}
                           status={r.status}
                           catalogPrice={catalogPrice}
-                          onChange={onStatusChange}
+                          onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                         />
                       </div>
                     </div>
