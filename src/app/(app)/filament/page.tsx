@@ -4,6 +4,7 @@ import { createFilament } from "./actions";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
 import ErrorNote from "@/components/ErrorNote";
+import AmazonLinkButton from "@/components/AmazonLinkButton";
 
 export default async function FilamentPage({
   searchParams,
@@ -117,6 +118,7 @@ export default async function FilamentPage({
                   </span>
                 )}
               </div>
+              {f.amazon_link && <AmazonLinkButton href={f.amazon_link} />}
               <div className="flex flex-wrap gap-1 pt-1">
                 {f.linkedPrizes.length === 0 && (
                   <span className="text-xs text-muted">

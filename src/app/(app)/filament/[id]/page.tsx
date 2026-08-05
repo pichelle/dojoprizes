@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import FilamentForm from "../FilamentForm";
 import { updateFilament, deleteFilament } from "../actions";
 import ActionButton from "@/components/ActionButton";
+import AmazonLinkButton from "@/components/AmazonLinkButton";
 
 export default async function EditFilamentPage({
   params,
@@ -58,14 +59,21 @@ export default async function EditFilamentPage({
         />
       </div>
 
-      <ActionButton
-        action={boundDelete}
-        toastMessage="Filament color deleted"
-        confirmMessage={`Delete ${filament.color_name}? This can't be undone.`}
-        className="text-sm text-rust hover:underline"
-      >
-        Delete this filament color
-      </ActionButton>
+      <div className="flex items-center justify-between">
+        {filament.amazon_link ? (
+          <AmazonLinkButton href={filament.amazon_link} />
+        ) : (
+          <span />
+        )}
+        <ActionButton
+          action={boundDelete}
+          toastMessage="Filament color deleted"
+          confirmMessage={`Delete ${filament.color_name}? This can't be undone.`}
+          className="text-sm text-rust hover:underline"
+        >
+          Delete this filament color
+        </ActionButton>
+      </div>
     </div>
   );
 }

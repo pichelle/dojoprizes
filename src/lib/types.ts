@@ -79,6 +79,7 @@ export interface Filament {
   stock_level: number | null;
   stock_unit: string;
   low_stock_threshold: number | null;
+  amazon_link: string | null;
   created_at: string;
   prizes?: Pick<Prize, "id" | "name">[];
 }

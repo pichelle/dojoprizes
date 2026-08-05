@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, Loader2, X as XIcon, type LucideIcon } from "lucide-react";
+import { Check, CircleDashed, Clock, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
 
@@ -10,7 +10,7 @@ const STATUS_META: Record<
   { label: string; bg: string; text: string; icon: LucideIcon }
 > = {
   pending: { label: "Pending", bg: "var(--color-pending-bg)", text: "var(--color-pending-text)", icon: Clock },
-  printed: { label: "Printed", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: Loader2 },
+  printed: { label: "Printed", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: CircleDashed },
   fulfilled: { label: "Fulfilled", bg: "var(--color-fulfilled-bg)", text: "var(--color-fulfilled-text)", icon: Check },
   cancelled: { label: "Cancelled", bg: "var(--color-cancelled-bg)", text: "var(--color-cancelled-text)", icon: XIcon },
 };
@@ -69,7 +69,7 @@ export default function StatusPill({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1"
+        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 hover:brightness-95 transition-[filter]"
         style={{ background: meta.bg, color: meta.text }}
       >
         <Icon size={12} aria-hidden="true" />
@@ -86,7 +86,7 @@ export default function StatusPill({
                 key={s}
                 type="button"
                 onClick={() => pick(s)}
-                className="flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 text-left hover:opacity-80"
+                className="flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 text-left hover:brightness-95 transition-[filter]"
                 style={{ background: m.bg, color: m.text }}
               >
                 <OptIcon size={12} aria-hidden="true" />

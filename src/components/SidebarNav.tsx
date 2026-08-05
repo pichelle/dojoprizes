@@ -24,7 +24,7 @@ export default function SidebarNav() {
             className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
               isActive
                 ? "text-ink font-bold"
-                : "text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
+                : "text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
             }`}
             style={isActive ? { background: "var(--color-nav-active)" } : undefined}
           >

@@ -96,6 +96,22 @@ export default function FilamentForm({
             className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
+
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-ink">
+            Amazon link (optional)
+          </label>
+          <input
+            type="url"
+            name="amazon_link"
+            placeholder="https://amazon.com/..."
+            defaultValue={initial?.amazon_link ?? ""}
+            className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+          />
+          <p className="mt-1 text-xs text-muted">
+            So repurchasing this color when it runs out is one click away.
+          </p>
+        </div>
       </div>
 
       <div>

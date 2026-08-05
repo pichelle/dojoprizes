@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check } from "lucide-react";
-import StickyNote from "./StickyNote";
+import { Check, X } from "lucide-react";
 
 type ToastItem = { id: number; message: string; onUndo?: () => void };
 
@@ -41,24 +40,39 @@ export default function ToastHost() {
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end pointer-events-none">
       {toasts.map((t) => (
-        <StickyNote key={t.id} rotate={1} className="toast-enter pointer-events-auto">
-          <span className="font-serif font-medium text-[13px] text-ink flex items-center gap-2">
-            <Check size={14} className="text-sage shrink-0" aria-hidden="true" />
-            {t.message}
-            {t.onUndo && (
-              <button
-                type="button"
-                onClick={() => {
-                  t.onUndo?.();
-                  dismiss(t.id);
-                }}
-                className="ml-1 text-xs font-sans font-semibold text-sage underline underline-offset-2 hover:text-ink"
-              >
-                Undo
-              </button>
-            )}
+        <div
+          key={t.id}
+          className="toast-enter pointer-events-auto flex items-center gap-2.5 bg-card border border-border-warm rounded-xl shadow-md px-3 py-2.5 min-w-[220px]"
+        >
+          <span
+            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+            style={{ background: "var(--color-fulfilled-bg)" }}
+          >
+            <Check size={14} style={{ color: "var(--color-fulfilled-text)" }} aria-hidden="true" />
           </span>
-        </StickyNote>
+          <span className="text-[13px] text-ink flex-1">{t.message}</span>
+          {t.onUndo && (
+            <button
+              type="button"
+              onClick={() => {
+                t.onUndo?.();
+                dismiss(t.id);
+              }}
+              className="text-xs font-semibold underline underline-offset-2"
+              style={{ color: "var(--color-printed-text)" }}
+            >
+              Undo
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => dismiss(t.id)}
+            aria-label="Dismiss"
+            className="text-muted hover:text-ink shrink-0"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
       ))}
     </div>
   );

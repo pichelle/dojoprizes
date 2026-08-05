@@ -38,14 +38,12 @@ export default async function CatalogPage({
     { count: totalPrizes },
     { count: totalCheckedOut },
     { data: allTagLinks },
-    { data: checkoutRows },
     { data: franchiseTagRows },
     { data: filamentOptions },
   ] = await Promise.all([
     supabase.from("prizes").select("*", { count: "exact", head: true }),
     supabase.from("checkouts").select("*", { count: "exact", head: true }),
     supabase.from("prize_franchise_tags").select("prize_id, tag:franchise_tags(id, name)"),
-    supabase.from("checkouts").select("prize_id"),
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
   ]);
@@ -60,13 +58,6 @@ export default async function CatalogPage({
     list.push(link.tag);
     tagsByPrizeId.set(link.prize_id, list);
   }
-
-  const franchiseOccurrences: string[] = [];
-  for (const row of checkoutRows ?? []) {
-    const tags = tagsByPrizeId.get(row.prize_id) ?? [];
-    for (const t of tags) franchiseOccurrences.push(t.name);
-  }
-  const mostPopularFranchise = mostCommon(franchiseOccurrences);
 
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
 
@@ -117,21 +108,23 @@ export default async function CatalogPage({
     await quickCheckout(prizeId, boughtBy);
   }
 
-  const statLine = `${totalPrizes ?? 0} prize${totalPrizes === 1 ? "" : "s"} · ${totalCheckedOut ?? 0} bought · ${mostPopularFranchise ?? "no checkouts yet"}`;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Prize catalog</h1>
-          <p className="text-sm text-muted mt-1">{statLine}</p>
+          <p className="text-sm text-muted mt-1">See what&apos;s currently on the prize shelf.</p>
         </div>
-        <Link
-          href="/catalog/new"
-          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
-        >
-          Add a prize
-        </Link>
+        <div className="flex gap-3">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+            <p className="text-xs text-muted">Prizes</p>
+            <p className="text-lg font-medium text-ink mt-0.5">{totalPrizes ?? 0}</p>
+          </div>
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+            <p className="text-xs text-muted">Bought</p>
+            <p className="text-lg font-medium text-ink mt-0.5">{totalCheckedOut ?? 0}</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid sm:grid-cols-[200px_1fr] gap-6 items-start">
@@ -165,7 +158,15 @@ export default async function CatalogPage({
         />
 
         <div className="space-y-6 min-w-0">
-          <CatalogFilterBar />
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/catalog/new"
+              className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
+            >
+              Add a prize
+            </Link>
+            <CatalogFilterBar />
+          </div>
 
           {error && (
             <ErrorNote>
@@ -195,17 +196,3 @@ export default async function CatalogPage({
   );
 }
 
-function mostCommon(values: string[]): string | null {
-  if (values.length === 0) return null;
-  const counts = new Map<string, number>();
-  for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
-  let best: string | null = null;
-  let bestCount = 0;
-  for (const [v, c] of counts) {
-    if (c > bestCount) {
-      best = v;
-      bestCount = c;
-    }
-  }
-  return best;
-}

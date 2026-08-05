@@ -24,6 +24,7 @@ export async function createFilament(formData: FormData) {
       low_stock_threshold: formData.get("low_stock_threshold")
         ? Number(formData.get("low_stock_threshold"))
         : null,
+      amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
     })
     .select("id")
     .single();
@@ -58,6 +59,7 @@ export async function updateFilament(filamentId: string, formData: FormData) {
       low_stock_threshold: formData.get("low_stock_threshold")
         ? Number(formData.get("low_stock_threshold"))
         : null,
+      amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
     })
     .eq("id", filamentId);
   if (error) throw new Error(error.message);

@@ -29,7 +29,7 @@ export default function AppLayout({
                 href="https://makerworld.com/en"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
               >
                 <Image src="/makerworld-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
                 MakerWorld
@@ -38,7 +38,7 @@ export default function AppLayout({
                 href="https://www.tinkercad.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-[#f6f6f4] hover:text-ink"
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
               >
                 <Image src="/tinkercad-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
                 Tinkercad

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, X } from "lucide-react";
+import Tooltip from "@/components/Tooltip";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
@@ -254,45 +255,49 @@ export default function RequestsKanban({
                   <span className="text-muted font-medium">{rows.length}</span>
                 </p>
                 <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(col.status, "asc")}
-                    aria-label={`Sort ${col.label} oldest first`}
-                    title="Oldest"
-                    aria-pressed={override === "asc"}
-                    className={`p-0.5 rounded hover:bg-[#f0ede3] ${override === "asc" ? "text-ink" : "text-muted"}`}
-                  >
-                    <ChevronUp size={14} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleSort(col.status, "desc")}
-                    aria-label={`Sort ${col.label} newest first`}
-                    title="Most recent"
-                    aria-pressed={override === "desc"}
-                    className={`p-0.5 rounded hover:bg-[#f0ede3] ${override === "desc" ? "text-ink" : "text-muted"}`}
-                  >
-                    <ChevronDown size={14} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(col.status)}
-                    aria-label={`Expand ${col.label} column`}
-                    title="Expand"
-                    aria-pressed={isExpanded}
-                    className={`p-0.5 rounded hover:bg-[#f0ede3] ml-1 ${isExpanded ? "text-ink" : "text-muted"}`}
-                  >
-                    <Maximize2 size={13} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleHide(col.status)}
-                    aria-label={`Hide ${col.label} column`}
-                    title="Hide"
-                    className="p-0.5 rounded text-muted hover:bg-[#f0ede3] hover:text-ink"
-                  >
-                    <EyeOff size={14} aria-hidden="true" />
-                  </button>
+                  <Tooltip label="Oldest">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(col.status, "asc")}
+                      aria-label={`Sort ${col.label} oldest first`}
+                      aria-pressed={override === "asc"}
+                      className={`p-0.5 rounded hover:bg-nav-hover ${override === "asc" ? "text-ink" : "text-muted"}`}
+                    >
+                      <ChevronUp size={14} aria-hidden="true" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Most recent">
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(col.status, "desc")}
+                      aria-label={`Sort ${col.label} newest first`}
+                      aria-pressed={override === "desc"}
+                      className={`p-0.5 rounded hover:bg-nav-hover ${override === "desc" ? "text-ink" : "text-muted"}`}
+                    >
+                      <ChevronDown size={14} aria-hidden="true" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Expand">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpand(col.status)}
+                      aria-label={`Expand ${col.label} column`}
+                      aria-pressed={isExpanded}
+                      className={`p-0.5 rounded hover:bg-nav-hover ml-1 ${isExpanded ? "text-ink" : "text-muted"}`}
+                    >
+                      <Maximize2 size={13} aria-hidden="true" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip label="Hide">
+                    <button
+                      type="button"
+                      onClick={() => toggleHide(col.status)}
+                      aria-label={`Hide ${col.label} column`}
+                      className="p-0.5 rounded text-muted hover:bg-nav-hover hover:text-ink"
+                    >
+                      <EyeOff size={14} aria-hidden="true" />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
               <div
