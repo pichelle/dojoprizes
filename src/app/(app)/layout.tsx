@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import SidebarNav from "@/components/SidebarNav";
+import FeedbackButton from "@/components/FeedbackButton";
 
 export default function AppLayout({
   children,
@@ -47,19 +48,7 @@ export default function AppLayout({
           </div>
           <div className="mt-auto w-full flex flex-col items-center gap-3">
             <div className="flex flex-col items-start gap-2 w-full">
-              <a
-                href="mailto:michelleepak@gmail.com?subject=DojoPrizes%20bug%2Ffeature"
-                className="flex items-center gap-2 text-sm text-muted hover:text-ink"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="/icons/nav-feedback.png"
-                  alt=""
-                  className="w-5 h-5 object-contain shrink-0"
-                  aria-hidden="true"
-                />
-                Report a bug / feature
-              </a>
+              <FeedbackButton className="flex items-center gap-2 text-sm text-muted hover:text-ink" />
               <form action="/api/logout" method="POST">
                 <button
                   type="submit"
