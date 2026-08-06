@@ -128,19 +128,19 @@ export default async function RequestsPage({
           <p className="text-sm text-muted mt-1">Track pending prints and see what to make next.</p>
         </div>
         <div className="flex gap-3">
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="flex items-center gap-1.5 text-xs text-muted">
               <Check size={13} aria-hidden="true" />
               Total fulfilled
             </p>
-            <p className="text-lg font-medium text-ink mt-0.5">{fulfilledCount ?? 0} prints</p>
+            <p className="text-lg font-bold text-ink mt-0.5">{fulfilledCount ?? 0} prints</p>
           </div>
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
-            <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="flex items-center gap-1.5 text-xs text-muted">
               <Clock size={13} aria-hidden="true" />
               Oldest waiting
             </p>
-            <p className="text-lg font-medium text-ink mt-0.5">
+            <p className="text-lg font-bold text-ink mt-0.5">
               {oldestPendingDays === null ? "—" : `${oldestPendingDays} days`}
             </p>
           </div>
@@ -148,7 +148,7 @@ export default async function RequestsPage({
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-start gap-2">
           <Link
             href="/requests/new"
             className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0"
