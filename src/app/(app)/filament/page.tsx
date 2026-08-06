@@ -9,7 +9,7 @@ import AmazonLinkButton from "@/components/AmazonLinkButton";
 export default async function FilamentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ add?: string; sort?: string }>;
+  searchParams: Promise<{ add?: string; sort?: string; error?: string }>;
 }) {
   const params = await searchParams;
   const sort = params.sort ?? "name";
@@ -58,6 +58,11 @@ export default async function FilamentPage({
       {params.add && (
         <div className="bg-card border border-border-warm rounded-xl p-6">
           <h2 className="font-medium text-ink mb-4">Add a filament color</h2>
+          {params.error && (
+            <div className="mb-4">
+              <ErrorNote>{params.error}</ErrorNote>
+            </div>
+          )}
           <FilamentForm
             action={createFilament}
             allPrizes={prizes ?? []}
