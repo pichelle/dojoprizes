@@ -29,14 +29,18 @@ export async function createFilament(formData: FormData) {
     .select("id")
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    redirect(`/filament?add=1&error=${encodeURIComponent(error.message)}`);
+  }
 
   const prizeIds = parsePrizeIds(formData);
   if (prizeIds.length > 0 && filament) {
     const { error: linkError } = await supabase.from("prize_filament").insert(
       prizeIds.map((prize_id) => ({ prize_id, filament_id: filament.id })),
     );
-    if (linkError) throw new Error(linkError.message);
+    if (linkError) {
+      redirect(`/filament?add=1&error=${encodeURIComponent(linkError.message)}`);
+    }
   }
 
   revalidatePath("/filament");
@@ -62,20 +66,30 @@ export async function updateFilament(filamentId: string, formData: FormData) {
       amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
     })
     .eq("id", filamentId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    redirect(`/filament/${filamentId}?error=${encodeURIComponent(error.message)}`);
+  }
 
   const { error: deleteLinksError } = await supabase
     .from("prize_filament")
     .delete()
     .eq("filament_id", filamentId);
-  if (deleteLinksError) throw new Error(deleteLinksError.message);
+  if (deleteLinksError) {
+    redirect(
+      `/filament/${filamentId}?error=${encodeURIComponent(deleteLinksError.message)}`,
+    );
+  }
 
   const prizeIds = parsePrizeIds(formData);
   if (prizeIds.length > 0) {
     const { error: linkError } = await supabase.from("prize_filament").insert(
       prizeIds.map((prize_id) => ({ prize_id, filament_id: filamentId })),
     );
-    if (linkError) throw new Error(linkError.message);
+    if (linkError) {
+      redirect(
+        `/filament/${filamentId}?error=${encodeURIComponent(linkError.message)}`,
+      );
+    }
   }
 
   revalidatePath("/filament");
@@ -89,7 +103,11 @@ export async function deleteFilament(filamentId: string) {
     .from("filaments")
     .delete()
     .eq("id", filamentId);
-  if (error) throw new Error(error.message);
+  if (error) {
+    redirect(
+      `/filament/${filamentId}?error=${encodeURIComponent(error.message)}`,
+    );
+  }
   revalidatePath("/filament");
   redirect("/filament");
 }

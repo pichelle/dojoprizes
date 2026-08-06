@@ -5,13 +5,17 @@ import FilamentForm from "../FilamentForm";
 import { updateFilament, deleteFilament } from "../actions";
 import ActionButton from "@/components/ActionButton";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
+import ErrorNote from "@/components/ErrorNote";
 
 export default async function EditFilamentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error: errorMessage } = await searchParams;
   const supabase = createServerClient();
 
   const { data: filament } = await supabase
@@ -48,6 +52,8 @@ export default async function EditFilamentPage({
           Back to filament
         </Link>
       </div>
+
+      {errorMessage && <ErrorNote>{errorMessage}</ErrorNote>}
 
       <div className="bg-card border border-border-warm rounded-xl p-6">
         <FilamentForm
