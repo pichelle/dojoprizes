@@ -86,7 +86,7 @@ create table if not exists requests (
   links text,
   date_requested date not null default current_date,
   status text not null default 'pending'
-    check (status in ('pending', 'printed', 'fulfilled', 'cancelled')),
+    check (status in ('idea', 'pending', 'printed', 'fulfilled', 'cancelled')),
   is_print_club boolean not null default false,
   notes text,
   photo_url text,

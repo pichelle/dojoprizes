@@ -36,6 +36,9 @@
   --color-cancelled-bg: #faeaea;
   --color-cancelled-text: #8a4f4f;
   --color-cancelled-dot: #d98a8a;
+  --color-idea-bg: #f3ead9;
+  --color-idea-text: #8a6a2f;
+  --color-idea-dot: #d9a45c;
   --color-print-club-bg: #e3e4f5;
   --color-print-club-text: #4a4a8a;
 }

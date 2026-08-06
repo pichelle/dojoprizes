@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, CircleDashed, Clock, X as XIcon, type LucideIcon } from "lucide-react";
+import { Check, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
 
@@ -9,13 +9,14 @@ const STATUS_META: Record<
   RequestStatus,
   { label: string; bg: string; text: string; icon: LucideIcon }
 > = {
+  idea: { label: "Idea", bg: "var(--color-idea-bg)", text: "var(--color-idea-text)", icon: Lightbulb },
   pending: { label: "Pending", bg: "var(--color-pending-bg)", text: "var(--color-pending-text)", icon: Clock },
   printed: { label: "Printed", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: CircleDashed },
   fulfilled: { label: "Fulfilled", bg: "var(--color-fulfilled-bg)", text: "var(--color-fulfilled-text)", icon: Check },
   cancelled: { label: "Cancelled", bg: "var(--color-cancelled-bg)", text: "var(--color-cancelled-text)", icon: XIcon },
 };
 
-const STATUS_ORDER: RequestStatus[] = ["pending", "printed", "fulfilled", "cancelled"];
+const STATUS_ORDER: RequestStatus[] = ["idea", "pending", "printed", "fulfilled", "cancelled"];
 
 // Pure display + picker -- all the optimistic-move / undo / persist logic
 // lives in RequestsKanban now, since the card's column placement has to

@@ -10,7 +10,7 @@ export type PrizeStatus =
   | "out_of_stock"
   | "print_on_request";
 
-export type RequestStatus = "pending" | "printed" | "fulfilled" | "cancelled";
+export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled";
 
 export type RequestSize = "small" | "medium" | "large" | "xlarge";
 
