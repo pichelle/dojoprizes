@@ -84,6 +84,9 @@ function requestFieldsFromForm(formData: FormData) {
 async function performCreateRequest(formData: FormData): Promise<RequestFormState> {
   const supabase = createServerClient();
   try {
+    const rawStatus = String(formData.get("initial_status") ?? "").trim();
+    const initialStatus: RequestStatus = rawStatus === "idea" ? "idea" : "pending";
+
     const { data: request, error } = await supabase
       .from("requests")
       .insert({
@@ -91,7 +94,7 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
         date_requested:
           String(formData.get("date_requested") ?? "").trim() ||
           new Date().toISOString().slice(0, 10),
-        status: "pending" as RequestStatus,
+        status: initialStatus,
       })
       .select("id")
       .single();

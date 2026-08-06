@@ -12,10 +12,14 @@ import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 
+// "Fulfilled" isn't a visible column -- it's tracked (status still gets
+// set to "fulfilled" via the status pill, and still counts toward the
+// "Total fulfilled" stat above) but doesn't clutter the board, since a
+// fulfilled print's actual record lives on the Checkouts page instead.
 const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
+  { status: "idea", label: "Ideas", dot: "var(--color-idea-dot)" },
   { status: "pending", label: "Pending", dot: "var(--color-pending-dot)" },
   { status: "printed", label: "Printed", dot: "var(--color-printed-dot)" },
-  { status: "fulfilled", label: "Fulfilled", dot: "var(--color-fulfilled-dot)" },
   { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
 
@@ -25,7 +29,7 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
 // so those stay in the newest-first order the page already queried in.
 // A manual sort override (from the up/down carats) replaces this entirely
 // while it's active.
-const PRIORITY_SORTED: RequestStatus[] = ["pending", "printed"];
+const PRIORITY_SORTED: RequestStatus[] = ["idea", "pending", "printed"];
 
 const URGENT_DAYS = 14;
 const UNDO_WINDOW_MS = 5000;

@@ -62,7 +62,11 @@ export default function RequestForm({
   onSuccess?: () => void;
 }) {
   const router = useRouter();
+  const isCreating = !initial;
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? NONE_VALUE);
+  const [initialStatus, setInitialStatus] = useState<"idea" | "pending">(
+    initial?.status === "idea" ? "idea" : "pending",
+  );
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
   const [state, formAction, isPending] = useActionState(action, initialState);
 
@@ -75,10 +79,16 @@ export default function RequestForm({
   useEffect(() => {
     if (state?.success && !successHandled.current) {
       successHandled.current = true;
-      showToast(submitLabel === "Save changes" ? "Changes saved" : "Request logged");
+      showToast(
+        submitLabel === "Save changes"
+          ? "Changes saved"
+          : initialStatus === "idea"
+            ? "Idea logged"
+            : "Request logged",
+      );
       onSuccess?.();
     }
-  }, [state, submitLabel, onSuccess]);
+  }, [state, submitLabel, onSuccess, initialStatus]);
 
   async function fetchImageFromMakerworld() {
     if (!makerworldLink.trim()) {
@@ -107,12 +117,15 @@ export default function RequestForm({
   function validate(form: HTMLFormElement): boolean {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
+    const loggingIdea = isCreating && String(fd.get("initial_status") ?? "") === "idea";
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
-    const size = String(fd.get("size") ?? "");
-    if (!size || size === NONE_VALUE) next.size = true;
-    if (fd.getAll("color_filament_ids").length === 0) next.color_filament_ids = true;
+    if (!loggingIdea) {
+      const size = String(fd.get("size") ?? "");
+      if (!size || size === NONE_VALUE) next.size = true;
+      if (fd.getAll("color_filament_ids").length === 0) next.color_filament_ids = true;
+    }
 
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -134,13 +147,46 @@ export default function RequestForm({
 
       <div className="pb-6">
         <SectionLabel>Basics</SectionLabel>
+
+        {isCreating && (
+          <div className="mb-4">
+            <input type="hidden" name="initial_status" value={initialStatus} />
+            <div className="inline-flex rounded-md border border-border-warm-strong bg-card p-0.5 text-sm">
+              <button
+                type="button"
+                onClick={() => setInitialStatus("pending")}
+                className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                  initialStatus === "pending" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                Request
+              </button>
+              <button
+                type="button"
+                onClick={() => setInitialStatus("idea")}
+                className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                  initialStatus === "idea" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
+                }`}
+              >
+                Idea
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-muted">
+              {initialStatus === "idea"
+                ? "Not a firm request yet -- a sensei's idea or a themed print for later. Goes in the Ideas column until it's moved to Pending or Cancelled."
+                : "A real request someone's waiting on. Goes straight into Pending."}
+            </p>
+          </div>
+        )}
+
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-ink">
-              Ninja name <Req />
+              {initialStatus === "idea" ? "Idea title" : "Ninja name"} <Req />
             </label>
             <input
               name="student_name"
+              placeholder={initialStatus === "idea" ? "e.g. Halloween pumpkin box" : undefined}
               defaultValue={initial?.student_name ?? ""}
               onChange={() => setErrors((prev) => ({ ...prev, student_name: false }))}
               className={`mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
@@ -226,7 +272,7 @@ export default function RequestForm({
 
           <div>
             <label className="block text-sm font-medium text-ink">
-              Size <Req />
+              Size {initialStatus === "idea" ? "(optional)" : <Req />}
             </label>
             <div className={`mt-1 ${errors.size ? "rounded-md ring-2 ring-rust" : ""}`}>
               <Select
@@ -246,7 +292,7 @@ export default function RequestForm({
 
           <div>
             <label className="block text-sm font-medium text-ink">
-              Color requested <Req />
+              Color requested {initialStatus === "idea" ? "(optional)" : <Req />}
             </label>
             <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
               <MultiSelect
@@ -371,7 +417,11 @@ export default function RequestForm({
             disabled={isPending}
             className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-60"
           >
-            {isPending ? "Saving…" : submitLabel}
+            {isPending
+              ? "Saving…"
+              : isCreating && initialStatus === "idea"
+                ? "Log idea"
+                : submitLabel}
           </button>
           <button
             type="button"
