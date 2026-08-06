@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import ColorFilterDropdown from "@/components/ColorFilterDropdown";
 
 const SIZE_OPTIONS = [
@@ -28,8 +28,18 @@ export default function RequestsFilterBar({
     router.push(`/requests?${params.toString()}`);
   }
 
+  const hasActiveFilters =
+    Boolean(searchParams.get("color")) ||
+    Boolean(searchParams.get("size")) ||
+    Boolean(searchParams.get("q"));
+
+  function clearFilters() {
+    setQ("");
+    router.push("/requests");
+  }
+
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm">
+    <div className="flex flex-wrap items-center justify-start gap-2 text-sm">
       <ColorFilterDropdown basePath="/requests" options={colorOptions} />
       <ColorFilterDropdown
         basePath="/requests"
@@ -55,6 +65,16 @@ export default function RequestsFilterBar({
           aria-hidden="true"
         />
       </div>
+      {hasActiveFilters && (
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="flex items-center gap-1 text-muted hover:text-ink transition-colors"
+        >
+          <X size={14} aria-hidden="true" />
+          Clear filters
+        </button>
+      )}
     </div>
   );
 }

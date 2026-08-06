@@ -15,7 +15,7 @@ export default function FeedbackButton({ className }: { className?: string }) {
           className="w-5 h-5 object-contain shrink-0"
           aria-hidden="true"
         />
-        Report a bug / feature
+        Support
       </button>
       {open && <FeedbackModal onClose={() => setOpen(false)} />}
     </>

@@ -24,7 +24,7 @@ export default function AppLayout({
           </Link>
           <div className="w-full mt-4">
             <SidebarNav />
-            <div className="h-px bg-border-warm my-3" />
+            <div className="h-px bg-border-warm mt-6 mb-4" />
             <nav className="flex flex-col gap-1.5 w-full">
               <a
                 href="https://makerworld.com/en"
@@ -46,17 +46,20 @@ export default function AppLayout({
               </a>
             </nav>
           </div>
-          <div className="mt-auto w-full flex flex-col items-center gap-3">
-            <div className="flex flex-col items-start gap-2 w-full">
-              <FeedbackButton className="flex items-center gap-2 text-sm text-muted hover:text-ink" />
-              <form action="/api/logout" method="POST">
-                <button
-                  type="submit"
-                  className="text-sm text-muted hover:text-ink"
-                >
-                  Log out
-                </button>
-              </form>
+          <div className="mt-auto w-full flex flex-col items-center gap-5">
+            <div className="w-full">
+              <div className="h-px bg-border-warm mb-3" />
+              <div className="flex flex-col items-start gap-1.5 w-full">
+                <FeedbackButton className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink" />
+                <form action="/api/logout" method="POST" className="w-full">
+                  <button
+                    type="submit"
+                    className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink"
+                  >
+                    Log out
+                  </button>
+                </form>
+              </div>
             </div>
             <Image
               src="/signature.png"

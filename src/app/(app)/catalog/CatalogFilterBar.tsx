@@ -18,7 +18,7 @@ export default function CatalogFilterBar() {
   }
 
   return (
-    <div className="flex flex-wrap gap-2 items-center text-sm">
+    <div className="flex flex-wrap items-center justify-start gap-2 text-sm">
       <div className="relative">
         <Search
           size={14}

@@ -116,13 +116,13 @@ export default async function CatalogPage({
           <p className="text-sm text-muted mt-1">See what&apos;s currently on the prize shelf.</p>
         </div>
         <div className="flex gap-3">
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
             <p className="text-xs text-muted">Prizes</p>
-            <p className="text-lg font-medium text-ink mt-0.5">{totalPrizes ?? 0}</p>
+            <p className="text-lg font-bold text-ink mt-0.5">{totalPrizes ?? 0}</p>
           </div>
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-center">
+          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
             <p className="text-xs text-muted">Bought</p>
-            <p className="text-lg font-medium text-ink mt-0.5">{totalCheckedOut ?? 0}</p>
+            <p className="text-lg font-bold text-ink mt-0.5">{totalCheckedOut ?? 0}</p>
           </div>
         </div>
       </div>
@@ -158,7 +158,7 @@ export default async function CatalogPage({
         />
 
         <div className="space-y-6 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-start gap-2">
             <Link
               href="/catalog/new"
               className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
