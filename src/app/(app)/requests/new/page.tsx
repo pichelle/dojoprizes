@@ -7,7 +7,12 @@ import { createRequest } from "../actions";
 // snapshot.
 export const dynamic = "force-dynamic";
 
-export default async function NewRequestPage() {
+export default async function NewRequestPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ prize_id?: string }>;
+}) {
+  const { prize_id: prizeId } = await searchParams;
   const supabase = createServerClient();
 
   const { data: prizes } = await supabase
@@ -42,6 +47,7 @@ export default async function NewRequestPage() {
           prizes={prizes ?? []}
           filaments={filaments ?? []}
           allFranchiseTags={franchiseTags ?? []}
+          initialPrizeId={prizeId}
           action={createRequest}
         />
       </div>

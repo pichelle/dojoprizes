@@ -1,17 +1,21 @@
-import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Prize } from "@/lib/types";
 import { quickCheckout } from "./actions";
-import PrizeCard from "./PrizeCard";
-import CatalogFilterBar from "./CatalogFilterBar";
+import CatalogBoard from "./CatalogBoard";
 import FilterSidebar from "@/components/FilterSidebar";
 import ErrorNote from "@/components/ErrorNote";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "in_stock", label: "In stock" },
   { value: "low_stock", label: "Low stock" },
-  { value: "out_of_stock", label: "Out of stock" },
   { value: "print_on_request", label: "Print-on-request" },
+];
+
+const SIZE_FILTER_OPTIONS = [
+  { value: "small", label: "Small" },
+  { value: "medium", label: "Medium" },
+  { value: "large", label: "Large" },
+  { value: "xlarge", label: "X-Large" },
 ];
 
 export default async function CatalogPage({
@@ -22,30 +26,41 @@ export default async function CatalogPage({
     q?: string;
     theme?: string;
     color?: string;
+    size?: string;
     sort?: string;
   }>;
 }) {
   const params = await searchParams;
   const selectedThemes = params.theme ? params.theme.split(",").filter(Boolean) : [];
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
+  const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
   const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
   const supabase = createServerClient();
 
   // Stats row is always computed across ALL prizes/checkouts, independent
   // of whatever filters are currently applied below. These queries don't
   // depend on each other, so fetch them together.
+  //
+  // "Prizes" counts distinct catalog entries (rows), not physical units on
+  // the shelf -- a prize with stock_count 5 still counts as 1 here.
   const [
     { count: totalPrizes },
-    { count: totalCheckedOut },
     { data: allTagLinks },
     { data: franchiseTagRows },
     { data: filamentOptions },
+    { data: allFilamentLinks },
+    { data: recentCheckouts },
   ] = await Promise.all([
     supabase.from("prizes").select("*", { count: "exact", head: true }),
-    supabase.from("checkouts").select("*", { count: "exact", head: true }),
     supabase.from("prize_franchise_tags").select("prize_id, tag:franchise_tags(id, name)"),
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
+    supabase.from("prize_filament").select("prize_id, filament:filaments(id, color_name)"),
+    supabase
+      .from("checkouts")
+      .select("prize_id, date_checked_out")
+      .order("date_checked_out", { ascending: false })
+      .order("created_at", { ascending: false }),
   ]);
 
   const tagsByPrizeId = new Map<string, { id: string; name: string }[]>();
@@ -57,6 +72,26 @@ export default async function CatalogPage({
     const list = tagsByPrizeId.get(link.prize_id) ?? [];
     list.push(link.tag);
     tagsByPrizeId.set(link.prize_id, list);
+  }
+
+  const filamentsByPrizeId = new Map<string, { id: string; color_name: string }[]>();
+  for (const link of (allFilamentLinks ?? []) as unknown as {
+    prize_id: string;
+    filament: { id: string; color_name: string } | null;
+  }[]) {
+    if (!link.filament) continue;
+    const list = filamentsByPrizeId.get(link.prize_id) ?? [];
+    list.push(link.filament);
+    filamentsByPrizeId.set(link.prize_id, list);
+  }
+
+  // Most recent checkout date per prize -- rows already ordered newest
+  // first above, so the first hit per prize_id wins.
+  const latestCheckoutByPrize: Record<string, string> = {};
+  for (const c of (recentCheckouts ?? []) as { prize_id: string; date_checked_out: string }[]) {
+    if (!(c.prize_id in latestCheckoutByPrize)) {
+      latestCheckoutByPrize[c.prize_id] = c.date_checked_out;
+    }
   }
 
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
@@ -85,6 +120,7 @@ export default async function CatalogPage({
   let query = supabase.from("prizes").select("*");
 
   if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
+  if (selectedSizes.length > 0) query = query.in("size", selectedSizes);
   if (params.q) query = query.ilike("name", `%${params.q}%`);
   if (prizeIdsForColor) query = query.in("id", prizeIdsForColor);
   if (prizeIdsForFranchise) query = query.in("id", prizeIdsForFranchise);
@@ -101,6 +137,7 @@ export default async function CatalogPage({
   const prizes = (prizesRaw ?? []).map((p) => ({
     ...p,
     franchiseTags: tagsByPrizeId.get(p.id) ?? [],
+    filaments: filamentsByPrizeId.get(p.id) ?? [],
   }));
 
   async function handleCheckout(prizeId: string, boughtBy: string | null) {
@@ -113,16 +150,15 @@ export default async function CatalogPage({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Prize catalog</h1>
-          <p className="text-sm text-muted mt-1">See what&apos;s currently on the prize shelf.</p>
+          <p className="text-sm text-muted mt-1">
+            Full prize bin history: see what&apos;s currently in stock, what&apos;s
+            been printed before.
+          </p>
         </div>
         <div className="flex gap-3">
           <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
-            <p className="text-xs text-muted">Prizes</p>
+            <p className="text-xs text-muted">Unique prizes</p>
             <p className="text-lg font-bold text-ink mt-0.5">{totalPrizes ?? 0}</p>
-          </div>
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
-            <p className="text-xs text-muted">Bought</p>
-            <p className="text-lg font-bold text-ink mt-0.5">{totalCheckedOut ?? 0}</p>
           </div>
         </div>
       </div>
@@ -149,6 +185,12 @@ export default async function CatalogPage({
               })),
             },
             {
+              key: "size",
+              label: "Size",
+              type: "checkbox",
+              options: SIZE_FILTER_OPTIONS,
+            },
+            {
               key: "status",
               label: "Status",
               type: "checkbox",
@@ -158,16 +200,6 @@ export default async function CatalogPage({
         />
 
         <div className="space-y-6 min-w-0">
-          <div className="flex flex-wrap items-center justify-start gap-2">
-            <Link
-              href="/catalog/new"
-              className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
-            >
-              Add a prize
-            </Link>
-            <CatalogFilterBar />
-          </div>
-
           {error && (
             <ErrorNote>
               Couldn&apos;t load prizes: {error.message}. Have you run
@@ -175,24 +207,15 @@ export default async function CatalogPage({
             </ErrorNote>
           )}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {prizes.map((prize) => (
-              <PrizeCard
-                key={prize.id}
-                prize={prize as Prize}
-                onCheckout={handleCheckout}
-              />
-            ))}
-          </div>
-
-          {prizes.length === 0 && !error && (
-            <p className="text-sm text-muted">
-              Nothing here yet. Add your first prize to get started.
-            </p>
-          )}
+          <CatalogBoard
+            prizes={prizes as Prize[]}
+            allFilaments={filamentOptions ?? []}
+            allFranchiseTags={franchiseTagRows ?? []}
+            latestCheckoutByPrize={latestCheckoutByPrize}
+            onCheckout={handleCheckout}
+          />
         </div>
       </div>
     </div>
   );
 }
-
