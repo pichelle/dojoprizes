@@ -4,11 +4,7 @@
 
 export type CoinTier = "silver" | "gold" | "obsidian";
 
-export type PrizeStatus =
-  | "in_stock"
-  | "low_stock"
-  | "out_of_stock"
-  | "print_on_request";
+export type PrizeStatus = "in_stock" | "low_stock" | "print_on_request";
 
 export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled";
 
@@ -33,6 +29,7 @@ export interface Prize {
   makerworld_link: string | null;
   stock_count: number;
   status: PrizeStatus;
+  size: RequestSize | null;
   created_at: string;
   updated_at: string;
   filaments?: Pick<Filament, "id" | "color_name">[];

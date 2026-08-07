@@ -36,7 +36,7 @@ create table if not exists prizes (
   makerworld_link text,
   stock_count integer not null default 0,
   status text not null default 'in_stock'
-    check (status in ('in_stock', 'low_stock', 'out_of_stock', 'print_on_request')),
+    check (status in ('in_stock', 'low_stock', 'print_on_request')),
   size text check (size in ('small', 'medium', 'large', 'xlarge')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

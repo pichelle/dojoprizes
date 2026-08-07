@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
-import { breakdownToCoinPrice, silverEquivalentForTier } from "@/lib/coins";
+import { breakdownToCoinPrice } from "@/lib/coins";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
-import type { CoinTier, PrizeStatus } from "@/lib/types";
+import { NONE_VALUE } from "@/lib/constants";
+import type { PrizeStatus, RequestSize } from "@/lib/types";
+
+export type PrizeFormState = { error: string | null; success?: boolean; id?: string };
 
 function parseFilamentIds(formData: FormData): string[] {
   return formData.getAll("filament_ids").map(String).filter(Boolean);
@@ -21,6 +23,20 @@ function coinPriceFromForm(formData: FormData): number | null {
   const obsidian = Number(formData.get("coin_price_obsidian") || 0);
   if (!silver && !gold && !obsidian) return null;
   return breakdownToCoinPrice({ silver, gold, obsidian });
+}
+
+function sizeFromForm(formData: FormData): RequestSize | null {
+  const raw = String(formData.get("size") ?? "").trim();
+  return raw && raw !== NONE_VALUE ? (raw as RequestSize) : null;
+}
+
+// Stock at 0 always means Print-on-request, regardless of what was picked
+// in the status dropdown -- there's no separate "Out of stock" anymore,
+// since staff can always print another on request.
+function statusFromForm(formData: FormData, stockCount: number): PrizeStatus {
+  if (stockCount === 0) return "print_on_request";
+  const raw = String(formData.get("status") ?? "").trim();
+  return raw === "low_stock" || raw === "print_on_request" ? raw : "in_stock";
 }
 
 async function syncFilamentLinks(
@@ -61,80 +77,106 @@ async function syncFranchiseTagLinks(
   }
 }
 
-export async function createPrize(formData: FormData) {
+// Core logic, shared by the side-peek (non-redirecting) actions below.
+// Never throws -- DB errors come back as form state instead of crashing.
+
+async function performCreatePrize(formData: FormData): Promise<PrizeFormState> {
   const supabase = createServerClient();
-  const coinTier = (formData.get("coin_tier") as CoinTier) || null;
+  try {
+    const stockCount = Number(formData.get("stock_count") ?? 1);
 
-  const { data: prize, error } = await supabase
-    .from("prizes")
-    .insert({
-      name: String(formData.get("name") ?? "").trim(),
-      photo_url: String(formData.get("photo_url") ?? "").trim() || null,
-      coin_tier: coinTier,
-      coin_value_silver_equivalent: coinTier
-        ? silverEquivalentForTier(coinTier)
-        : null,
-      coin_price: coinPriceFromForm(formData),
-      makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
-      stock_count: Number(formData.get("stock_count") ?? 0),
-      status: (formData.get("status") as PrizeStatus) || "in_stock",
-    })
-    .select("id")
-    .single();
+    const { data: prize, error } = await supabase
+      .from("prizes")
+      .insert({
+        name: String(formData.get("name") ?? "").trim(),
+        photo_url: String(formData.get("photo_url") ?? "").trim() || null,
+        coin_price: coinPriceFromForm(formData),
+        makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
+        stock_count: stockCount,
+        status: statusFromForm(formData, stockCount),
+        size: sizeFromForm(formData),
+      })
+      .select("id")
+      .single();
 
-  if (error) throw new Error(error.message);
+    if (error) return { error: error.message };
 
-  if (prize) {
-    await syncFilamentLinks(supabase, prize.id, parseFilamentIds(formData));
+    if (prize) {
+      await syncFilamentLinks(supabase, prize.id, parseFilamentIds(formData));
+      const tagIds = await resolveFranchiseTagIds(
+        supabase,
+        parseFranchiseTagNames(formData),
+      );
+      await syncFranchiseTagLinks(supabase, prize.id, tagIds);
+    }
+
+    revalidatePath("/catalog");
+    revalidatePath("/filament");
+    revalidatePath("/requests");
+    return { error: null, success: true, id: prize?.id };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
+  }
+}
+
+async function performUpdatePrize(
+  prizeId: string,
+  formData: FormData,
+): Promise<PrizeFormState> {
+  const supabase = createServerClient();
+  try {
+    const stockCount = Number(formData.get("stock_count") ?? 0);
+
+    const { error } = await supabase
+      .from("prizes")
+      .update({
+        name: String(formData.get("name") ?? "").trim(),
+        photo_url: String(formData.get("photo_url") ?? "").trim() || null,
+        coin_price: coinPriceFromForm(formData),
+        makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
+        stock_count: stockCount,
+        status: statusFromForm(formData, stockCount),
+        size: sizeFromForm(formData),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", prizeId);
+
+    if (error) return { error: error.message };
+
+    await syncFilamentLinks(supabase, prizeId, parseFilamentIds(formData));
     const tagIds = await resolveFranchiseTagIds(
       supabase,
       parseFranchiseTagNames(formData),
     );
-    await syncFranchiseTagLinks(supabase, prize.id, tagIds);
-  }
+    await syncFranchiseTagLinks(supabase, prizeId, tagIds);
 
-  revalidatePath("/catalog");
-  revalidatePath("/filament");
-  revalidatePath("/requests");
-  redirect("/catalog");
+    revalidatePath("/catalog");
+    revalidatePath("/filament");
+    revalidatePath("/requests");
+    return { error: null, success: true, id: prizeId };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
+  }
 }
 
-export async function updatePrize(prizeId: string, formData: FormData) {
-  const supabase = createServerClient();
-  const coinTier = (formData.get("coin_tier") as CoinTier) || null;
+// Side-peek variants: no redirect, since the user never leaves /catalog.
+export async function createPrizeInline(
+  _prevState: PrizeFormState | null,
+  formData: FormData,
+): Promise<PrizeFormState> {
+  return performCreatePrize(formData);
+}
 
-  const { error } = await supabase
-    .from("prizes")
-    .update({
-      name: String(formData.get("name") ?? "").trim(),
-      photo_url: String(formData.get("photo_url") ?? "").trim() || null,
-      coin_tier: coinTier,
-      coin_value_silver_equivalent: coinTier
-        ? silverEquivalentForTier(coinTier)
-        : null,
-      coin_price: coinPriceFromForm(formData),
-      makerworld_link:
-        String(formData.get("makerworld_link") ?? "").trim() || null,
-      stock_count: Number(formData.get("stock_count") ?? 0),
-      status: (formData.get("status") as PrizeStatus) || "in_stock",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", prizeId);
-
-  if (error) throw new Error(error.message);
-
-  await syncFilamentLinks(supabase, prizeId, parseFilamentIds(formData));
-  const tagIds = await resolveFranchiseTagIds(
-    supabase,
-    parseFranchiseTagNames(formData),
-  );
-  await syncFranchiseTagLinks(supabase, prizeId, tagIds);
-
-  revalidatePath("/catalog");
-  revalidatePath(`/catalog/${prizeId}`);
-  revalidatePath("/filament");
-  revalidatePath("/requests");
-  redirect("/catalog");
+export async function updatePrizeInline(
+  prizeId: string,
+  _prevState: PrizeFormState | null,
+  formData: FormData,
+): Promise<PrizeFormState> {
+  return performUpdatePrize(prizeId, formData);
 }
 
 export async function deletePrize(prizeId: string) {
@@ -143,7 +185,6 @@ export async function deletePrize(prizeId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/catalog");
   revalidatePath("/filament");
-  redirect("/catalog");
 }
 
 // Quick one-click checkout, callable straight from the catalog grid.
@@ -169,7 +210,7 @@ export async function quickCheckout(prizeId: string, boughtBy: string | null) {
     .from("prizes")
     .update({
       stock_count: newStock,
-      status: newStock === 0 ? "out_of_stock" : undefined,
+      status: newStock === 0 ? "print_on_request" : undefined,
     })
     .eq("id", prizeId);
   if (updateError) throw new Error(updateError.message);

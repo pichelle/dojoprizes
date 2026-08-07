@@ -46,6 +46,7 @@ export default function RequestForm({
   initial,
   initialFranchiseTags = [],
   initialColorFilamentIds = [],
+  initialPrizeId,
   submitLabel = "Log request",
   onCancel,
   onSuccess,
@@ -57,13 +58,17 @@ export default function RequestForm({
   initial?: Partial<PrizeRequest>;
   initialFranchiseTags?: string[];
   initialColorFilamentIds?: string[];
+  // Prefills the prize dropdown when arriving from "Print another" on a
+  // print-on-request catalog card -- only used when there's no `initial`
+  // record (i.e. creating, not editing).
+  initialPrizeId?: string;
   submitLabel?: string;
   onCancel?: () => void;
   onSuccess?: () => void;
 }) {
   const router = useRouter();
   const isCreating = !initial;
-  const [prizeId, setPrizeId] = useState(initial?.prize_id ?? NONE_VALUE);
+  const [prizeId, setPrizeId] = useState(initial?.prize_id ?? initialPrizeId ?? NONE_VALUE);
   const [initialStatus, setInitialStatus] = useState<"idea" | "pending">(
     initial?.status === "idea" ? "idea" : "pending",
   );

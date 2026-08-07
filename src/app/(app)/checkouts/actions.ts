@@ -34,7 +34,7 @@ export async function createCheckout(formData: FormData) {
     .from("prizes")
     .update({
       stock_count: newStock,
-      status: newStock === 0 ? "out_of_stock" : undefined,
+      status: newStock === 0 ? "print_on_request" : undefined,
     })
     .eq("id", prizeId);
 
