@@ -1,15 +1,11 @@
-import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
-import { createFilament } from "./actions";
-import FilamentForm from "./FilamentForm";
-import SortSelect from "./SortSelect";
+import FilamentBoard from "./FilamentBoard";
 import ErrorNote from "@/components/ErrorNote";
-import AmazonLinkButton from "@/components/AmazonLinkButton";
 
 export default async function FilamentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ add?: string; sort?: string; error?: string }>;
+  searchParams: Promise<{ sort?: string }>;
 }) {
   const params = await searchParams;
   const sort = params.sort ?? "name";
@@ -38,117 +34,10 @@ export default async function FilamentPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-2xl text-ink">Filament inventory</h1>
-          <p className="text-sm text-muted max-w-2xl mt-1">
-            Linked to the prize catalog, so you can see which prizes a color
-            affects before you run out, and which colors are actually worth
-            restocking.
-          </p>
-        </div>
-        <Link
-          href={params.add ? "/filament" : "/filament?add=1"}
-          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
-        >
-          {params.add ? "Cancel" : "Add a color"}
-        </Link>
-      </div>
-
-      {params.add && (
-        <div className="bg-card border border-border-warm rounded-xl p-6">
-          <h2 className="font-medium text-ink mb-4">Add a filament color</h2>
-          {params.error && (
-            <div className="mb-4">
-              <ErrorNote>{params.error}</ErrorNote>
-            </div>
-          )}
-          <FilamentForm
-            action={createFilament}
-            allPrizes={prizes ?? []}
-            submitLabel="Add filament"
-          />
-        </div>
-      )}
-
       {error && (
         <ErrorNote>Couldn&apos;t load filament: {error.message}</ErrorNote>
       )}
-
-      <SortSelect sort={sort} />
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filaments.map((f) => {
-          const isLow =
-            f.low_stock_threshold != null &&
-            f.stock_level != null &&
-            f.stock_level <= f.low_stock_threshold;
-
-          return (
-            <Link
-              href={`/filament/${f.id}`}
-              key={f.id}
-              className="card-hover bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-ink flex items-center gap-2">
-                  <span
-                    className="inline-block w-3 h-3 rounded-full border border-border-warm-strong shrink-0"
-                    style={{ background: f.swatch_hex ?? "#c9c2b3" }}
-                    aria-hidden="true"
-                  />
-                  {f.color_name}
-                </span>
-                <div className="flex flex-col items-end gap-1">
-                  {isLow && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-rust/10 text-rust whitespace-nowrap">
-                      Low stock
-                    </span>
-                  )}
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-page text-muted whitespace-nowrap">
-                    Used by {f.linkedPrizes.length}{" "}
-                    {f.linkedPrizes.length === 1 ? "prize" : "prizes"}
-                  </span>
-                </div>
-              </div>
-              <div className="text-sm text-muted">
-                {f.material_type ?? "Material not set"}
-              </div>
-              <div className="text-sm text-ink">
-                {f.stock_level ?? "-"} {f.stock_unit}
-                {f.low_stock_threshold != null && (
-                  <span className="text-muted">
-                    {" "}
-                    (low below {f.low_stock_threshold})
-                  </span>
-                )}
-              </div>
-              {f.amazon_link && <AmazonLinkButton href={f.amazon_link} />}
-              <div className="flex flex-wrap gap-1 pt-1">
-                {f.linkedPrizes.length === 0 && (
-                  <span className="text-xs text-muted">
-                    No prizes linked
-                  </span>
-                )}
-                {f.linkedPrizes.map((p: { id: string; name: string }) => (
-                  <span
-                    key={p.id}
-                    className="text-xs px-2 py-0.5 rounded-full bg-page text-muted"
-                  >
-                    {p.name}
-                  </span>
-                ))}
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-
-      {filaments.length === 0 && !error && (
-        <p className="text-sm text-muted">
-          No filament colors yet. Add your first one to get started.
-        </p>
-      )}
+      <FilamentBoard filaments={filaments} prizes={prizes ?? []} sort={sort} />
     </div>
   );
 }

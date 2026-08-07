@@ -1,100 +1,108 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+
+export type FilamentFormState = { error: string | null; success?: boolean; id?: string };
 
 function parsePrizeIds(formData: FormData): string[] {
   return formData.getAll("prize_ids").map(String).filter(Boolean);
 }
 
-export async function createFilament(formData: FormData) {
-  const supabase = createServerClient();
-
-  const { data: filament, error } = await supabase
-    .from("filaments")
-    .insert({
-      color_name: String(formData.get("color_name") ?? "").trim(),
-      swatch_hex: String(formData.get("swatch_hex") ?? "").trim() || null,
-      material_type: String(formData.get("material_type") ?? "").trim() || null,
-      stock_level: formData.get("stock_level")
-        ? Number(formData.get("stock_level"))
-        : null,
-      stock_unit: String(formData.get("stock_unit") ?? "spools").trim(),
-      low_stock_threshold: formData.get("low_stock_threshold")
-        ? Number(formData.get("low_stock_threshold"))
-        : null,
-      amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    redirect(`/filament?add=1&error=${encodeURIComponent(error.message)}`);
-  }
-
-  const prizeIds = parsePrizeIds(formData);
-  if (prizeIds.length > 0 && filament) {
-    const { error: linkError } = await supabase.from("prize_filament").insert(
-      prizeIds.map((prize_id) => ({ prize_id, filament_id: filament.id })),
-    );
-    if (linkError) {
-      redirect(`/filament?add=1&error=${encodeURIComponent(linkError.message)}`);
-    }
-  }
-
-  revalidatePath("/filament");
-  redirect("/filament");
+function fieldsFromForm(formData: FormData) {
+  return {
+    color_name: String(formData.get("color_name") ?? "").trim(),
+    swatch_hex: String(formData.get("swatch_hex") ?? "").trim() || null,
+    material_type: String(formData.get("material_type") ?? "").trim() || null,
+    stock_level: formData.get("stock_level")
+      ? Number(formData.get("stock_level"))
+      : null,
+    stock_unit: String(formData.get("stock_unit") ?? "spools").trim(),
+    low_stock_threshold: formData.get("low_stock_threshold")
+      ? Number(formData.get("low_stock_threshold"))
+      : null,
+    amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
+  };
 }
 
-export async function updateFilament(filamentId: string, formData: FormData) {
+async function performCreateFilament(formData: FormData): Promise<FilamentFormState> {
   const supabase = createServerClient();
+  try {
+    const { data: filament, error } = await supabase
+      .from("filaments")
+      .insert(fieldsFromForm(formData))
+      .select("id")
+      .single();
 
-  const { error } = await supabase
-    .from("filaments")
-    .update({
-      color_name: String(formData.get("color_name") ?? "").trim(),
-      swatch_hex: String(formData.get("swatch_hex") ?? "").trim() || null,
-      material_type: String(formData.get("material_type") ?? "").trim() || null,
-      stock_level: formData.get("stock_level")
-        ? Number(formData.get("stock_level"))
-        : null,
-      stock_unit: String(formData.get("stock_unit") ?? "spools").trim(),
-      low_stock_threshold: formData.get("low_stock_threshold")
-        ? Number(formData.get("low_stock_threshold"))
-        : null,
-      amazon_link: String(formData.get("amazon_link") ?? "").trim() || null,
-    })
-    .eq("id", filamentId);
-  if (error) {
-    redirect(`/filament/${filamentId}?error=${encodeURIComponent(error.message)}`);
-  }
+    if (error) return { error: error.message };
 
-  const { error: deleteLinksError } = await supabase
-    .from("prize_filament")
-    .delete()
-    .eq("filament_id", filamentId);
-  if (deleteLinksError) {
-    redirect(
-      `/filament/${filamentId}?error=${encodeURIComponent(deleteLinksError.message)}`,
-    );
-  }
-
-  const prizeIds = parsePrizeIds(formData);
-  if (prizeIds.length > 0) {
-    const { error: linkError } = await supabase.from("prize_filament").insert(
-      prizeIds.map((prize_id) => ({ prize_id, filament_id: filamentId })),
-    );
-    if (linkError) {
-      redirect(
-        `/filament/${filamentId}?error=${encodeURIComponent(linkError.message)}`,
+    const prizeIds = parsePrizeIds(formData);
+    if (prizeIds.length > 0 && filament) {
+      const { error: linkError } = await supabase.from("prize_filament").insert(
+        prizeIds.map((prize_id) => ({ prize_id, filament_id: filament.id })),
       );
+      if (linkError) return { error: linkError.message };
     }
-  }
 
-  revalidatePath("/filament");
-  revalidatePath("/catalog");
-  redirect("/filament");
+    revalidatePath("/filament");
+    return { error: null, success: true, id: filament?.id };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
+  }
+}
+
+async function performUpdateFilament(
+  filamentId: string,
+  formData: FormData,
+): Promise<FilamentFormState> {
+  const supabase = createServerClient();
+  try {
+    const { error } = await supabase
+      .from("filaments")
+      .update(fieldsFromForm(formData))
+      .eq("id", filamentId);
+    if (error) return { error: error.message };
+
+    const { error: deleteLinksError } = await supabase
+      .from("prize_filament")
+      .delete()
+      .eq("filament_id", filamentId);
+    if (deleteLinksError) return { error: deleteLinksError.message };
+
+    const prizeIds = parsePrizeIds(formData);
+    if (prizeIds.length > 0) {
+      const { error: linkError } = await supabase.from("prize_filament").insert(
+        prizeIds.map((prize_id) => ({ prize_id, filament_id: filamentId })),
+      );
+      if (linkError) return { error: linkError.message };
+    }
+
+    revalidatePath("/filament");
+    revalidatePath("/catalog");
+    return { error: null, success: true, id: filamentId };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Something went wrong. Please try again.",
+    };
+  }
+}
+
+// Side-peek variants: no redirect, since the user never leaves /filament.
+export async function createFilamentInline(
+  _prevState: FilamentFormState | null,
+  formData: FormData,
+): Promise<FilamentFormState> {
+  return performCreateFilament(formData);
+}
+
+export async function updateFilamentInline(
+  filamentId: string,
+  _prevState: FilamentFormState | null,
+  formData: FormData,
+): Promise<FilamentFormState> {
+  return performUpdateFilament(filamentId, formData);
 }
 
 export async function deleteFilament(filamentId: string) {
@@ -103,11 +111,7 @@ export async function deleteFilament(filamentId: string) {
     .from("filaments")
     .delete()
     .eq("id", filamentId);
-  if (error) {
-    redirect(
-      `/filament/${filamentId}?error=${encodeURIComponent(error.message)}`,
-    );
-  }
+  if (error) throw new Error(error.message);
   revalidatePath("/filament");
-  redirect("/filament");
+  revalidatePath("/catalog");
 }

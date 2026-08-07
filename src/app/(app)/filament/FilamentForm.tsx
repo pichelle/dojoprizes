@@ -1,7 +1,13 @@
 "use client";
 
+import { useActionState, useEffect, useRef } from "react";
 import type { Filament, Prize } from "@/lib/types";
 import Select from "@/components/Select";
+import ErrorNote from "@/components/ErrorNote";
+import { showToast } from "@/components/ToastHost";
+import type { FilamentFormState } from "./actions";
+
+const initialState: FilamentFormState = { error: null };
 
 export default function FilamentForm({
   action,
@@ -9,15 +15,32 @@ export default function FilamentForm({
   allPrizes,
   linkedPrizeIds = [],
   submitLabel = "Save filament",
+  onCancel,
+  onSuccess,
 }: {
-  action: (formData: FormData) => void;
+  action: (prevState: FilamentFormState | null, formData: FormData) => Promise<FilamentFormState>;
   initial?: Partial<Filament>;
   allPrizes: Pick<Prize, "id" | "name">[];
   linkedPrizeIds?: string[];
   submitLabel?: string;
+  onCancel?: () => void;
+  onSuccess?: () => void;
 }) {
+  const [state, formAction, isPending] = useActionState(action, initialState);
+
+  const successHandled = useRef(false);
+  useEffect(() => {
+    if (state?.success && !successHandled.current) {
+      successHandled.current = true;
+      showToast(submitLabel === "Save changes" ? "Changes saved" : "Filament added");
+      onSuccess?.();
+    }
+  }, [state, submitLabel, onSuccess]);
+
   return (
-    <form action={action} className="space-y-4">
+    <form action={formAction} className="space-y-4">
+      {state?.error && <ErrorNote>{state.error}</ErrorNote>}
+
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-ink">
@@ -138,12 +161,24 @@ export default function FilamentForm({
         </div>
       </div>
 
-      <button
-        type="submit"
-        className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90"
-      >
-        {submitLabel}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={isPending}
+          className="rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-50"
+        >
+          {isPending ? "Saving…" : submitLabel}
+        </button>
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-sm text-muted hover:text-ink"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 }
