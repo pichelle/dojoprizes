@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Check, Clock, Plus } from "lucide-react";
+import { Check, Clock, Plus, TrendingUp } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsKanban from "./RequestsKanban";
+import { getTrendingSnapshot } from "@/lib/trending";
 
 // Force dynamic rendering (belt-and-suspenders alongside reading
 // searchParams below) so this page always reflects the latest requests
@@ -38,6 +39,7 @@ export default async function RequestsPage({
     { data: franchiseTagRows },
     { data: prizes },
     { data: allFilamentLinks },
+    trending,
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
@@ -45,6 +47,7 @@ export default async function RequestsPage({
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("prizes").select("id, name").order("name"),
     supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
+    getTrendingSnapshot(30),
   ]);
 
   const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
@@ -146,6 +149,26 @@ export default async function RequestsPage({
           </div>
         </div>
       </div>
+
+      {(trending.theme || trending.color || trending.size) && (
+        <div className="flex items-center justify-between gap-3 bg-nav border border-border-warm rounded-xl px-4 py-2.5">
+          <span className="text-sm text-ink flex items-center gap-2">
+            <TrendingUp size={15} style={{ color: "var(--color-pending-text)" }} aria-hidden="true" />
+            Trending this month:{" "}
+            {[trending.theme, trending.color, trending.size]
+              .filter(Boolean)
+              .map((v, i, arr) => (
+                <span key={i} className="font-semibold">
+                  {v}
+                  {i < arr.length - 1 ? "," : ""}
+                </span>
+              ))}
+          </span>
+          <Link href="/checkouts" className="text-xs whitespace-nowrap underline" style={{ color: "var(--color-printed-text)" }}>
+            See full trends ↗
+          </Link>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-start gap-2">
