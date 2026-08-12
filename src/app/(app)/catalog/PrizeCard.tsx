@@ -123,7 +123,7 @@ export default function PrizeCard({
               className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-page shrink-0 transition-colors whitespace-nowrap"
               title="Log a request to print another one of these"
             >
-              Print another
+              Reprint
             </Link>
           ) : (
             <button
@@ -136,7 +136,7 @@ export default function PrizeCard({
               className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-page shrink-0 transition-colors"
               title="Log that a student took this off the shelf"
             >
-              Sold!
+              Mark sold
             </button>
           )}
         </div>
