@@ -85,7 +85,10 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
   const supabase = createServerClient();
   try {
     const rawStatus = String(formData.get("initial_status") ?? "").trim();
-    const initialStatus: RequestStatus = rawStatus === "idea" ? "idea" : "pending";
+    const CREATABLE_STATUSES: RequestStatus[] = ["idea", "pending", "printed", "cancelled"];
+    const initialStatus: RequestStatus = CREATABLE_STATUSES.includes(rawStatus as RequestStatus)
+      ? (rawStatus as RequestStatus)
+      : "pending";
 
     const { data: request, error } = await supabase
       .from("requests")
@@ -190,6 +193,15 @@ export async function updateRequestInline(
   formData: FormData,
 ): Promise<RequestFormState> {
   return performUpdateRequest(requestId, formData);
+}
+
+// Side-peek variant of create: no redirect, since the "+ Add new" column
+// buttons open the form without leaving /requests.
+export async function createRequestInline(
+  _prevState: RequestFormState | null,
+  formData: FormData,
+): Promise<RequestFormState> {
+  return performCreateRequest(formData);
 }
 
 export async function updateRequestStatus(
