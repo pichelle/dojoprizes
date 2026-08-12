@@ -124,8 +124,13 @@ export default function CheckoutsTable({
   const [colorFilter, setColorFilter] = useState("");
   const [q, setQ] = useState("");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
 
   const active = rows.find((r) => r.id === activeId) ?? null;
+
+  function hideForDelete(id: string) {
+    setPendingDeleteIds((prev) => new Set(prev).add(id));
+  }
 
   const trending = useMemo(() => {
     const cutoff = PERIOD_DAYS[period];
@@ -145,7 +150,7 @@ export default function CheckoutsTable({
   }
 
   const filtered = useMemo(() => {
-    let list = rows;
+    let list = rows.filter((r) => !pendingDeleteIds.has(r.id));
     if (sourceFilter) list = list.filter((r) => r.source === sourceFilter);
     if (colorFilter) list = list.filter((r) => r.colors.some((c) => c.id === colorFilter));
     if (q.trim()) {
@@ -155,7 +160,7 @@ export default function CheckoutsTable({
       );
     }
     return list;
-  }, [rows, sourceFilter, colorFilter, q]);
+  }, [rows, sourceFilter, colorFilter, q, pendingDeleteIds]);
 
   const sorted = useMemo(() => {
     if (!sortDir) return filtered;
@@ -396,6 +401,10 @@ export default function CheckoutsTable({
               toastMessage="Checkout removed"
               confirmMessage={`Remove this checkout of ${active.itemName}? This can't be undone.`}
               undoable={false}
+              onStart={() => {
+                setActiveId(null);
+                hideForDelete(active.id);
+              }}
               className="text-sm text-rust hover:underline"
             >
               Remove this checkout
