@@ -2,7 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, Pencil, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  Clock,
+  Eye,
+  EyeOff,
+  Link2,
+  Maximize2,
+  Palette,
+  Pencil,
+  Ruler,
+  Coins,
+  Sparkles,
+  StickyNote,
+  Tags,
+  User,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
@@ -112,10 +131,21 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+function DetailRow({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex justify-between gap-4 py-1.5 border-b border-border-warm last:border-b-0">
-      <span className="text-muted">{label}</span>
+    <div className="flex items-center justify-between gap-4 py-2 border-b border-border-warm last:border-b-0">
+      <span className="flex items-center gap-2 text-muted">
+        <Icon size={14} className="shrink-0" aria-hidden="true" />
+        {label}
+      </span>
       <span className="text-ink text-right">{children}</span>
     </div>
   );
@@ -344,6 +374,14 @@ export default function RequestsKanban({
                       }}
                       className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
+                      {(r.franchiseTags ?? []).length > 0 && (
+                        <span
+                          className="inline-block text-[10px] font-semibold rounded-full px-2 py-0.5 mb-2"
+                          style={{ background: "var(--color-idea-bg)", color: "var(--color-idea-text)" }}
+                        >
+                          {r.franchiseTags![0].name}
+                        </span>
+                      )}
                       <div className="flex items-start justify-between gap-2">
                         <span
                           className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
@@ -431,13 +469,25 @@ export default function RequestsKanban({
               />
             )}
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">
-                {peekMode === "edit" ? "Edit request" : printTitle(active)}
-              </h2>
+              <div className="flex items-center gap-2 min-w-0">
+                {peekMode === "edit" && (
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("view")}
+                    aria-label="Back"
+                    className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
+                  >
+                    <ChevronLeft size={18} aria-hidden="true" />
+                  </button>
+                )}
+                <h2 className="font-serif text-xl text-ink truncate">
+                  {peekMode === "edit" ? "Edit request" : printTitle(active)}
+                </h2>
+              </div>
               <button
                 type="button"
                 onClick={() => setActiveId(null)}
-                className="text-muted hover:text-ink"
+                className="shrink-0 text-muted hover:text-ink"
                 aria-label="Close"
               >
                 <X size={18} />
@@ -464,27 +514,27 @@ export default function RequestsKanban({
 
                 <div className="text-sm">
                   {active.status !== "idea" && (
-                    <DetailRow label="Ninja">{active.student_name}</DetailRow>
+                    <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
-                  <DetailRow label="Requested by">{formatSensei(active.requested_by)}</DetailRow>
-                  <DetailRow label="Requested">{formatRequestedAgo(active.date_requested)}</DetailRow>
-                  {active.size && <DetailRow label="Size">{active.size}</DetailRow>}
+                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Requested" icon={Clock}>{formatRequestedAgo(active.date_requested)}</DetailRow>
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
                   {(active.colorFilaments ?? []).length > 0 && (
-                    <DetailRow label="Color">
+                    <DetailRow label="Color" icon={Palette}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
                     </DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (
-                    <DetailRow label="Theme">
+                    <DetailRow label="Theme" icon={Tags}>
                       {(active.franchiseTags ?? []).map((t) => t.name).join(", ")}
                     </DetailRow>
                   )}
-                  {active.is_print_club && <DetailRow label="Print club">Yes</DetailRow>}
+                  {active.is_print_club && <DetailRow label="Print club" icon={Sparkles}>Yes</DetailRow>}
                   {formatCoinPriceBreakdown(active.sale_price) && (
-                    <DetailRow label="Price">{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
+                    <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link">
+                    <DetailRow label="Link" icon={Link2}>
                       <a
                         href={active.links}
                         target="_blank"
@@ -495,7 +545,7 @@ export default function RequestsKanban({
                       </a>
                     </DetailRow>
                   )}
-                  {active.notes && <DetailRow label="Notes">{active.notes}</DetailRow>}
+                  {active.notes && <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>}
                 </div>
 
                 <ActionButton
