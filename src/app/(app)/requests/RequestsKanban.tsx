@@ -340,7 +340,7 @@ export default function RequestsKanban({
                 e.preventDefault();
                 handleDrop(col.status);
               }}
-              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 ${
+              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 sm:overflow-hidden ${
                 dragOverStatus === col.status ? "border-sage bg-sage/5" : "border-border-warm"
               }`}
               style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
@@ -403,9 +403,13 @@ export default function RequestsKanban({
               </div>
               <div
                 className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 ${
-                  isExpanded ? "grid gap-2.5" : "space-y-2.5"
+                  isExpanded ? "grid content-start items-start gap-2.5" : "space-y-2.5"
                 }`}
-                style={isExpanded ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" } : undefined}
+                style={
+                  isExpanded
+                    ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gridAutoRows: "min-content" }
+                    : undefined
+                }
               >
                 {rows.map((r, i) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
