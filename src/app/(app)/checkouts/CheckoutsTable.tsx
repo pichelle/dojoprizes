@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import ActionButton from "@/components/ActionButton";
+import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
 
@@ -270,14 +271,15 @@ export default function CheckoutsTable({
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r) => {
+            {sorted.map((r, i) => {
               const meta = SOURCE_META[r.source];
               const priceTag = formatCoinPriceBreakdown(r.price);
               return (
                 <tr
                   key={r.id}
                   onClick={() => setActiveId(r.id)}
-                  className="border-t border-border-warm cursor-pointer hover:bg-nav/40"
+                  style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+                  className="stagger-fade-in border-t border-border-warm cursor-pointer hover:bg-nav/40"
                 >
                   <td className="px-3 py-2.5 text-muted whitespace-nowrap">{formatShortDate(r.date)}</td>
                   <td className="px-3 py-2.5 font-medium text-ink">{r.itemName}</td>

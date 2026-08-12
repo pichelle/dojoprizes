@@ -302,3 +302,11 @@ textarea:hover {
   animation: skeleton-in 0.4s cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
   animation-delay: var(--stagger-delay, 0ms);
 }
+
+/* Opacity-only variant for table rows -- some browsers are inconsistent
+   animating `transform` on <tr>, so this skips the rise/scale and just
+   fades each row in with the same stagger timing. */
+.stagger-fade-in {
+  animation: overlay-fade-in 0.4s ease-out backwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}

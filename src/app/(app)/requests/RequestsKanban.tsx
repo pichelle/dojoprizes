@@ -320,7 +320,7 @@ export default function RequestsKanban({
       )}
 
       <div
-        className="grid items-start sm:items-stretch gap-5 sm:h-[calc(100vh-19rem)] sm:min-h-[420px]"
+        className="grid items-start sm:items-stretch gap-5 sm:h-[calc(100vh-14rem)] sm:min-h-[420px]"
         style={{ gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))` }}
       >
         {visibleColumns.map((col) => {
