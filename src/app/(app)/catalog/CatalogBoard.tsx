@@ -85,7 +85,7 @@ export default function CatalogBoard({
       )}
 
       {inStockPrizes.length > 0 && printOnRequestPrizes.length > 0 && (
-        <div className="flex items-center gap-3 mt-4 mb-1">
+        <div className="flex items-center gap-3 mt-8 mb-2">
           <div className="h-px flex-1 bg-border-warm" />
           <p className="text-xs font-medium text-muted uppercase tracking-wide shrink-0">
             Print-on-request

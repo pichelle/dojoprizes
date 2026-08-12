@@ -340,7 +340,7 @@ export default function RequestsKanban({
                 e.preventDefault();
                 handleDrop(col.status);
               }}
-              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 sm:overflow-hidden ${
+              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 ${
                 dragOverStatus === col.status ? "border-sage bg-sage/5" : "border-border-warm"
               }`}
               style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
