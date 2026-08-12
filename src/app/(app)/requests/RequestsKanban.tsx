@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -201,27 +201,53 @@ export default function RequestsKanban({
   // other card uses. Cleared after the animation plays or on the next
   // successful add, whichever comes first.
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
-  // Tracks which card we've already scrolled to, so the ref callback
-  // below (which re-fires on every render since it's defined inline)
-  // doesn't re-trigger scrollIntoView on every subsequent render --
-  // only the first time the just-added card's DOM node appears.
+  // Cards mid-delete: hidden immediately (optimistic), restored if Undo
+  // is clicked, actually gone once the undo window elapses and the
+  // server delete + refresh completes (at which point the id just stops
+  // existing in `requests` anyway).
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  // Every currently-rendered card's DOM node, keyed by request id -- kept
+  // passively up to date by each card's ref (register on mount, remove
+  // on unmount). Scrolling itself happens in the effect below, not here,
+  // so it isn't at the mercy of exactly when/how often React re-invokes
+  // an inline ref callback.
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const scrolledIdRef = useRef<string | null>(null);
   const router = useRouter();
 
   // Effective requests: server data with any not-yet-persisted optimistic
   // status/price changes applied, so cards move columns the instant a new
   // status is picked instead of waiting for the undo window to elapse.
+  // Anything mid-delete is filtered out here too, for the same reason.
   const effectiveRequests = useMemo(
     () =>
-      requests.map((r) => {
-        const o = overrides[r.id];
-        if (!o) return r;
-        return { ...r, status: o.status, sale_price: o.salePrice };
-      }),
-    [requests, overrides],
+      requests
+        .filter((r) => !pendingDeleteIds.has(r.id))
+        .map((r) => {
+          const o = overrides[r.id];
+          if (!o) return r;
+          return { ...r, status: o.status, sale_price: o.salePrice };
+        }),
+    [requests, overrides, pendingDeleteIds],
   );
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
+
+  // Scrolls the just-added card into view once its real DOM node exists.
+  // Runs on every effectiveRequests change (not just on mount) because
+  // the card frequently doesn't exist yet on the render where justAddedId
+  // is first set -- router.refresh() hasn't returned the new row yet at
+  // that point. Re-checking here, once fresh data actually lands and
+  // re-renders this component, is what makes this reliable regardless of
+  // that timing gap.
+  useEffect(() => {
+    if (!justAddedId || scrolledIdRef.current === justAddedId) return;
+    const el = cardRefs.current.get(justAddedId);
+    if (el) {
+      scrolledIdRef.current = justAddedId;
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }, [justAddedId, effectiveRequests]);
 
   const visibleColumns = useMemo(
     () => COLUMNS.filter((c) => !hidden.has(c.status)),
@@ -301,6 +327,18 @@ export default function RequestsKanban({
         clearTimeout(timeoutId);
         setOverrides((prev) => ({ ...prev, [requestId]: previous }));
       },
+    });
+  }
+
+  function hideForDelete(requestId: string) {
+    setPendingDeleteIds((prev) => new Set(prev).add(requestId));
+  }
+
+  function restoreFromDelete(requestId: string) {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(requestId);
+      return next;
     });
   }
 
@@ -432,10 +470,8 @@ export default function RequestsKanban({
                     <div
                       key={r.id}
                       ref={(el) => {
-                        if (el && r.id === justAddedId && scrolledIdRef.current !== r.id) {
-                          scrolledIdRef.current = r.id;
-                          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-                        }
+                        if (el) cardRefs.current.set(r.id, el);
+                        else cardRefs.current.delete(r.id);
                       }}
                       draggable
                       onDragStart={(e) => {
@@ -650,6 +686,11 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  onStart={() => {
+                    setActiveId(null);
+                    hideForDelete(active.id);
+                  }}
+                  onUndo={() => restoreFromDelete(active.id)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request
@@ -677,6 +718,11 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  onStart={() => {
+                    setActiveId(null);
+                    hideForDelete(active.id);
+                  }}
+                  onUndo={() => restoreFromDelete(active.id)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request
