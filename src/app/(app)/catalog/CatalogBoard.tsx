@@ -41,6 +41,24 @@ export default function CatalogBoard({
     setMode(null);
   }
 
+  const inStockPrizes = prizes.filter((p) => p.status === "in_stock");
+  const printOnRequestPrizes = prizes.filter((p) => p.status !== "in_stock");
+
+  function renderCard(prize: Prize) {
+    return (
+      <PrizeCard
+        key={prize.id}
+        prize={prize}
+        onCheckout={onCheckout}
+        onEdit={() => setMode({ id: prize.id })}
+        addedOrSoldDate={
+          prize.stock_count === 0 ? latestCheckoutByPrize[prize.id] : prize.created_at
+        }
+        soldDateKnown={prize.stock_count === 0 && Boolean(latestCheckoutByPrize[prize.id])}
+      />
+    );
+  }
+
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -57,22 +75,29 @@ export default function CatalogBoard({
 
       <ActiveFilters colorOptions={allFilaments} />
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {prizes.map((prize) => (
-          <PrizeCard
-            key={prize.id}
-            prize={prize}
-            onCheckout={onCheckout}
-            onEdit={() => setMode({ id: prize.id })}
-            addedOrSoldDate={
-              prize.stock_count === 0
-                ? latestCheckoutByPrize[prize.id]
-                : prize.created_at
-            }
-            soldDateKnown={prize.stock_count === 0 && Boolean(latestCheckoutByPrize[prize.id])}
-          />
-        ))}
-      </div>
+      {/* In stock first, then a divider, then Print-on-request -- each
+          group keeps whatever secondary sort (name/price) was picked. */}
+      {inStockPrizes.length > 0 && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {inStockPrizes.map((prize) => renderCard(prize))}
+        </div>
+      )}
+
+      {inStockPrizes.length > 0 && printOnRequestPrizes.length > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border-warm" />
+          <p className="text-xs font-medium text-muted uppercase tracking-wide shrink-0">
+            Print-on-request
+          </p>
+          <div className="h-px flex-1 bg-border-warm" />
+        </div>
+      )}
+
+      {printOnRequestPrizes.length > 0 && (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {printOnRequestPrizes.map((prize) => renderCard(prize))}
+        </div>
+      )}
 
       {prizes.length === 0 && (
         <p className="text-sm text-muted">
