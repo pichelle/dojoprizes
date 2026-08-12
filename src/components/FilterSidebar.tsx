@@ -76,11 +76,11 @@ export default function FilterSidebar({
   const hasAny = Object.values(selected).some((v) => v.length > 0);
 
   return (
-    <div className="bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:max-h-[min(28rem,calc(100vh-3rem))] flex flex-col">
+    <div className="bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)] flex flex-col">
       {/* The group list scrolls on its own so the Apply/Clear footer below
           always stays on screen -- it never gets pushed past the fold by a
           long list of filter options. */}
-      <div className="scroll-warm space-y-4 overflow-y-auto min-h-0">
+      <div className="scroll-warm space-y-4 overflow-y-auto min-h-0 flex-1">
         {groups.map((g) => (
           <div key={g.key} className="min-w-0">
             <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
