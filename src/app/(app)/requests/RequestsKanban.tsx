@@ -240,13 +240,27 @@ export default function RequestsKanban({
   // that point. Re-checking here, once fresh data actually lands and
   // re-renders this component, is what makes this reliable regardless of
   // that timing gap.
+  //
+  // The scrollIntoView call itself is deferred two animation frames --
+  // calling it synchronously in the effect body was measuring the
+  // card's position before the browser had finished laying out the
+  // newly-inserted row (it was still mid-reflow, sometimes still at its
+  // pre-animation scale(0.85)/opacity:0 starting state), so the computed
+  // scroll target was wrong and nothing visibly moved. Two rAFs is the
+  // standard way to guarantee layout has actually settled before reading
+  // element position. block: "center" (not "nearest") so the movement is
+  // unambiguous rather than a browser judgment call that can end up as
+  // a no-op if it decides the element is "close enough" already.
   useEffect(() => {
     if (!justAddedId || scrolledIdRef.current === justAddedId) return;
     const el = cardRefs.current.get(justAddedId);
-    if (el) {
-      scrolledIdRef.current = justAddedId;
-      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
+    if (!el) return;
+    scrolledIdRef.current = justAddedId;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
   }, [justAddedId, effectiveRequests]);
 
   const visibleColumns = useMemo(
