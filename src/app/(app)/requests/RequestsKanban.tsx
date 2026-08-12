@@ -188,6 +188,8 @@ export default function RequestsKanban({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [creatingStatus, setCreatingStatus] = useState<RequestStatus | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<RequestStatus | null>(null);
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
@@ -243,6 +245,19 @@ export default function RequestsKanban({
       else next.add(status);
       return next;
     });
+  }
+
+  // Drag-and-drop is mouse/trackpad only (native HTML5 DnD doesn't reach
+  // touch devices) -- the status pill dropdown on each card remains the
+  // way to change status on mobile.
+  function handleDrop(status: RequestStatus) {
+    setDragOverStatus(null);
+    const requestId = draggingId;
+    setDraggingId(null);
+    if (!requestId) return;
+    const current = effectiveRequests.find((r) => r.id === requestId);
+    if (!current || current.status === status) return;
+    handlePick(requestId, status);
   }
 
   function handlePick(requestId: string, next: RequestStatus, salePrice?: number | null) {
@@ -313,7 +328,19 @@ export default function RequestsKanban({
           return (
             <div
               key={col.status}
-              className="rounded-2xl p-3 bg-nav border border-border-warm"
+              onDragOver={(e) => {
+                if (!draggingId) return;
+                e.preventDefault();
+                setDragOverStatus(col.status);
+              }}
+              onDragLeave={() => setDragOverStatus((s) => (s === col.status ? null : s))}
+              onDrop={(e) => {
+                e.preventDefault();
+                handleDrop(col.status);
+              }}
+              className={`rounded-2xl p-3 bg-nav border transition-colors ${
+                dragOverStatus === col.status ? "border-sage bg-sage/5" : "border-border-warm"
+              }`}
               style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
             >
               <div className="flex items-center justify-between mb-3 px-1">
@@ -386,11 +413,22 @@ export default function RequestsKanban({
                   return (
                     <div
                       key={r.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingId(r.id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDragOverStatus(null);
+                      }}
                       onClick={() => {
                         setActiveId(r.id);
                         setPeekMode("view");
                       }}
-                      className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
+                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                        draggingId === r.id ? "opacity-40" : ""
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span
