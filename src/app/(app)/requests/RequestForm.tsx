@@ -254,7 +254,7 @@ export default function RequestForm({
 
               <div>
                 <label className="block text-sm font-medium text-ink">
-                  OR choose existing prize from catalog
+                  OR select from existing
                 </label>
                 <div className="mt-1">
                   <Select
@@ -263,7 +263,7 @@ export default function RequestForm({
                     onValueChange={setPrizeId}
                     className="w-full"
                     options={[
-                      { value: NONE_VALUE, label: "Custom (use title above)" },
+                      { value: NONE_VALUE, label: "Select" },
                       ...prizes.map((p) => ({ value: p.id, label: p.name })),
                     ]}
                   />

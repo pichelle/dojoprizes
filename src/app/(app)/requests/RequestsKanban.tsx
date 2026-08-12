@@ -15,7 +15,6 @@ import {
   Pencil,
   Ruler,
   Coins,
-  Sparkles,
   StickyNote,
   Tags,
   User,
@@ -87,6 +86,21 @@ function formatRequestedAgo(iso: string) {
   return `Requested ${age} days ago`;
 }
 
+function formatCalendarDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Same relative time as formatRequestedAgo, but without the "Requested"
+// prefix and with the calendar date alongside it -- used only in the
+// peek's Request date row, not on the card.
+function formatRequestDateDetailed(iso: string) {
+  const age = daysAgo(iso);
+  const relative = age === null ? iso : age === 0 ? "Today" : age === 1 ? "1 day ago" : `${age} days ago`;
+  return `${relative} (${formatCalendarDate(iso)})`;
+}
+
 // Requests are logged under whichever staff name is on duty -- most people
 // just type their first name, so this prefixes "sensei" for display without
 // changing what's actually stored.
@@ -134,35 +148,19 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
 function DetailRow({
   label,
   icon: Icon,
-  onEdit,
   children,
 }: {
   label: string;
   icon: LucideIcon;
-  onEdit?: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div
-      role={onEdit ? "button" : undefined}
-      tabIndex={onEdit ? 0 : undefined}
-      onClick={onEdit}
-      onKeyDown={
-        onEdit
-          ? (e) => {
-              if (e.key === "Enter") onEdit();
-            }
-          : undefined
-      }
-      className={`py-2.5 border-b border-border-warm last:border-b-0 text-left ${
-        onEdit ? "cursor-pointer rounded-md -mx-2 px-2 hover:bg-page transition-colors" : ""
-      }`}
-    >
-      <span className="flex items-center gap-1.5 text-xs text-muted mb-1">
+    <div className="flex items-center gap-2 py-2 border-b border-border-warm last:border-b-0 text-left">
+      <span className="flex items-center gap-1.5 text-muted w-32 shrink-0">
         <Icon size={13} className="shrink-0" aria-hidden="true" />
         {label}
       </span>
-      <div className="text-ink">{children}</div>
+      <span className="text-ink truncate">{children}</span>
     </div>
   );
 }
@@ -390,14 +388,6 @@ export default function RequestsKanban({
                       }}
                       className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
-                      {(r.franchiseTags ?? []).length > 0 && (
-                        <span
-                          className="inline-block text-[10px] font-semibold rounded-full px-2 py-0.5 mb-2"
-                          style={{ background: "var(--color-idea-bg)", color: "var(--color-idea-text)" }}
-                        >
-                          {r.franchiseTags![0].name}
-                        </span>
-                      )}
                       <div className="flex items-start justify-between gap-2">
                         <span
                           className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
@@ -499,6 +489,14 @@ export default function RequestsKanban({
                 <h2 className="font-serif text-xl text-ink truncate">
                   {peekMode === "edit" ? "Edit request" : printTitle(active)}
                 </h2>
+                {peekMode === "view" && active.is_print_club && (
+                  <span
+                    className="shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1"
+                    style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
+                  >
+                    Print club
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -513,22 +511,11 @@ export default function RequestsKanban({
             {peekMode === "view" ? (
               <>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <StatusPill
-                      status={active.status}
-                      catalogPrice={active.prize?.coin_price ?? null}
-                      onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
-                    />
-                    {active.is_print_club && (
-                      <span
-                        className="flex items-center gap-1 text-[11px] font-semibold rounded-full px-2.5 py-1"
-                        style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
-                      >
-                        <Sparkles size={11} aria-hidden="true" />
-                        Print club
-                      </span>
-                    )}
-                  </div>
+                  <StatusPill
+                    status={active.status}
+                    catalogPrice={active.prize?.coin_price ?? null}
+                    onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
+                  />
                   <button
                     type="button"
                     onClick={() => setPeekMode("edit")}
@@ -541,43 +528,30 @@ export default function RequestsKanban({
 
                 <div className="text-sm">
                   {active.status !== "idea" && (
-                    <DetailRow label="Ninja" icon={User} onEdit={() => setPeekMode("edit")}>
-                      {active.student_name}
-                    </DetailRow>
+                    <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
-                  <DetailRow label="Requested by" icon={User} onEdit={() => setPeekMode("edit")}>
-                    {formatSensei(active.requested_by)}
-                  </DetailRow>
-                  <DetailRow label="Request date" icon={Clock} onEdit={() => setPeekMode("edit")}>
-                    {formatRequestedAgo(active.date_requested)}
-                  </DetailRow>
-                  {active.size && (
-                    <DetailRow label="Size" icon={Ruler} onEdit={() => setPeekMode("edit")}>
-                      {active.size}
-                    </DetailRow>
-                  )}
+                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
                   {(active.colorFilaments ?? []).length > 0 && (
-                    <DetailRow label="Color" icon={Palette} onEdit={() => setPeekMode("edit")}>
+                    <DetailRow label="Color" icon={Palette}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
                     </DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (
-                    <DetailRow label="Theme" icon={Tags} onEdit={() => setPeekMode("edit")}>
+                    <DetailRow label="Theme" icon={Tags}>
                       {(active.franchiseTags ?? []).map((t) => t.name).join(", ")}
                     </DetailRow>
                   )}
                   {formatCoinPriceBreakdown(active.sale_price) && (
-                    <DetailRow label="Price" icon={Coins} onEdit={() => setPeekMode("edit")}>
-                      {formatCoinPriceBreakdown(active.sale_price)}
-                    </DetailRow>
+                    <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link" icon={Link2} onEdit={() => setPeekMode("edit")}>
+                    <DetailRow label="Link" icon={Link2}>
                       <a
                         href={active.links}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
                         className="text-sage underline underline-offset-2"
                       >
                         Open ↗
@@ -585,9 +559,7 @@ export default function RequestsKanban({
                     </DetailRow>
                   )}
                   {active.notes && (
-                    <DetailRow label="Notes" icon={StickyNote} onEdit={() => setPeekMode("edit")}>
-                      {active.notes}
-                    </DetailRow>
+                    <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>
                   )}
                 </div>
 
