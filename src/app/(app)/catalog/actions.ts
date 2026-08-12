@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { breakdownToCoinPrice } from "@/lib/coins";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
@@ -162,12 +163,15 @@ async function performUpdatePrize(
   }
 }
 
-// Side-peek variants: no redirect, since the user never leaves /catalog.
-export async function createPrizeInline(
+// Dedicated-page variant: redirects back to /catalog on success, for the
+// "Add a prize" full page.
+export async function createPrize(
   _prevState: PrizeFormState | null,
   formData: FormData,
 ): Promise<PrizeFormState> {
-  return performCreatePrize(formData);
+  const result = await performCreatePrize(formData);
+  if (result.error) return result;
+  redirect("/catalog");
 }
 
 export async function updatePrizeInline(
