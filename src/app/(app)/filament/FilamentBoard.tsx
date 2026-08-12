@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, X } from "lucide-react";
-import type { Prize } from "@/lib/types";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
 import ActionButton from "@/components/ActionButton";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
-import { createFilamentInline, updateFilamentInline, deleteFilament } from "./actions";
+import { updateFilamentInline, deleteFilament } from "./actions";
 
 type FilamentWithLinks = {
   id: string;
@@ -28,19 +28,16 @@ export default function FilamentBoard({
   sort,
 }: {
   filaments: FilamentWithLinks[];
-  prizes: Pick<Prize, "id" | "name">[];
+  prizes: { id: string; name: string }[];
   sort: string;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<null | "new" | { id: string }>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  const active =
-    mode && typeof mode === "object" ? filaments.find((f) => f.id === mode.id) ?? null : null;
-  const isCreating = mode === "new";
-  const open = isCreating || Boolean(active);
+  const active = filaments.find((f) => f.id === activeId) ?? null;
 
   function close() {
-    setMode(null);
+    setActiveId(null);
   }
 
   return (
@@ -54,14 +51,13 @@ export default function FilamentBoard({
             restocking.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setMode("new")}
+        <Link
+          href="/filament/new"
           className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
         >
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a color
-        </button>
+        </Link>
       </div>
 
       <SortSelect sort={sort} />
@@ -77,9 +73,9 @@ export default function FilamentBoard({
             <div
               role="button"
               tabIndex={0}
-              onClick={() => setMode({ id: f.id })}
+              onClick={() => setActiveId(f.id)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") setMode({ id: f.id });
+                if (e.key === "Enter") setActiveId(f.id);
               }}
               key={f.id}
               className="card-hover cursor-pointer text-left bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
@@ -135,7 +131,7 @@ export default function FilamentBoard({
         </p>
       )}
 
-      {open && (
+      {active && (
         <div className="fixed inset-0 z-40 flex justify-end">
           <div
             className="absolute inset-0 bg-ink/20"
@@ -144,9 +140,7 @@ export default function FilamentBoard({
           />
           <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">
-                {isCreating ? "Add a filament color" : "Edit filament"}
-              </h2>
+              <h2 className="font-serif text-xl text-ink">Edit filament</h2>
               <button
                 type="button"
                 onClick={close}
@@ -158,14 +152,12 @@ export default function FilamentBoard({
             </div>
 
             <FilamentForm
-              key={isCreating ? "new" : active!.id}
-              action={
-                isCreating ? createFilamentInline : updateFilamentInline.bind(null, active!.id)
-              }
-              initial={isCreating ? undefined : active!}
+              key={active.id}
+              action={updateFilamentInline.bind(null, active.id)}
+              initial={active}
               allPrizes={prizes}
-              linkedPrizeIds={isCreating ? [] : active!.linkedPrizes.map((p) => p.id)}
-              submitLabel={isCreating ? "Add filament" : "Save changes"}
+              linkedPrizeIds={active.linkedPrizes.map((p) => p.id)}
+              submitLabel="Save changes"
               onCancel={close}
               onSuccess={() => {
                 close();
@@ -173,23 +165,21 @@ export default function FilamentBoard({
               }}
             />
 
-            {!isCreating && (
-              <div className="flex items-center justify-between">
-                {active!.amazon_link ? (
-                  <AmazonLinkButton href={active!.amazon_link} />
-                ) : (
-                  <span />
-                )}
-                <ActionButton
-                  action={deleteFilament.bind(null, active!.id)}
-                  toastMessage="Filament color deleted"
-                  confirmMessage={`Delete ${active!.color_name}? This can't be undone.`}
-                  className="text-sm text-rust hover:underline"
-                >
-                  Delete this filament color
-                </ActionButton>
-              </div>
-            )}
+            <div className="flex items-center justify-between">
+              {active.amazon_link ? (
+                <AmazonLinkButton href={active.amazon_link} />
+              ) : (
+                <span />
+              )}
+              <ActionButton
+                action={deleteFilament.bind(null, active.id)}
+                toastMessage="Filament color deleted"
+                confirmMessage={`Delete ${active.color_name}? This can't be undone.`}
+                className="text-sm text-rust hover:underline"
+              >
+                Delete this filament color
+              </ActionButton>
+            </div>
           </div>
         </div>
       )}

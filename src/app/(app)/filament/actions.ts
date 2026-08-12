@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 
 export type FilamentFormState = { error: string | null; success?: boolean; id?: string };
@@ -89,14 +90,19 @@ async function performUpdateFilament(
   }
 }
 
-// Side-peek variants: no redirect, since the user never leaves /filament.
-export async function createFilamentInline(
+// Dedicated-page variant: redirects back to /filament on success, since
+// adding a color is a full page again (not a side peek).
+export async function createFilament(
   _prevState: FilamentFormState | null,
   formData: FormData,
 ): Promise<FilamentFormState> {
-  return performCreateFilament(formData);
+  const result = await performCreateFilament(formData);
+  if (result.error) return result;
+  redirect("/filament");
 }
 
+// Side-peek variant: no redirect, since the user never leaves /filament --
+// editing still happens inline.
 export async function updateFilamentInline(
   filamentId: string,
   _prevState: FilamentFormState | null,
