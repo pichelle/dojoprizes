@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, Pencil, X } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
@@ -19,7 +19,7 @@ import { formatCoinPriceBreakdown } from "@/lib/coins";
 const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
   { status: "idea", label: "Ideas", dot: "var(--color-idea-dot)" },
   { status: "pending", label: "Queue", dot: "var(--color-pending-dot)" },
-  { status: "printed", label: "Awaiting pickup", dot: "var(--color-printed-dot)" },
+  { status: "printed", label: "Pickup", dot: "var(--color-printed-dot)" },
   { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
 
@@ -76,6 +76,14 @@ function formatSensei(name: string | null) {
   return /^sensei\b/i.test(name.trim()) ? name : `sensei ${name}`;
 }
 
+// Ideas don't have a prize/free-text title -- the "idea title" field
+// captured at creation is stored in student_name instead, so use that
+// as the display title for idea-status cards.
+function printTitle(r: PrizeRequest) {
+  if (r.status === "idea") return r.student_name || "Untitled idea";
+  return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
+}
+
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "?";
@@ -104,6 +112,15 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
   );
 }
 
+function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5 border-b border-border-warm last:border-b-0">
+      <span className="text-muted">{label}</span>
+      <span className="text-ink text-right">{children}</span>
+    </div>
+  );
+}
+
 type Override = { status: RequestStatus; salePrice: number | null };
 
 export default function RequestsKanban({
@@ -122,6 +139,7 @@ export default function RequestsKanban({
   onDelete: (requestId: string) => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
@@ -316,11 +334,14 @@ export default function RequestsKanban({
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
                   const age = daysAgo(r.date_requested);
                   const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
-                  const printName = r.prize?.name ?? r.free_text_prize ?? "Untitled print";
+                  const printName = printTitle(r);
                   return (
                     <div
                       key={r.id}
-                      onClick={() => setActiveId(r.id)}
+                      onClick={() => {
+                        setActiveId(r.id);
+                        setPeekMode("view");
+                      }}
                       className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -347,7 +368,7 @@ export default function RequestsKanban({
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
-                          r.student_name,
+                          r.status === "idea" ? null : r.student_name,
                           r.size,
                           (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
                         ]
@@ -410,7 +431,9 @@ export default function RequestsKanban({
               />
             )}
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Edit request</h2>
+              <h2 className="font-serif text-xl text-ink">
+                {peekMode === "edit" ? "Edit request" : printTitle(active)}
+              </h2>
               <button
                 type="button"
                 onClick={() => setActiveId(null)}
@@ -420,30 +443,98 @@ export default function RequestsKanban({
                 <X size={18} />
               </button>
             </div>
-            <RequestForm
-              key={active.id}
-              action={updateRequestInline.bind(null, active.id)}
-              onCancel={() => setActiveId(null)}
-              onSuccess={() => {
-                setActiveId(null);
-                router.refresh();
-              }}
-              initial={active}
-              initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
-              initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}
-              prizes={prizes}
-              filaments={filaments}
-              allFranchiseTags={allFranchiseTags}
-              submitLabel="Save changes"
-            />
-            <ActionButton
-              action={onDelete.bind(null, active.id)}
-              toastMessage="Request deleted"
-              confirmMessage={`Delete ${active.student_name}'s request? This can't be undone.`}
-              className="text-sm text-rust hover:underline"
-            >
-              Delete this request
-            </ActionButton>
+
+            {peekMode === "view" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <StatusPill
+                    status={active.status}
+                    catalogPrice={active.prize?.coin_price ?? null}
+                    onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("edit")}
+                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+                  >
+                    <Pencil size={13} aria-hidden="true" />
+                    Edit
+                  </button>
+                </div>
+
+                <div className="text-sm">
+                  {active.status !== "idea" && (
+                    <DetailRow label="Ninja">{active.student_name}</DetailRow>
+                  )}
+                  <DetailRow label="Requested by">{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Requested">{formatRequestedAgo(active.date_requested)}</DetailRow>
+                  {active.size && <DetailRow label="Size">{active.size}</DetailRow>}
+                  {(active.colorFilaments ?? []).length > 0 && (
+                    <DetailRow label="Color">
+                      {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
+                    </DetailRow>
+                  )}
+                  {(active.franchiseTags ?? []).length > 0 && (
+                    <DetailRow label="Theme">
+                      {(active.franchiseTags ?? []).map((t) => t.name).join(", ")}
+                    </DetailRow>
+                  )}
+                  {active.is_print_club && <DetailRow label="Print club">Yes</DetailRow>}
+                  {formatCoinPriceBreakdown(active.sale_price) && (
+                    <DetailRow label="Price">{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
+                  )}
+                  {active.links && (
+                    <DetailRow label="Link">
+                      <a
+                        href={active.links}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sage underline underline-offset-2"
+                      >
+                        Open ↗
+                      </a>
+                    </DetailRow>
+                  )}
+                  {active.notes && <DetailRow label="Notes">{active.notes}</DetailRow>}
+                </div>
+
+                <ActionButton
+                  action={onDelete.bind(null, active.id)}
+                  toastMessage="Request deleted"
+                  confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  className="text-sm text-rust hover:underline"
+                >
+                  Delete this request
+                </ActionButton>
+              </>
+            ) : (
+              <>
+                <RequestForm
+                  key={active.id}
+                  action={updateRequestInline.bind(null, active.id)}
+                  onCancel={() => setPeekMode("view")}
+                  onSuccess={() => {
+                    setActiveId(null);
+                    router.refresh();
+                  }}
+                  initial={active}
+                  initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
+                  initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}
+                  prizes={prizes}
+                  filaments={filaments}
+                  allFranchiseTags={allFranchiseTags}
+                  submitLabel="Save changes"
+                />
+                <ActionButton
+                  action={onDelete.bind(null, active.id)}
+                  toastMessage="Request deleted"
+                  confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  className="text-sm text-rust hover:underline"
+                >
+                  Delete this request
+                </ActionButton>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -123,7 +123,9 @@ export default function RequestForm({
   function validate(form: HTMLFormElement): boolean {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
-    const loggingIdea = isCreating && String(fd.get("initial_status") ?? "") === "idea";
+    // initialStatus (not the form's own initial_status field, which only
+    // exists while creating) covers both creating and editing an idea.
+    const loggingIdea = initialStatus === "idea";
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
@@ -248,9 +250,6 @@ export default function RequestForm({
                   placeholder="e.g. custom Bulbasaur keychain"
                   className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
                 />
-                <p className="mt-1.5 text-sm text-muted">
-                  Most requests are custom -- this is what shows on the card.
-                </p>
               </div>
 
               <div>
