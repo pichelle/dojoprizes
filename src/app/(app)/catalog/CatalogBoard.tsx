@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Plus, X } from "lucide-react";
 import type { Filament, FranchiseTag, Prize } from "@/lib/types";
 import PrizeCard from "./PrizeCard";
@@ -9,7 +10,7 @@ import CatalogFilterBar from "./CatalogFilterBar";
 import ActiveFilters from "./ActiveFilters";
 import PrizeForm from "./PrizeForm";
 import ActionButton from "@/components/ActionButton";
-import { createPrizeInline, updatePrizeInline, deletePrize } from "./actions";
+import { updatePrizeInline, deletePrize } from "./actions";
 
 type CheckoutsByPrize = Record<string, string>;
 
@@ -27,15 +28,13 @@ export default function CatalogBoard({
   onCheckout: (prizeId: string, boughtBy: string | null) => Promise<void>;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<null | "new" | { id: string }>(null);
+  const [mode, setMode] = useState<null | { id: string }>(null);
 
   // Derived from the current `prizes` prop by id (not stored directly) so
   // that after a delete + router.refresh(), the prize disappearing from
   // this list automatically closes the peek instead of showing stale data.
-  const active =
-    mode && typeof mode === "object" ? prizes.find((p) => p.id === mode.id) ?? null : null;
-  const isCreating = mode === "new";
-  const open = isCreating || Boolean(active);
+  const active = mode ? prizes.find((p) => p.id === mode.id) ?? null : null;
+  const open = Boolean(active);
 
   function close() {
     setMode(null);
@@ -62,14 +61,13 @@ export default function CatalogBoard({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => setMode("new")}
+        <Link
+          href="/catalog/new"
           className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
         >
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a prize
-        </button>
+        </Link>
         <CatalogFilterBar />
       </div>
 
@@ -114,9 +112,7 @@ export default function CatalogBoard({
           />
           <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">
-                {isCreating ? "Add a prize" : "Edit prize"}
-              </h2>
+              <h2 className="font-serif text-xl text-ink">Edit prize</h2>
               <button
                 type="button"
                 onClick={close}
@@ -127,37 +123,33 @@ export default function CatalogBoard({
               </button>
             </div>
 
-            <PrizeForm
-              key={isCreating ? "new" : active!.id}
-              action={
-                isCreating ? createPrizeInline : updatePrizeInline.bind(null, active!.id)
-              }
-              initial={isCreating ? undefined : active!}
-              allFilaments={allFilaments}
-              linkedFilamentIds={
-                isCreating ? [] : (active!.filaments ?? []).map((f) => f.id)
-              }
-              allFranchiseTags={allFranchiseTags}
-              initialFranchiseTags={
-                isCreating ? [] : (active!.franchiseTags ?? []).map((t) => t.name)
-              }
-              submitLabel={isCreating ? "Add prize" : "Save changes"}
-              onCancel={close}
-              onSuccess={() => {
-                close();
-                router.refresh();
-              }}
-            />
+            {active && (
+              <>
+                <PrizeForm
+                  key={active.id}
+                  action={updatePrizeInline.bind(null, active.id)}
+                  initial={active}
+                  allFilaments={allFilaments}
+                  linkedFilamentIds={(active.filaments ?? []).map((f) => f.id)}
+                  allFranchiseTags={allFranchiseTags}
+                  initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
+                  submitLabel="Save changes"
+                  onCancel={close}
+                  onSuccess={() => {
+                    close();
+                    router.refresh();
+                  }}
+                />
 
-            {!isCreating && (
-              <ActionButton
-                action={deletePrize.bind(null, active!.id)}
-                toastMessage="Prize deleted"
-                confirmMessage={`Delete ${active!.name}? This can't be undone.`}
-                className="text-sm text-rust hover:underline"
-              >
-                Delete this prize
-              </ActionButton>
+                <ActionButton
+                  action={deletePrize.bind(null, active.id)}
+                  toastMessage="Prize deleted"
+                  confirmMessage={`Delete ${active.name}? This can't be undone.`}
+                  className="text-sm text-rust hover:underline"
+                >
+                  Delete this prize
+                </ActionButton>
+              </>
             )}
           </div>
         </div>
