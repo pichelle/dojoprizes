@@ -13,6 +13,7 @@ import {
   Maximize2,
   Palette,
   Pencil,
+  Plus,
   Ruler,
   Coins,
   StickyNote,
@@ -26,7 +27,7 @@ import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from 
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
-import { updateRequestInline } from "./actions";
+import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 
@@ -174,6 +175,7 @@ export default function RequestsKanban({
   allFranchiseTags,
   onStatusChange,
   onDelete,
+  onClearCancelled,
 }: {
   requests: PrizeRequest[];
   prizes: Pick<Prize, "id" | "name">[];
@@ -181,9 +183,11 @@ export default function RequestsKanban({
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
+  onClearCancelled: () => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
+  const [creatingStatus, setCreatingStatus] = useState<RequestStatus | null>(null);
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
@@ -453,6 +457,24 @@ export default function RequestsKanban({
                   </p>
                 )}
               </div>
+              <button
+                type="button"
+                onClick={() => setCreatingStatus(col.status)}
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60"
+              >
+                <Plus size={13} aria-hidden="true" />
+                Add new
+              </button>
+              {col.status === "cancelled" && rows.length > 0 && (
+                <ActionButton
+                  action={onClearCancelled}
+                  toastMessage="Cancelled requests cleared"
+                  confirmMessage={`Delete all ${rows.length} cancelled request${rows.length === 1 ? "" : "s"}? This can't be undone.`}
+                  className="mt-2 w-full text-xs font-medium text-rust hover:underline"
+                >
+                  Clear cancelled
+                </ActionButton>
+              )}
             </div>
           );
         })}
@@ -600,6 +622,42 @@ export default function RequestsKanban({
                 </ActionButton>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {creatingStatus && (
+        <div className="fixed inset-0 z-40 flex justify-end">
+          <div
+            className="absolute inset-0 bg-ink/20"
+            onClick={() => setCreatingStatus(null)}
+            aria-hidden="true"
+          />
+          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-xl text-ink">Add to {COLUMNS.find((c) => c.status === creatingStatus)?.label}</h2>
+              <button
+                type="button"
+                onClick={() => setCreatingStatus(null)}
+                className="shrink-0 text-muted hover:text-ink"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <RequestForm
+              key={creatingStatus}
+              action={createRequestInline}
+              presetStatus={creatingStatus}
+              onCancel={() => setCreatingStatus(null)}
+              onSuccess={() => {
+                setCreatingStatus(null);
+                router.refresh();
+              }}
+              prizes={prizes}
+              filaments={filaments}
+              allFranchiseTags={allFranchiseTags}
+            />
           </div>
         </div>
       )}

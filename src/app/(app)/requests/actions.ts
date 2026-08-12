@@ -85,7 +85,10 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
   const supabase = createServerClient();
   try {
     const rawStatus = String(formData.get("initial_status") ?? "").trim();
-    const initialStatus: RequestStatus = rawStatus === "idea" ? "idea" : "pending";
+    const CREATABLE_STATUSES: RequestStatus[] = ["idea", "pending", "printed", "cancelled"];
+    const initialStatus: RequestStatus = CREATABLE_STATUSES.includes(rawStatus as RequestStatus)
+      ? (rawStatus as RequestStatus)
+      : "pending";
 
     const { data: request, error } = await supabase
       .from("requests")
@@ -192,6 +195,15 @@ export async function updateRequestInline(
   return performUpdateRequest(requestId, formData);
 }
 
+// Side-peek variant of create: no redirect, since the "+ Add new" column
+// buttons open the form without leaving /requests.
+export async function createRequestInline(
+  _prevState: RequestFormState | null,
+  formData: FormData,
+): Promise<RequestFormState> {
+  return performCreateRequest(formData);
+}
+
 export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus,
@@ -217,6 +229,16 @@ export async function updateRequestStatus(
 export async function deleteRequest(requestId: string) {
   const supabase = createServerClient();
   const { error } = await supabase.from("requests").delete().eq("id", requestId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+  revalidatePath("/");
+}
+
+// Bulk-clears every cancelled request in one go -- used by the "Clear
+// cancelled" button at the bottom of the Cancelled column.
+export async function clearCancelledRequests() {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("requests").delete().eq("status", "cancelled");
   if (error) throw new Error(error.message);
   revalidatePath("/requests");
   revalidatePath("/");

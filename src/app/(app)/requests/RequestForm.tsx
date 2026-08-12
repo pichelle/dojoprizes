@@ -2,7 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestSize } from "@/lib/types";
+import type {
+  Filament,
+  FranchiseTag,
+  Prize,
+  PrizeRequest,
+  RequestSize,
+  RequestStatus,
+} from "@/lib/types";
 import TagInput from "@/components/TagInput";
 import MultiSelect from "@/components/MultiSelect";
 import Select, { NONE_VALUE } from "@/components/Select";
@@ -37,6 +44,14 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
 
+const STATUS_LABELS: Record<RequestStatus, string> = {
+  idea: "Ideas",
+  pending: "Queue",
+  printed: "Pickup",
+  fulfilled: "Fulfilled",
+  cancelled: "Cancelled",
+};
+
 const initialState: RequestFormState = { error: null };
 
 export default function RequestForm({
@@ -49,6 +64,7 @@ export default function RequestForm({
   initialColorFilamentIds = [],
   initialPrizeId,
   submitLabel = "Log request",
+  presetStatus,
   onCancel,
   onSuccess,
 }: {
@@ -64,14 +80,17 @@ export default function RequestForm({
   // record (i.e. creating, not editing).
   initialPrizeId?: string;
   submitLabel?: string;
+  // When set, creation skips the Idea/Request toggle and logs straight into
+  // this status -- used by the "+ Add new" buttons on each kanban column.
+  presetStatus?: RequestStatus;
   onCancel?: () => void;
   onSuccess?: () => void;
 }) {
   const router = useRouter();
   const isCreating = !initial;
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? initialPrizeId ?? NONE_VALUE);
-  const [initialStatus, setInitialStatus] = useState<"idea" | "pending">(
-    initial?.status === "idea" ? "idea" : "pending",
+  const [initialStatus, setInitialStatus] = useState<RequestStatus>(
+    presetStatus ?? (initial?.status === "idea" ? "idea" : "pending"),
   );
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -159,31 +178,39 @@ export default function RequestForm({
         {isCreating && (
           <div className="mb-4">
             <input type="hidden" name="initial_status" value={initialStatus} />
-            <div className="inline-flex rounded-md border border-border-warm-strong bg-card p-0.5 text-sm">
-              <button
-                type="button"
-                onClick={() => setInitialStatus("pending")}
-                className={`rounded px-3 py-1.5 font-medium transition-colors ${
-                  initialStatus === "pending" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                Request
-              </button>
-              <button
-                type="button"
-                onClick={() => setInitialStatus("idea")}
-                className={`rounded px-3 py-1.5 font-medium transition-colors ${
-                  initialStatus === "idea" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
-                }`}
-              >
-                Idea
-              </button>
-            </div>
-            <p className="mt-1.5 text-xs text-muted">
-              {initialStatus === "idea"
-                ? "Not a firm request yet -- a sensei's idea or a themed print for later. Goes in the Ideas column until it's moved to Pending or Cancelled."
-                : "A real request someone's waiting on. Goes straight into Pending."}
-            </p>
+            {presetStatus ? (
+              <p className="text-xs text-muted">
+                Adding to the <span className="font-medium text-ink">{STATUS_LABELS[presetStatus]}</span> column.
+              </p>
+            ) : (
+              <>
+                <div className="inline-flex rounded-md border border-border-warm-strong bg-card p-0.5 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => setInitialStatus("pending")}
+                    className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                      initialStatus === "pending" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    Request
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInitialStatus("idea")}
+                    className={`rounded px-3 py-1.5 font-medium transition-colors ${
+                      initialStatus === "idea" ? "bg-ink text-page" : "text-ink-soft hover:text-ink"
+                    }`}
+                  >
+                    Idea
+                  </button>
+                </div>
+                <p className="mt-1.5 text-xs text-muted">
+                  {initialStatus === "idea"
+                    ? "Not a firm request yet -- a sensei's idea or a themed print for later. Goes in the Ideas column until it's moved to Pending or Cancelled."
+                    : "A real request someone's waiting on. Goes straight into Pending."}
+                </p>
+              </>
+            )}
           </div>
         )}
 
