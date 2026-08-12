@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase/server";
 import RequestForm from "../RequestForm";
+import type { RequestSize } from "@/lib/types";
 import { createRequest } from "../actions";
 
 // Always fetch fresh prize/filament/tag lists rather than a build-time
@@ -30,6 +31,33 @@ export default async function NewRequestPage({
     .select("id, name")
     .order("name");
 
+  // "Print another" on a print-on-request catalog card links here with
+  // ?prize_id= -- pull that prize's own details (image, size, color,
+  // theme) so the request form arrives pre-filled instead of just the
+  // prize dropdown.
+  let prefillFromPrize: { photo_url: string | null; size: RequestSize | null } | null = null;
+  let prefillFranchiseTags: string[] = [];
+  let prefillColorFilamentIds: string[] = [];
+
+  if (prizeId) {
+    const [{ data: prizeRow }, { data: tagLinks }, { data: filamentLinks }] = await Promise.all([
+      supabase.from("prizes").select("photo_url, size").eq("id", prizeId).maybeSingle(),
+      supabase
+        .from("prize_franchise_tags")
+        .select("tag:franchise_tags(name)")
+        .eq("prize_id", prizeId),
+      supabase.from("prize_filament").select("filament_id").eq("prize_id", prizeId),
+    ]);
+
+    if (prizeRow) prefillFromPrize = prizeRow;
+    prefillFranchiseTags = (
+      (tagLinks ?? []) as unknown as { tag: { name: string } | null }[]
+    )
+      .map((l) => l.tag?.name)
+      .filter((n): n is string => Boolean(n));
+    prefillColorFilamentIds = (filamentLinks ?? []).map((l) => l.filament_id);
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       <div className="flex items-center justify-between">
@@ -48,6 +76,10 @@ export default async function NewRequestPage({
           filaments={filaments ?? []}
           allFranchiseTags={franchiseTags ?? []}
           initialPrizeId={prizeId}
+          initialPhotoUrl={prefillFromPrize?.photo_url}
+          initialSize={prefillFromPrize?.size}
+          initialFranchiseTags={prefillFranchiseTags}
+          initialColorFilamentIds={prefillColorFilamentIds}
           action={createRequest}
         />
       </div>
