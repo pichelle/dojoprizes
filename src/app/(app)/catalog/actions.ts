@@ -186,6 +186,24 @@ export async function deletePrize(prizeId: string) {
   revalidatePath("/filament");
 }
 
+// Renames a franchise tag in place (e.g. fixing a typo) -- since prizes
+// and requests only ever link to a tag by id, this fixes every place
+// that tag shows up, everywhere, with no separate cleanup needed.
+export async function renameFranchiseTag(oldName: string, newName: string) {
+  const supabase = createServerClient();
+  const trimmed = newName.trim();
+  if (!trimmed) throw new Error("Tag name can't be empty.");
+
+  const { error } = await supabase
+    .from("franchise_tags")
+    .update({ name: trimmed })
+    .ilike("name", oldName);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/catalog");
+  revalidatePath("/requests");
+}
+
 // Quick one-click checkout, callable straight from the catalog grid.
 export async function quickCheckout(prizeId: string, boughtBy: string | null) {
   const supabase = createServerClient();
