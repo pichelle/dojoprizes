@@ -10,6 +10,7 @@ import CatalogFilterBar from "./CatalogFilterBar";
 import ActiveFilters from "./ActiveFilters";
 import PrizeForm from "./PrizeForm";
 import ActionButton from "@/components/ActionButton";
+import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import { updatePrizeInline, deletePrize } from "./actions";
 
@@ -44,7 +45,7 @@ export default function CatalogBoard({
   const inStockPrizes = prizes.filter((p) => p.status === "in_stock");
   const printOnRequestPrizes = prizes.filter((p) => p.status !== "in_stock");
 
-  function renderCard(prize: Prize) {
+  function renderCard(prize: Prize, index: number) {
     return (
       <PrizeCard
         key={prize.id}
@@ -55,6 +56,7 @@ export default function CatalogBoard({
           prize.stock_count === 0 ? latestCheckoutByPrize[prize.id] : prize.created_at
         }
         soldDateKnown={prize.stock_count === 0 && Boolean(latestCheckoutByPrize[prize.id])}
+        staggerDelay={staggerDelay(index)}
       />
     );
   }
@@ -78,12 +80,12 @@ export default function CatalogBoard({
           group keeps whatever secondary sort (name/price) was picked. */}
       {inStockPrizes.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {inStockPrizes.map((prize) => renderCard(prize))}
+          {inStockPrizes.map((prize, i) => renderCard(prize, i))}
         </div>
       )}
 
       {inStockPrizes.length > 0 && printOnRequestPrizes.length > 0 && (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 mt-4 mb-1">
           <div className="h-px flex-1 bg-border-warm" />
           <p className="text-xs font-medium text-muted uppercase tracking-wide shrink-0">
             Print-on-request
@@ -94,7 +96,7 @@ export default function CatalogBoard({
 
       {printOnRequestPrizes.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {printOnRequestPrizes.map((prize) => renderCard(prize))}
+          {printOnRequestPrizes.map((prize, i) => renderCard(prize, i))}
         </div>
       )}
 

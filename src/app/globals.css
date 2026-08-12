@@ -293,3 +293,12 @@ textarea:hover {
   animation: skeleton-in 0.45s cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
   animation-delay: var(--skeleton-delay, 0ms);
 }
+
+/* Same fade + slight rise/scale as the skeleton placeholders, applied to
+   the real cards once they've loaded -- staggered per item (via
+   --stagger-delay) so a grid/column reveals sequentially instead of
+   popping in all at once. */
+.stagger-in {
+  animation: skeleton-in 0.4s cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}

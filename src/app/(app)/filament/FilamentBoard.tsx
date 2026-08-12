@@ -7,6 +7,7 @@ import { Plus, X } from "lucide-react";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
 import ActionButton from "@/components/ActionButton";
+import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
 import { updateFilamentInline, deleteFilament } from "./actions";
@@ -64,7 +65,7 @@ export default function FilamentBoard({
       <SortSelect sort={sort} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filaments.map((f) => {
+        {filaments.map((f, i) => {
           const isLow =
             f.low_stock_threshold != null &&
             f.stock_level != null &&
@@ -79,7 +80,8 @@ export default function FilamentBoard({
                 if (e.key === "Enter") setActiveId(f.id);
               }}
               key={f.id}
-              className="card-hover cursor-pointer text-left bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
+              style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+              className="card-hover stagger-in cursor-pointer text-left bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-medium text-ink flex items-center gap-2">

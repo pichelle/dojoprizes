@@ -31,6 +31,7 @@ import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { staggerDelay } from "@/lib/stagger";
 
 // "Fulfilled" isn't a visible column -- it's tracked (status still gets
 // set to "fulfilled" via the status pill, and still counts toward the
@@ -319,7 +320,7 @@ export default function RequestsKanban({
       )}
 
       <div
-        className="grid items-start gap-5"
+        className="grid items-start sm:items-stretch gap-5 sm:h-[calc(100vh-19rem)] sm:min-h-[420px]"
         style={{ gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))` }}
       >
         {visibleColumns.map((col) => {
@@ -339,12 +340,12 @@ export default function RequestsKanban({
                 e.preventDefault();
                 handleDrop(col.status);
               }}
-              className={`rounded-2xl p-3 bg-nav border transition-colors ${
+              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 ${
                 dragOverStatus === col.status ? "border-sage bg-sage/5" : "border-border-warm"
               }`}
               style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
             >
-              <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center justify-between mb-3 px-1 sm:shrink-0">
                 <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
                   <span
                     className="inline-block w-2 h-2 rounded-full"
@@ -401,10 +402,12 @@ export default function RequestsKanban({
                 </div>
               </div>
               <div
-                className={isExpanded ? "grid gap-2.5" : "space-y-2.5"}
+                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 ${
+                  isExpanded ? "grid gap-2.5" : "space-y-2.5"
+                }`}
                 style={isExpanded ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" } : undefined}
               >
-                {rows.map((r) => {
+                {rows.map((r, i) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
                   const priceTag = formatCoinPriceBreakdown(r.sale_price);
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
@@ -427,7 +430,8 @@ export default function RequestsKanban({
                         setActiveId(r.id);
                         setPeekMode("view");
                       }}
-                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                      style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+                      className={`card-hover stagger-in cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
                         draggingId === r.id ? "opacity-40" : ""
                       }`}
                     >
@@ -499,7 +503,7 @@ export default function RequestsKanban({
               <button
                 type="button"
                 onClick={() => setCreatingStatus(col.status)}
-                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60 sm:shrink-0"
               >
                 <Plus size={13} aria-hidden="true" />
                 Add new
@@ -509,7 +513,7 @@ export default function RequestsKanban({
                   action={onClearCancelled}
                   toastMessage="Cancelled requests cleared"
                   confirmMessage={`Delete all ${rows.length} cancelled request${rows.length === 1 ? "" : "s"}? This can't be undone.`}
-                  className="mt-2 w-full text-xs font-medium text-rust hover:underline"
+                  className="mt-2 w-full text-xs font-medium text-rust hover:underline sm:shrink-0"
                 >
                   Clear cancelled
                 </ActionButton>

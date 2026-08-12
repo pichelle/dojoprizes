@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Check, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
@@ -33,18 +34,44 @@ export default function StatusPill({
   const [open, setOpen] = useState(false);
   const [confirmingPrice, setConfirmingPrice] = useState(false);
   const [breakdown, setBreakdown] = useState<CoinBreakdown>({ obsidian: 0, gold: 0, silver: 0 });
-  const ref = useRef<HTMLDivElement>(null);
+  // Menu position in viewport coordinates, computed from the trigger
+  // button's own bounding box -- the dropdown renders through a portal
+  // (see below) rather than as a descendant of this card, so it needs
+  // its own fixed position rather than relying on absolute + a
+  // positioned ancestor.
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-        setConfirmingPrice(false);
-      }
+      const target = e.target as Node;
+      if (buttonRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
+      setConfirmingPrice(false);
+    }
+    function handleScrollOrResize() {
+      setOpen(false);
+      setConfirmingPrice(false);
     }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
   }, []);
+
+  function toggleOpen() {
+    if (!open && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen((o) => !o);
+  }
 
   function pick(next: RequestStatus) {
     if (next === "printed") {
@@ -66,10 +93,11 @@ export default function StatusPill({
   const Icon = meta.icon;
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative">
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 hover:brightness-95 transition-[filter]"
         style={{ background: meta.bg, color: meta.text }}
       >
@@ -77,68 +105,90 @@ export default function StatusPill({
         {meta.label}
       </button>
 
-      {open && !confirmingPrice && (
-        <div className="absolute right-0 z-20 mt-1 w-36 bg-card border border-border-warm-strong rounded-md shadow-md p-1.5 flex flex-col gap-1">
-          {STATUS_ORDER.map((s) => {
-            const m = STATUS_META[s];
-            const OptIcon = m.icon;
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => pick(s)}
-                className="flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 text-left hover:brightness-95 transition-[filter]"
-                style={{ background: m.bg, color: m.text }}
-              >
-                <OptIcon size={12} aria-hidden="true" />
-                {m.label}
-                {s === status && <Check size={12} className="ml-auto" aria-hidden="true" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Portaled straight to <body> -- a card that's part of a hoverable
+          grid (transform on :hover) creates its own stacking context the
+          instant a sibling card is hovered, which was momentarily
+          shuffling this dropdown behind whatever card the mouse passed
+          over. Rendering it outside the card tree entirely sidesteps
+          that regardless of sibling hover state. */}
+      {open &&
+        !confirmingPrice &&
+        menuPos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: menuPos.top, right: menuPos.right }}
+            className="fixed z-50 w-36 bg-card border border-border-warm-strong rounded-md shadow-md p-1.5 flex flex-col gap-1"
+          >
+            {STATUS_ORDER.map((s) => {
+              const m = STATUS_META[s];
+              const OptIcon = m.icon;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => pick(s)}
+                  className="flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 text-left hover:brightness-95 transition-[filter]"
+                  style={{ background: m.bg, color: m.text }}
+                >
+                  <OptIcon size={12} aria-hidden="true" />
+                  {m.label}
+                  {s === status && <Check size={12} className="ml-auto" aria-hidden="true" />}
+                </button>
+              );
+            })}
+          </div>,
+          document.body,
+        )}
 
-      {open && confirmingPrice && (
-        <div className="absolute right-0 z-20 mt-1 w-56 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2">
-          <p className="text-[11px] text-muted">Price for this print?</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {(["gold", "obsidian"] as const).map((tier) => (
-              <div key={tier}>
-                <label className="block text-[10px] text-muted capitalize">{tier}</label>
-                <input
-                  type="number"
-                  min={0}
-                  step="1"
-                  value={breakdown[tier] || ""}
-                  onChange={(e) =>
-                    setBreakdown((prev) => ({ ...prev, [tier]: Number(e.target.value) || 0 }))
-                  }
-                  placeholder="0"
-                  className="w-full rounded-md border border-border-warm-strong px-1.5 py-1 text-xs"
-                />
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-end gap-1.5">
-            <button
-              type="button"
-              onClick={() => setConfirmingPrice(false)}
-              className="text-[11px] text-muted hover:text-ink px-2 py-1"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={confirmPrice}
-              className="text-[11px] font-medium rounded-md px-2.5 py-1"
-              style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
-            >
-              Confirm
-            </button>
-          </div>
-        </div>
-      )}
+      {open &&
+        confirmingPrice &&
+        menuPos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            style={{ top: menuPos.top, right: menuPos.right }}
+            className="fixed z-50 w-56 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2"
+          >
+            <p className="text-[11px] text-muted">Price for this print?</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(["gold", "obsidian"] as const).map((tier) => (
+                <div key={tier}>
+                  <label className="block text-[10px] text-muted capitalize">{tier}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={breakdown[tier] || ""}
+                    onChange={(e) =>
+                      setBreakdown((prev) => ({ ...prev, [tier]: Number(e.target.value) || 0 }))
+                    }
+                    placeholder="0"
+                    className="w-full rounded-md border border-border-warm-strong px-1.5 py-1 text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => setConfirmingPrice(false)}
+                className="text-[11px] text-muted hover:text-ink px-2 py-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmPrice}
+                className="text-[11px] font-medium rounded-md px-2.5 py-1"
+                style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
