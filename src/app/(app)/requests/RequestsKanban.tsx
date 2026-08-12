@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -201,6 +201,11 @@ export default function RequestsKanban({
   // other card uses. Cleared after the animation plays or on the next
   // successful add, whichever comes first.
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  // Tracks which card we've already scrolled to, so the ref callback
+  // below (which re-fires on every render since it's defined inline)
+  // doesn't re-trigger scrollIntoView on every subsequent render --
+  // only the first time the just-added card's DOM node appears.
+  const scrolledIdRef = useRef<string | null>(null);
   const router = useRouter();
 
   // Effective requests: server data with any not-yet-persisted optimistic
@@ -426,6 +431,12 @@ export default function RequestsKanban({
                   return (
                     <div
                       key={r.id}
+                      ref={(el) => {
+                        if (el && r.id === justAddedId && scrolledIdRef.current !== r.id) {
+                          scrolledIdRef.current = r.id;
+                          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                        }
+                      }}
                       draggable
                       onDragStart={(e) => {
                         setDraggingId(r.id);
