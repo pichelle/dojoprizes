@@ -6,6 +6,7 @@ import { Plus, X } from "lucide-react";
 import type { Filament, FranchiseTag, Prize } from "@/lib/types";
 import PrizeCard from "./PrizeCard";
 import CatalogFilterBar from "./CatalogFilterBar";
+import ActiveFilters from "./ActiveFilters";
 import PrizeForm from "./PrizeForm";
 import ActionButton from "@/components/ActionButton";
 import { createPrizeInline, updatePrizeInline, deletePrize } from "./actions";
@@ -42,7 +43,7 @@ export default function CatalogBoard({
 
   return (
     <>
-      <div className="flex flex-wrap items-center justify-start gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setMode("new")}
@@ -53,6 +54,8 @@ export default function CatalogBoard({
         </button>
         <CatalogFilterBar />
       </div>
+
+      <ActiveFilters colorOptions={allFilaments} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {prizes.map((prize) => (
