@@ -396,6 +396,7 @@ export default function CheckoutsTable({
               toastMessage="Checkout removed"
               confirmMessage={`Remove this checkout of ${active.itemName}? This can't be undone.`}
               undoable={false}
+              onStart={() => setActiveId(null)}
               className="text-sm text-rust hover:underline"
             >
               Remove this checkout

@@ -631,6 +631,7 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  onStart={() => setActiveId(null)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request
@@ -658,6 +659,7 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  onStart={() => setActiveId(null)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request

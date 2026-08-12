@@ -173,6 +173,7 @@ export default function FilamentBoard({
                 action={deleteFilament.bind(null, active.id)}
                 toastMessage="Filament color deleted"
                 confirmMessage={`Delete ${active.color_name}? This can't be undone.`}
+                onStart={close}
                 className="text-sm text-rust hover:underline"
               >
                 Delete this filament color

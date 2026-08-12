@@ -141,6 +141,7 @@ export default function CatalogBoard({
               action={deletePrize.bind(null, active.id)}
               toastMessage="Prize deleted"
               confirmMessage={`Delete ${active.name}? This can't be undone.`}
+              onStart={close}
               className="text-sm text-rust hover:underline"
             >
               Delete this prize
