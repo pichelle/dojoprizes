@@ -381,7 +381,7 @@ export default function RequestForm({
 
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-ink">
-              MakerWorld link
+              MakerWorld or Tinkercad link
             </label>
             <div className="mt-1 flex gap-2">
               <input
@@ -389,7 +389,7 @@ export default function RequestForm({
                 type="url"
                 value={makerworldLink}
                 onChange={(e) => setMakerworldLink(e.target.value)}
-                placeholder="https://makerworld.com/..."
+                placeholder="https://makerworld.com/... or https://tinkercad.com/..."
                 className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
               />
               <button

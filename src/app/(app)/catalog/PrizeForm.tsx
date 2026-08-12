@@ -122,7 +122,7 @@ export default function PrizeForm({
 
         <div className="sm:col-span-2 lg:col-span-3">
           <label className="block text-sm font-medium text-ink">
-            Print source (MakerWorld link / design name)
+            MakerWorld link
           </label>
           <div className="mt-1 flex gap-2">
             <input
@@ -220,10 +220,6 @@ export default function PrizeForm({
             defaultValue={initial?.stock_count ?? 1}
             className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
-          <p className="mt-1 text-xs text-muted">
-            Status is automatic: 0 shows as Print-on-request, anything
-            above shows as In stock.
-          </p>
         </div>
       </div>
 
@@ -231,19 +227,7 @@ export default function PrizeForm({
         <label className="block text-sm font-medium text-ink mb-1">
           Listed price
         </label>
-        <div className="grid grid-cols-3 gap-3 max-w-md">
-          <div>
-            <label className="block text-xs text-muted">Silver</label>
-            <input
-              type="number"
-              min={0}
-              step="1"
-              name="coin_price_silver"
-              defaultValue={priceBreakdown.silver || ""}
-              placeholder="0"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
-            />
-          </div>
+        <div className="grid grid-cols-2 gap-3 max-w-xs">
           <div>
             <label className="block text-xs text-muted">Gold</label>
             <input
@@ -269,10 +253,6 @@ export default function PrizeForm({
             />
           </div>
         </div>
-        <p className="mt-1 text-xs text-muted">
-          Tracking only, not used anywhere else. Handy for checking what a
-          prize sold for against what it was meant to cost.
-        </p>
       </div>
 
       <div>

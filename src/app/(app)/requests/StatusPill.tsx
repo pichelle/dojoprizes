@@ -102,8 +102,8 @@ export default function StatusPill({
       {open && confirmingPrice && (
         <div className="absolute right-0 z-20 mt-1 w-56 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2">
           <p className="text-[11px] text-muted">Price for this print?</p>
-          <div className="grid grid-cols-3 gap-1.5">
-            {(["silver", "gold", "obsidian"] as const).map((tier) => (
+          <div className="grid grid-cols-2 gap-1.5">
+            {(["gold", "obsidian"] as const).map((tier) => (
               <div key={tier}>
                 <label className="block text-[10px] text-muted capitalize">{tier}</label>
                 <input

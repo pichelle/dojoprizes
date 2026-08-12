@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server";
 import type { Prize } from "@/lib/types";
-import { quickCheckout } from "./actions";
+import { quickCheckout, renameFranchiseTag } from "./actions";
 import CatalogBoard from "./CatalogBoard";
 import FilterSidebar from "@/components/FilterSidebar";
 import ErrorNote from "@/components/ErrorNote";
@@ -173,6 +173,7 @@ export default async function CatalogPage({
               label: "Theme",
               type: "checkbox",
               options: franchiseOptions.map((f) => ({ value: f, label: f })),
+              onRenameOption: renameFranchiseTag,
             },
             {
               key: "color",

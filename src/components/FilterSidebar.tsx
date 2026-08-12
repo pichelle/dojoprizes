@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Pencil } from "lucide-react";
+import { showToast } from "@/components/ToastHost";
 
 export type FilterGroup = {
   key: string;
   label: string;
   type: "checkbox" | "radio";
   options: { value: string; label: string; swatch?: string | null }[];
+  // Optional -- lets an option's label be renamed in place (e.g. fixing a
+  // typo'd theme tag). Renaming updates the underlying record wherever
+  // it's used, not just this filter.
+  onRenameOption?: (value: string, newLabel: string) => Promise<void>;
 };
 
 export default function FilterSidebar({
@@ -24,6 +30,9 @@ export default function FilterSidebar({
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [renaming, setRenaming] = useState<{ group: string; value: string } | null>(null);
+  const [renameText, setRenameText] = useState("");
+
   const [selected, setSelected] = useState<Record<string, string[]>>(() => {
     const init: Record<string, string[]> = {};
     for (const g of groups) {
@@ -32,6 +41,41 @@ export default function FilterSidebar({
     }
     return init;
   });
+
+  async function saveRename(group: FilterGroup) {
+    if (!renaming) return;
+    const newLabel = renameText.trim();
+    const oldValue = renaming.value;
+    setRenaming(null);
+    if (!newLabel || !group.onRenameOption) return;
+
+    try {
+      await group.onRenameOption(oldValue, newLabel);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't rename that.");
+      return;
+    }
+
+    // Keep it checked (under its new value) if it was already selected,
+    // and carry the rename into the applied URL filter too, so an active
+    // filter doesn't silently stop matching anything.
+    setSelected((prev) => {
+      const current = prev[group.key] ?? [];
+      if (!current.includes(oldValue)) return prev;
+      return { ...prev, [group.key]: current.map((v) => (v === oldValue ? newLabel : v)) };
+    });
+
+    const applied = (searchParams.get(group.key) ?? "").split(",").filter(Boolean);
+    if (applied.includes(oldValue)) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set(group.key, applied.map((v) => (v === oldValue ? newLabel : v)).join(","));
+      router.replace(`${basePath}?${params.toString()}`);
+    } else {
+      router.refresh();
+    }
+
+    showToast("Tag renamed");
+  }
 
   function toggle(group: FilterGroup, value: string) {
     setSelected((prev) => {
@@ -92,27 +136,62 @@ export default function FilterSidebar({
               <div className="scroll-warm space-y-1.5 max-h-28 overflow-y-auto overflow-x-hidden pr-1">
                 {g.options.map((opt) => {
                   const checked = (selected[g.key] ?? []).includes(opt.value);
-                  return (
-                    <label
-                      key={opt.value}
-                      className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
-                    >
+                  const isRenaming =
+                    renaming?.group === g.key && renaming.value === opt.value;
+
+                  if (isRenaming) {
+                    return (
                       <input
-                        type={g.type}
-                        name={g.key}
-                        checked={checked}
-                        onChange={() => toggle(g, opt.value)}
-                        className="accent-sage shrink-0"
+                        key={opt.value}
+                        autoFocus
+                        value={renameText}
+                        onChange={(e) => setRenameText(e.target.value)}
+                        onBlur={() => saveRename(g)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveRename(g);
+                          if (e.key === "Escape") setRenaming(null);
+                        }}
+                        className="w-full rounded-md border border-border-warm-strong bg-card px-1.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
                       />
-                      {opt.swatch && (
-                        <span
-                          className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
-                          style={{ background: opt.swatch }}
-                          aria-hidden="true"
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={opt.value}
+                      className="group flex items-center gap-2 text-sm text-ink rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
+                    >
+                      <label className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
+                        <input
+                          type={g.type}
+                          name={g.key}
+                          checked={checked}
+                          onChange={() => toggle(g, opt.value)}
+                          className="accent-sage shrink-0"
                         />
+                        {opt.swatch && (
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
+                            style={{ background: opt.swatch }}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <span className="truncate">{opt.label}</span>
+                      </label>
+                      {g.onRenameOption && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRenaming({ group: g.key, value: opt.value });
+                            setRenameText(opt.label);
+                          }}
+                          aria-label={`Rename ${opt.label}`}
+                          className="shrink-0 text-muted hover:text-ink opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Pencil size={12} aria-hidden="true" />
+                        </button>
                       )}
-                      <span className="truncate">{opt.label}</span>
-                    </label>
+                    </div>
                   );
                 })}
               </div>
