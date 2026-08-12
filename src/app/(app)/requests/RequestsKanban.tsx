@@ -18,8 +18,8 @@ import { formatCoinPriceBreakdown } from "@/lib/coins";
 // fulfilled print's actual record lives on the Checkouts page instead.
 const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
   { status: "idea", label: "Ideas", dot: "var(--color-idea-dot)" },
-  { status: "pending", label: "Pending", dot: "var(--color-pending-dot)" },
-  { status: "printed", label: "Printed", dot: "var(--color-printed-dot)" },
+  { status: "pending", label: "Queue", dot: "var(--color-pending-dot)" },
+  { status: "printed", label: "Awaiting pickup", dot: "var(--color-printed-dot)" },
   { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
 
@@ -36,19 +36,21 @@ const UNDO_WINDOW_MS = 5000;
 
 type SortOverride = "asc" | "desc" | null;
 
+// Default (no manual override) is oldest-first everywhere -- that's the
+// order things actually need attention in. Pending/printed/idea also
+// bubble Print Club requests to the top within that.
 function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override: SortOverride) {
   const rows = requests.filter((r) => r.status === status);
-  if (override === "asc") {
-    return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
-  }
   if (override === "desc") {
     return [...rows].sort((a, b) => b.date_requested.localeCompare(a.date_requested));
   }
-  if (!PRIORITY_SORTED.includes(status)) return rows;
-  return [...rows].sort((a, b) => {
-    if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
-    return a.date_requested.localeCompare(b.date_requested);
-  });
+  if (override !== "asc" && PRIORITY_SORTED.includes(status)) {
+    return [...rows].sort((a, b) => {
+      if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
+      return a.date_requested.localeCompare(b.date_requested);
+    });
+  }
+  return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
 }
 
 function daysAgo(iso: string) {
@@ -399,6 +401,14 @@ export default function RequestsKanban({
             aria-hidden="true"
           />
           <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+            {(active.photo_url || active.prize?.photo_url) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={active.photo_url || active.prize?.photo_url || ""}
+                alt=""
+                className="w-full h-40 object-cover rounded-xl border border-border-warm"
+              />
+            )}
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-xl text-ink">Edit request</h2>
               <button

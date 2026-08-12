@@ -32,6 +32,7 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
+  { value: "true_to_size", label: "True to size" },
 ];
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
@@ -234,46 +235,53 @@ export default function RequestForm({
       <div className="py-6 border-t border-border-warm">
         <SectionLabel>Details</SectionLabel>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-ink">
-              Prize (from catalog)
-            </label>
-            <div className="mt-1">
-              <Select
-                name="prize_id"
-                value={prizeId}
-                onValueChange={setPrizeId}
-                className="w-full"
-                options={[
-                  { value: NONE_VALUE, label: "Not catalogued yet / other" },
-                  ...prizes.map((p) => ({ value: p.id, label: p.name })),
-                ]}
-              />
-            </div>
-          </div>
+          {initialStatus !== "idea" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-ink">
+                  Title of print
+                </label>
+                <input
+                  name="free_text_prize"
+                  disabled={prizeId !== NONE_VALUE}
+                  defaultValue={initial?.free_text_prize ?? ""}
+                  placeholder="e.g. custom Bulbasaur keychain"
+                  className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
+                />
+                <p className="mt-1.5 text-sm text-muted">
+                  Most requests are custom -- this is what shows on the card.
+                </p>
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-ink">
-              If not catalogued, describe it
-            </label>
-            <input
-              name="free_text_prize"
-              disabled={prizeId !== NONE_VALUE}
-              defaultValue={initial?.free_text_prize ?? ""}
-              placeholder="e.g. custom Bulbasaur keychain"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-ink">
+                  OR choose existing prize from catalog
+                </label>
+                <div className="mt-1">
+                  <Select
+                    name="prize_id"
+                    value={prizeId}
+                    onValueChange={setPrizeId}
+                    className="w-full"
+                    options={[
+                      { value: NONE_VALUE, label: "Custom (use title above)" },
+                      ...prizes.map((p) => ({ value: p.id, label: p.name })),
+                    ]}
+                  />
+                </div>
+              </div>
 
-          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              name="is_print_club"
-              defaultChecked={initial?.is_print_club ?? false}
-              className="accent-sage"
-            />
-            3D Print Club
-          </label>
+              <label className="sm:col-span-2 flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  name="is_print_club"
+                  defaultChecked={initial?.is_print_club ?? false}
+                  className="accent-sage"
+                />
+                3D Print Club
+              </label>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-ink">

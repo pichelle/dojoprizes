@@ -25,6 +25,7 @@ const SIZE_LABELS: Record<string, string> = {
   medium: "Medium",
   large: "Large",
   xlarge: "X-Large",
+  true_to_size: "True to size",
 };
 
 function formatDate(iso: string) {

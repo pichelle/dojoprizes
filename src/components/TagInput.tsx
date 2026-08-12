@@ -57,8 +57,16 @@ export default function TagInput({
   }
 
   function handleBlur() {
-    // Delay closing so a click on a dropdown option registers first.
-    closeTimeout.current = setTimeout(() => setOpen(false), 150);
+    // Delay closing so a click on a dropdown option registers first. If
+    // there's still unsubmitted text in the box when focus leaves (typed a
+    // new tag but never hit Enter or clicked "Create"), commit it as a tag
+    // instead of silently dropping it -- that's what looked like "new tags
+    // not saving".
+    const pending = query.trim();
+    closeTimeout.current = setTimeout(() => {
+      setOpen(false);
+      if (pending) addTag(pending);
+    }, 150);
   }
 
   function handleFocus() {

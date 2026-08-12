@@ -8,7 +8,7 @@ export type PrizeStatus = "in_stock" | "low_stock" | "print_on_request";
 
 export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled";
 
-export type RequestSize = "small" | "medium" | "large" | "xlarge";
+export type RequestSize = "small" | "medium" | "large" | "xlarge" | "true_to_size";
 
 export interface FranchiseTag {
   id: string;

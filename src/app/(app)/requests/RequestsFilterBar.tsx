@@ -10,6 +10,7 @@ const SIZE_OPTIONS = [
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
+  { value: "true_to_size", label: "True to size" },
 ];
 
 export default function RequestsFilterBar({

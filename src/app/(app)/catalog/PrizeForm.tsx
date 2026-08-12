@@ -20,6 +20,7 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
+  { value: "true_to_size", label: "True to size" },
 ];
 
 const initialState: PrizeFormState = { error: null };
