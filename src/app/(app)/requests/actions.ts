@@ -233,3 +233,13 @@ export async function deleteRequest(requestId: string) {
   revalidatePath("/requests");
   revalidatePath("/");
 }
+
+// Bulk-clears every cancelled request in one go -- used by the "Clear
+// cancelled" button at the bottom of the Cancelled column.
+export async function clearCancelledRequests() {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("requests").delete().eq("status", "cancelled");
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+  revalidatePath("/");
+}

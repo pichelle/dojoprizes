@@ -175,6 +175,7 @@ export default function RequestsKanban({
   allFranchiseTags,
   onStatusChange,
   onDelete,
+  onClearCancelled,
 }: {
   requests: PrizeRequest[];
   prizes: Pick<Prize, "id" | "name">[];
@@ -182,6 +183,7 @@ export default function RequestsKanban({
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
+  onClearCancelled: () => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
@@ -463,6 +465,16 @@ export default function RequestsKanban({
                 <Plus size={13} aria-hidden="true" />
                 Add new
               </button>
+              {col.status === "cancelled" && rows.length > 0 && (
+                <ActionButton
+                  action={onClearCancelled}
+                  toastMessage="Cancelled requests cleared"
+                  confirmMessage={`Delete all ${rows.length} cancelled request${rows.length === 1 ? "" : "s"}? This can't be undone.`}
+                  className="mt-2 w-full text-xs font-medium text-rust hover:underline"
+                >
+                  Clear cancelled
+                </ActionButton>
+              )}
             </div>
           );
         })}

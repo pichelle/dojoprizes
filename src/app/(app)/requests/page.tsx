@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Check, Clock, Plus, TrendingUp } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
-import { updateRequestStatus, deleteRequest } from "./actions";
+import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsKanban from "./RequestsKanban";
@@ -171,7 +171,7 @@ export default async function RequestsPage({
       )}
 
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-start gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Link
             href="/requests/new"
             className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0"
@@ -197,6 +197,7 @@ export default async function RequestsPage({
           allFranchiseTags={franchiseTagRows ?? []}
           onStatusChange={updateRequestStatus}
           onDelete={deleteRequest}
+          onClearCancelled={clearCancelledRequests}
         />
       </div>
     </div>
