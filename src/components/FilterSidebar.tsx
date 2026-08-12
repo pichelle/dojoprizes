@@ -124,16 +124,16 @@ export default function FilterSidebar({
       {/* The group list scrolls on its own so the Apply/Clear footer below
           always stays on screen -- it never gets pushed past the fold by a
           long list of filter options. */}
-      <div className="scroll-warm space-y-4 overflow-y-auto min-h-0 flex-1">
+      <div className="flex flex-col gap-4 min-h-0 flex-1">
         {groups.map((g) => (
-          <div key={g.key} className="min-w-0">
-            <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
+          <div key={g.key} className="min-w-0 flex flex-col flex-1 min-h-0">
+            <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2 shrink-0">
               {g.label}
             </div>
             {g.options.length === 0 ? (
               <p className="text-xs text-muted">Nothing to filter by yet.</p>
             ) : (
-              <div className="scroll-warm space-y-1.5 max-h-28 overflow-y-auto overflow-x-hidden pr-1">
+              <div className="scroll-warm space-y-1.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
                 {g.options.map((opt) => {
                   const checked = (selected[g.key] ?? []).includes(opt.value);
                   const isRenaming =

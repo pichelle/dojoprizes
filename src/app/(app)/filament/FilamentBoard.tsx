@@ -7,6 +7,8 @@ import { Plus, X } from "lucide-react";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
 import ActionButton from "@/components/ActionButton";
+import { staggerDelay } from "@/lib/stagger";
+import SidePeek from "@/components/SidePeek";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
 import { updateFilamentInline, deleteFilament } from "./actions";
 
@@ -63,7 +65,7 @@ export default function FilamentBoard({
       <SortSelect sort={sort} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filaments.map((f) => {
+        {filaments.map((f, i) => {
           const isLow =
             f.low_stock_threshold != null &&
             f.stock_level != null &&
@@ -78,7 +80,8 @@ export default function FilamentBoard({
                 if (e.key === "Enter") setActiveId(f.id);
               }}
               key={f.id}
-              className="card-hover cursor-pointer text-left bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
+              style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+              className="card-hover stagger-in cursor-pointer text-left bg-card border border-border-warm rounded-xl p-4 hover:border-border-warm-strong flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
                 <span className="font-medium text-ink flex items-center gap-2">
@@ -131,26 +134,21 @@ export default function FilamentBoard({
         </p>
       )}
 
-      {active && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
+      <SidePeek open={Boolean(active)} onClose={close}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-ink">Edit filament</h2>
+          <button
+            type="button"
             onClick={close}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Edit filament</h2>
-              <button
-                type="button"
-                onClick={close}
-                className="text-muted hover:text-ink"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            className="text-muted hover:text-ink"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
+        {active && (
+          <>
             <FilamentForm
               key={active.id}
               action={updateFilamentInline.bind(null, active.id)}
@@ -180,9 +178,9 @@ export default function FilamentBoard({
                 Delete this filament color
               </ActionButton>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
     </>
   );
 }

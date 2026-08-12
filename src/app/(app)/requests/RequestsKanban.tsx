@@ -27,9 +27,11 @@ import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from 
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
+import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { staggerDelay } from "@/lib/stagger";
 
 // "Fulfilled" isn't a visible column -- it's tracked (status still gets
 // set to "fulfilled" via the status pill, and still counts toward the
@@ -318,7 +320,7 @@ export default function RequestsKanban({
       )}
 
       <div
-        className="grid items-start gap-5"
+        className="grid items-start sm:items-stretch gap-5 sm:h-[calc(100vh-14rem)] sm:min-h-[420px]"
         style={{ gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))` }}
       >
         {visibleColumns.map((col) => {
@@ -338,12 +340,12 @@ export default function RequestsKanban({
                 e.preventDefault();
                 handleDrop(col.status);
               }}
-              className={`rounded-2xl p-3 bg-nav border transition-colors ${
+              className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 ${
                 dragOverStatus === col.status ? "border-sage bg-sage/5" : "border-border-warm"
               }`}
               style={{ gridColumn: isExpanded ? "1 / -1" : undefined }}
             >
-              <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center justify-between mb-3 px-1 sm:shrink-0">
                 <p className="flex items-center gap-2 text-[15px] font-bold text-ink">
                   <span
                     className="inline-block w-2 h-2 rounded-full"
@@ -400,10 +402,16 @@ export default function RequestsKanban({
                 </div>
               </div>
               <div
-                className={isExpanded ? "grid gap-2.5" : "space-y-2.5"}
-                style={isExpanded ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" } : undefined}
+                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 ${
+                  isExpanded ? "grid content-start items-start gap-2.5" : "space-y-2.5"
+                }`}
+                style={
+                  isExpanded
+                    ? { gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gridAutoRows: "min-content" }
+                    : undefined
+                }
               >
-                {rows.map((r) => {
+                {rows.map((r, i) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
                   const priceTag = formatCoinPriceBreakdown(r.sale_price);
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
@@ -426,7 +434,8 @@ export default function RequestsKanban({
                         setActiveId(r.id);
                         setPeekMode("view");
                       }}
-                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                      style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+                      className={`card-hover stagger-in cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
                         draggingId === r.id ? "opacity-40" : ""
                       }`}
                     >
@@ -498,7 +507,7 @@ export default function RequestsKanban({
               <button
                 type="button"
                 onClick={() => setCreatingStatus(col.status)}
-                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60 sm:shrink-0"
               >
                 <Plus size={13} aria-hidden="true" />
                 Add new
@@ -508,7 +517,7 @@ export default function RequestsKanban({
                   action={onClearCancelled}
                   toastMessage="Cancelled requests cleared"
                   confirmMessage={`Delete all ${rows.length} cancelled request${rows.length === 1 ? "" : "s"}? This can't be undone.`}
-                  className="mt-2 w-full text-xs font-medium text-rust hover:underline"
+                  className="mt-2 w-full text-xs font-medium text-rust hover:underline sm:shrink-0"
                 >
                   Clear cancelled
                 </ActionButton>
@@ -518,14 +527,9 @@ export default function RequestsKanban({
         })}
       </div>
 
-      {active && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
-            onClick={() => setActiveId(null)}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+      <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)}>
+        {active && (
+          <>
             {(active.photo_url || active.prize?.photo_url) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -660,18 +664,13 @@ export default function RequestsKanban({
                 </ActionButton>
               </>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
 
-      {creatingStatus && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
-            onClick={() => setCreatingStatus(null)}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+      <SidePeek open={Boolean(creatingStatus)} onClose={() => setCreatingStatus(null)}>
+        {creatingStatus && (
+          <>
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-xl text-ink">Add to {COLUMNS.find((c) => c.status === creatingStatus)?.label}</h2>
               <button
@@ -696,9 +695,9 @@ export default function RequestsKanban({
               filaments={filaments}
               allFranchiseTags={allFranchiseTags}
             />
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
     </>
   );
 }

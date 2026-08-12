@@ -33,12 +33,16 @@ export default function PrizeCard({
   onEdit,
   addedOrSoldDate,
   soldDateKnown,
+  staggerDelay,
 }: {
   prize: Prize;
   onCheckout: (prizeId: string, boughtBy: string | null) => Promise<void>;
   onEdit: () => void;
   addedOrSoldDate?: string;
   soldDateKnown: boolean;
+  // CSS --stagger-delay value (e.g. "90ms") for the sequential entrance
+  // animation -- optional so PrizeCard doesn't require it everywhere.
+  staggerDelay?: string;
 }) {
   const priceTag = formatCoinPriceBreakdown(prize.coin_price);
   const [showBuyerModal, setShowBuyerModal] = useState(false);
@@ -54,7 +58,10 @@ export default function PrizeCard({
       onKeyDown={(e) => {
         if (e.key === "Enter") onEdit();
       }}
-      className="card-hover relative bg-card border border-border-warm rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-border-warm-strong"
+      style={staggerDelay ? ({ "--stagger-delay": staggerDelay } as React.CSSProperties) : undefined}
+      className={`card-hover relative bg-card border border-border-warm rounded-xl overflow-hidden flex flex-col cursor-pointer hover:border-border-warm-strong ${
+        staggerDelay ? "stagger-in" : ""
+      }`}
     >
       <div className="h-44 bg-page flex items-center justify-center">
         {prize.photo_url ? (

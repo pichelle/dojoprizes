@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import ActionButton from "@/components/ActionButton";
+import { staggerDelay } from "@/lib/stagger";
+import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
 
 export type MergedCheckoutRow = {
@@ -269,14 +271,15 @@ export default function CheckoutsTable({
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r) => {
+            {sorted.map((r, i) => {
               const meta = SOURCE_META[r.source];
               const priceTag = formatCoinPriceBreakdown(r.price);
               return (
                 <tr
                   key={r.id}
                   onClick={() => setActiveId(r.id)}
-                  className="border-t border-border-warm cursor-pointer hover:bg-nav/40"
+                  style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+                  className="stagger-fade-in border-t border-border-warm cursor-pointer hover:bg-nav/40"
                 >
                   <td className="px-3 py-2.5 text-muted whitespace-nowrap">{formatShortDate(r.date)}</td>
                   <td className="px-3 py-2.5 font-medium text-ink">{r.itemName}</td>
@@ -304,10 +307,9 @@ export default function CheckoutsTable({
         )}
       </div>
 
-      {active && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div className="absolute inset-0 bg-ink/20" onClick={() => setActiveId(null)} aria-hidden="true" />
-          <div className="slide-in-right relative w-full max-w-md bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+      <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)} maxWidth="max-w-md">
+        {active && (
+          <>
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-xl text-ink">{active.itemName}</h2>
               <button type="button" onClick={() => setActiveId(null)} aria-label="Close" className="text-muted hover:text-ink">
@@ -398,9 +400,9 @@ export default function CheckoutsTable({
             >
               Remove this checkout
             </ActionButton>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
     </div>
   );
 }

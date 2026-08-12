@@ -226,45 +226,87 @@ textarea:hover {
   }
 }
 
+@keyframes slide-out-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Side peeks (requests/catalog/filament/checkouts) -- a touch slower
+   than most UI motion since it's a bigger panel, with a matching
+   slide-out pair used while the peek is closing but still mounted. */
 .slide-in-right {
-  animation: slide-in-right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slide-in-right 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Skeleton loading -- shimmering placeholder blocks that fade/slide in
-   with a slight stagger per item (via --skeleton-delay), so a loading
-   page reveals progressively instead of popping in all at once. */
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
+.slide-out-right {
+  animation: slide-out-right 0.26s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-@keyframes skeleton-in {
+@keyframes overlay-fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+  }
+}
+
+@keyframes overlay-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.overlay-fade-in {
+  animation: overlay-fade-in 0.32s ease-out;
+}
+
+.overlay-fade-out {
+  animation: overlay-fade-out 0.26s ease-in forwards;
+}
+
+/* Placeholder blocks fade/rise into place with a slight per-item stagger
+   (via --skeleton-delay) and a soft spring settle -- replaces the old
+   perpetual shimmer sheen, which read as busier than intended. */
+@keyframes skeleton-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
 .skeleton {
   display: block;
   border-radius: 0.5rem;
-  background: linear-gradient(
-    100deg,
-    var(--color-border-warm) 30%,
-    var(--color-border-warm-strong) 50%,
-    var(--color-border-warm) 70%
-  );
-  background-size: 200% 100%;
-  animation:
-    skeleton-in 0.3s ease-out backwards,
-    skeleton-shimmer 1.6s ease-in-out infinite;
-  animation-delay: var(--skeleton-delay, 0ms), var(--skeleton-delay, 0ms);
+  background: var(--color-border-warm);
+  animation: skeleton-in 0.45s cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
+  animation-delay: var(--skeleton-delay, 0ms);
+}
+
+/* Same fade + slight rise/scale as the skeleton placeholders, applied to
+   the real cards once they've loaded -- staggered per item (via
+   --stagger-delay) so a grid/column reveals sequentially instead of
+   popping in all at once. */
+.stagger-in {
+  animation: skeleton-in 0.4s cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+/* Opacity-only variant for table rows -- some browsers are inconsistent
+   animating `transform` on <tr>, so this skips the rise/scale and just
+   fades each row in with the same stagger timing. */
+.stagger-fade-in {
+  animation: overlay-fade-in 0.4s ease-out backwards;
+  animation-delay: var(--stagger-delay, 0ms);
 }
