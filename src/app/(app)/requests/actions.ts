@@ -7,7 +7,14 @@ import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
 import { NONE_VALUE } from "@/lib/constants";
 import type { RequestSize, RequestStatus } from "@/lib/types";
 
-export type RequestFormState = { error: string | null; success?: boolean };
+export type RequestFormState = {
+  error: string | null;
+  success?: boolean;
+  // Only populated by create (not update) -- lets the inline "+ Add new"
+  // flow animate the specific card that was just created instead of
+  // re-running the whole column's entrance animation.
+  requestId?: string;
+};
 
 function parseFranchiseTagNames(formData: FormData): string[] {
   return formData.getAll("franchise_tag_names").map(String).filter(Boolean);
@@ -127,7 +134,7 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
 
     revalidatePath("/requests");
     revalidatePath("/");
-    return { error: null, success: true };
+    return { error: null, success: true, requestId: request?.id };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Something went wrong. Please try again.",

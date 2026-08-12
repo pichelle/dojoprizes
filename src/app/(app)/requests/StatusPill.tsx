@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Check, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
+import { burstConfetti } from "@/lib/confetti";
 
 const STATUS_META: Record<
   RequestStatus,
@@ -80,6 +81,11 @@ export default function StatusPill({
       return;
     }
     setOpen(false);
+    // Same celebratory burst as marking a prize sold on the catalog --
+    // fulfilled is the equivalent "this is actually done" moment here.
+    if (next === "fulfilled" && buttonRef.current) {
+      burstConfetti(buttonRef.current);
+    }
     onPick(next);
   }
 

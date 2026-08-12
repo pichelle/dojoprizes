@@ -92,7 +92,7 @@ export default function RequestForm({
   // this status -- used by the "+ Add new" buttons on each kanban column.
   presetStatus?: RequestStatus;
   onCancel?: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (result?: { requestId?: string }) => void;
 }) {
   const router = useRouter();
   const isCreating = !initial;
@@ -119,7 +119,7 @@ export default function RequestForm({
             ? "Idea logged"
             : "Request logged",
       );
-      onSuccess?.();
+      onSuccess?.({ requestId: state.requestId });
     }
   }, [state, submitLabel, onSuccess, initialStatus]);
 

@@ -196,6 +196,11 @@ export default function RequestsKanban({
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // The single most-recently-created card, if any -- gets the celebratory
+  // pop-in (.card-added-in) once, instead of the page-load stagger every
+  // other card uses. Cleared after the animation plays or on the next
+  // successful add, whichever comes first.
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const router = useRouter();
 
   // Effective requests: server data with any not-yet-persisted optimistic
@@ -285,7 +290,7 @@ export default function RequestsKanban({
       })();
     }, UNDO_WINDOW_MS);
 
-    showToast("Status updated", {
+    showToast(next === "fulfilled" ? "Marked fulfilled!" : "Status updated", {
       onUndo: () => {
         cancelled = true;
         clearTimeout(timeoutId);
@@ -435,9 +440,12 @@ export default function RequestsKanban({
                         setPeekMode("view");
                       }}
                       style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
-                      className={`card-hover stagger-in cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
-                        draggingId === r.id ? "opacity-40" : ""
-                      }`}
+                      onAnimationEnd={() => {
+                        if (r.id === justAddedId) setJustAddedId(null);
+                      }}
+                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                        r.id === justAddedId ? "card-added-in" : "stagger-in"
+                      } ${draggingId === r.id ? "opacity-40" : ""}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span
@@ -687,8 +695,9 @@ export default function RequestsKanban({
               action={createRequestInline}
               presetStatus={creatingStatus}
               onCancel={() => setCreatingStatus(null)}
-              onSuccess={() => {
+              onSuccess={(result) => {
                 setCreatingStatus(null);
+                if (result?.requestId) setJustAddedId(result.requestId);
                 router.refresh();
               }}
               prizes={prizes}
