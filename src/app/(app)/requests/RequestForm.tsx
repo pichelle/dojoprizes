@@ -63,6 +63,8 @@ export default function RequestForm({
   initialFranchiseTags = [],
   initialColorFilamentIds = [],
   initialPrizeId,
+  initialPhotoUrl,
+  initialSize,
   submitLabel = "Log request",
   presetStatus,
   onCancel,
@@ -79,6 +81,12 @@ export default function RequestForm({
   // print-on-request catalog card -- only used when there's no `initial`
   // record (i.e. creating, not editing).
   initialPrizeId?: string;
+  // Same idea as initialPrizeId -- prefills the photo/size fields from a
+  // catalog prize's own details on "Print another" without flipping
+  // isCreating (which only "initial", i.e. editing an existing request,
+  // should do).
+  initialPhotoUrl?: string | null;
+  initialSize?: RequestSize | null;
   submitLabel?: string;
   // When set, creation skips the Idea/Request toggle and logs straight into
   // this status -- used by the "+ Add new" buttons on each kanban column.
@@ -95,7 +103,7 @@ export default function RequestForm({
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
   const [state, formAction, isPending] = useActionState(action, initialState);
 
-  const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? "");
+  const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? initialPhotoUrl ?? "");
   const [makerworldLink, setMakerworldLink] = useState(initial?.links ?? "");
   const [fetchingImage, setFetchingImage] = useState(false);
   const [imageFetchError, setImageFetchError] = useState<string | null>(null);
@@ -316,7 +324,7 @@ export default function RequestForm({
             <div className={`mt-1 ${errors.size ? "rounded-md ring-2 ring-rust" : ""}`}>
               <Select
                 name="size"
-                defaultValue={initial?.size ?? undefined}
+                defaultValue={initial?.size ?? initialSize ?? undefined}
                 placeholder="Select a size..."
                 className="w-full"
                 options={SIZE_OPTIONS}
