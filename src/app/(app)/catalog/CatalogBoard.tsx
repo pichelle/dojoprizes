@@ -10,6 +10,7 @@ import CatalogFilterBar from "./CatalogFilterBar";
 import ActiveFilters from "./ActiveFilters";
 import PrizeForm from "./PrizeForm";
 import ActionButton from "@/components/ActionButton";
+import SidePeek from "@/components/SidePeek";
 import { updatePrizeInline, deletePrize } from "./actions";
 
 type CheckoutsByPrize = Record<string, string>;
@@ -103,57 +104,48 @@ export default function CatalogBoard({
         </p>
       )}
 
-      {open && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
+      <SidePeek open={open} onClose={close}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-ink">Edit prize</h2>
+          <button
+            type="button"
             onClick={close}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Edit prize</h2>
-              <button
-                type="button"
-                onClick={close}
-                className="text-muted hover:text-ink"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {active && (
-              <>
-                <PrizeForm
-                  key={active.id}
-                  action={updatePrizeInline.bind(null, active.id)}
-                  initial={active}
-                  allFilaments={allFilaments}
-                  linkedFilamentIds={(active.filaments ?? []).map((f) => f.id)}
-                  allFranchiseTags={allFranchiseTags}
-                  initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
-                  submitLabel="Save changes"
-                  onCancel={close}
-                  onSuccess={() => {
-                    close();
-                    router.refresh();
-                  }}
-                />
-
-                <ActionButton
-                  action={deletePrize.bind(null, active.id)}
-                  toastMessage="Prize deleted"
-                  confirmMessage={`Delete ${active.name}? This can't be undone.`}
-                  className="text-sm text-rust hover:underline"
-                >
-                  Delete this prize
-                </ActionButton>
-              </>
-            )}
-          </div>
+            className="text-muted hover:text-ink"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
         </div>
-      )}
+
+        {active && (
+          <>
+            <PrizeForm
+              key={active.id}
+              action={updatePrizeInline.bind(null, active.id)}
+              initial={active}
+              allFilaments={allFilaments}
+              linkedFilamentIds={(active.filaments ?? []).map((f) => f.id)}
+              allFranchiseTags={allFranchiseTags}
+              initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
+              submitLabel="Save changes"
+              onCancel={close}
+              onSuccess={() => {
+                close();
+                router.refresh();
+              }}
+            />
+
+            <ActionButton
+              action={deletePrize.bind(null, active.id)}
+              toastMessage="Prize deleted"
+              confirmMessage={`Delete ${active.name}? This can't be undone.`}
+              className="text-sm text-rust hover:underline"
+            >
+              Delete this prize
+            </ActionButton>
+          </>
+        )}
+      </SidePeek>
     </>
   );
 }

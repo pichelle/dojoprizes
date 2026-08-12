@@ -27,6 +27,7 @@ import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from 
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import ActionButton from "@/components/ActionButton";
+import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
@@ -518,14 +519,9 @@ export default function RequestsKanban({
         })}
       </div>
 
-      {active && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
-            onClick={() => setActiveId(null)}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+      <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)}>
+        {active && (
+          <>
             {(active.photo_url || active.prize?.photo_url) && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -660,18 +656,13 @@ export default function RequestsKanban({
                 </ActionButton>
               </>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
 
-      {creatingStatus && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
-            onClick={() => setCreatingStatus(null)}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+      <SidePeek open={Boolean(creatingStatus)} onClose={() => setCreatingStatus(null)}>
+        {creatingStatus && (
+          <>
             <div className="flex items-center justify-between">
               <h2 className="font-serif text-xl text-ink">Add to {COLUMNS.find((c) => c.status === creatingStatus)?.label}</h2>
               <button
@@ -696,9 +687,9 @@ export default function RequestsKanban({
               filaments={filaments}
               allFranchiseTags={allFranchiseTags}
             />
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
     </>
   );
 }

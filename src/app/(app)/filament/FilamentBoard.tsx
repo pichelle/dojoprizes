@@ -7,6 +7,7 @@ import { Plus, X } from "lucide-react";
 import FilamentForm from "./FilamentForm";
 import SortSelect from "./SortSelect";
 import ActionButton from "@/components/ActionButton";
+import SidePeek from "@/components/SidePeek";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
 import { updateFilamentInline, deleteFilament } from "./actions";
 
@@ -131,26 +132,21 @@ export default function FilamentBoard({
         </p>
       )}
 
-      {active && (
-        <div className="fixed inset-0 z-40 flex justify-end">
-          <div
-            className="absolute inset-0 bg-ink/20"
+      <SidePeek open={Boolean(active)} onClose={close}>
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-xl text-ink">Edit filament</h2>
+          <button
+            type="button"
             onClick={close}
-            aria-hidden="true"
-          />
-          <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Edit filament</h2>
-              <button
-                type="button"
-                onClick={close}
-                className="text-muted hover:text-ink"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            className="text-muted hover:text-ink"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
+        {active && (
+          <>
             <FilamentForm
               key={active.id}
               action={updateFilamentInline.bind(null, active.id)}
@@ -180,9 +176,9 @@ export default function FilamentBoard({
                 Delete this filament color
               </ActionButton>
             </div>
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </SidePeek>
     </>
   );
 }

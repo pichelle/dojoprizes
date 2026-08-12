@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { submitFeedback, type FeedbackFormState } from "@/lib/feedbackActions";
 import { showToast } from "./ToastHost";
@@ -32,7 +33,11 @@ export default function FeedbackModal({ onClose }: { onClose: () => void }) {
     }
   }, [state, type, onClose]);
 
-  return (
+  // Rendered via portal straight to <body> -- this modal is opened from a
+  // button inside the sticky sidebar, and position:sticky always creates
+  // its own stacking context, which was trapping the modal underneath
+  // the main page content instead of on top of it.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-ink/20" onClick={onClose} aria-hidden="true" />
       <div className="modal-in relative w-full max-w-md bg-card border border-border-warm rounded-xl shadow-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
@@ -164,6 +169,7 @@ export default function FeedbackModal({ onClose }: { onClose: () => void }) {
           </p>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
