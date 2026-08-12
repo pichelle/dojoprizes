@@ -14,7 +14,6 @@ const SIZE_LABELS: Record<string, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   in_stock: "In stock",
-  low_stock: "Low stock",
   print_on_request: "Print-on-request",
 };
 
