@@ -30,13 +30,12 @@ function sizeFromForm(formData: FormData): RequestSize | null {
   return raw && raw !== NONE_VALUE ? (raw as RequestSize) : null;
 }
 
-// Stock at 0 always means Print-on-request, regardless of what was picked
-// in the status dropdown -- there's no separate "Out of stock" anymore,
-// since staff can always print another on request.
-function statusFromForm(formData: FormData, stockCount: number): PrizeStatus {
-  if (stockCount === 0) return "print_on_request";
-  const raw = String(formData.get("status") ?? "").trim();
-  return raw === "low_stock" || raw === "print_on_request" ? raw : "in_stock";
+// Status is fully derived from stock count -- there's no manual status
+// picker in the form anymore. 0 means Print-on-request (staff can always
+// print another on request); anything above 0 is In stock. "Low stock"
+// was removed as a status entirely (see migration 014).
+function statusFromStock(stockCount: number): PrizeStatus {
+  return stockCount === 0 ? "print_on_request" : "in_stock";
 }
 
 async function syncFilamentLinks(
@@ -93,7 +92,7 @@ async function performCreatePrize(formData: FormData): Promise<PrizeFormState> {
         coin_price: coinPriceFromForm(formData),
         makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
         stock_count: stockCount,
-        status: statusFromForm(formData, stockCount),
+        status: statusFromStock(stockCount),
         size: sizeFromForm(formData),
       })
       .select("id")
@@ -137,7 +136,7 @@ async function performUpdatePrize(
         coin_price: coinPriceFromForm(formData),
         makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
         stock_count: stockCount,
-        status: statusFromForm(formData, stockCount),
+        status: statusFromStock(stockCount),
         size: sizeFromForm(formData),
         updated_at: new Date().toISOString(),
       })

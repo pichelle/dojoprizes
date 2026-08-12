@@ -7,7 +7,6 @@ import ErrorNote from "@/components/ErrorNote";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "in_stock", label: "In stock" },
-  { value: "low_stock", label: "Low stock" },
   { value: "print_on_request", label: "Print-on-request" },
 ];
 

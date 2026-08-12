@@ -27,11 +27,11 @@ on conflict (id) do nothing;
 -- ── Prizes ──────────────────────────────────────────────────────────────
 insert into prizes (id, name, photo_url, coin_tier, coin_value_silver_equivalent, coin_price, status, stock_count) values
   ('c0000000-0000-4000-8000-000000000001', 'Bulbasaur Keychain', 'https://placehold.co/400x300/dcecd0/3a342a?text=Bulbasaur', 'silver', 1, 3, 'in_stock', 8),
-  ('c0000000-0000-4000-8000-000000000002', 'Creeper Head Box', null, 'gold', 5, 6, 'low_stock', 2),
+  ('c0000000-0000-4000-8000-000000000002', 'Creeper Head Box', null, 'gold', 5, 6, 'in_stock', 2),
   ('c0000000-0000-4000-8000-000000000003', 'Hello Kitty Bow Clip', 'https://placehold.co/400x300/f7dce6/3a342a?text=Hello+Kitty', 'silver', 1, 2, 'in_stock', 10),
   ('c0000000-0000-4000-8000-000000000004', 'Baby Yoda Figure', null, 'obsidian', 25, 26, 'print_on_request', 0),
   ('c0000000-0000-4000-8000-000000000005', 'Among Us Crewmate', 'https://placehold.co/400x300/d6e8f0/3a342a?text=Among+Us', 'gold', 5, 5, 'in_stock', 6),
-  ('c0000000-0000-4000-8000-000000000006', 'Roblox Noob Figure', null, 'silver', 1, 4, 'low_stock', 1)
+  ('c0000000-0000-4000-8000-000000000006', 'Roblox Noob Figure', null, 'silver', 1, 4, 'in_stock', 1)
 on conflict (id) do nothing;
 
 insert into prize_franchise_tags (prize_id, tag_id) values

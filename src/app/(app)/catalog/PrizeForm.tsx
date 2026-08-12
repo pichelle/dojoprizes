@@ -9,12 +9,6 @@ import ErrorNote from "@/components/ErrorNote";
 import { showToast } from "@/components/ToastHost";
 import type { PrizeFormState } from "./actions";
 
-const STATUS_OPTIONS: { value: Prize["status"]; label: string }[] = [
-  { value: "in_stock", label: "In stock" },
-  { value: "low_stock", label: "Low stock" },
-  { value: "print_on_request", label: "Print-on-request only" },
-];
-
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
@@ -217,24 +211,6 @@ export default function PrizeForm({
 
         <div>
           <label className="block text-sm font-medium text-ink">
-            Status
-          </label>
-          <div className="mt-1">
-            <Select
-              name="status"
-              defaultValue={initial?.status ?? "in_stock"}
-              className="w-full"
-              options={STATUS_OPTIONS}
-            />
-          </div>
-          <p className="mt-1 text-xs text-muted">
-            Automatically shows as Print-on-request once stock hits 0,
-            regardless of what&apos;s picked here.
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-ink">
             Stock count
           </label>
           <input
@@ -244,6 +220,10 @@ export default function PrizeForm({
             defaultValue={initial?.stock_count ?? 1}
             className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
+          <p className="mt-1 text-xs text-muted">
+            Status is automatic: 0 shows as Print-on-request, anything
+            above shows as In stock.
+          </p>
         </div>
       </div>
 

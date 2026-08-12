@@ -10,14 +10,7 @@ import BuyerNameModal from "@/components/BuyerNameModal";
 
 const STATUS_DOT: Record<Prize["status"], string> = {
   in_stock: "bg-sage",
-  low_stock: "bg-amber",
   print_on_request: "bg-slate",
-};
-
-const STATUS_LABELS: Record<Prize["status"], string> = {
-  in_stock: "In stock",
-  low_stock: "Low stock",
-  print_on_request: "Print-on-request",
 };
 
 const SIZE_LABELS: Record<string, string> = {
@@ -75,42 +68,31 @@ export default function PrizeCard({
           <span className="text-4xl">🎁</span>
         )}
       </div>
-      <div className="p-4 flex-1 flex flex-col gap-2">
-        <span className="font-serif font-medium text-lg text-ink">{prize.name}</span>
+      <div className="p-3.5 flex-1 flex flex-col gap-1.5">
+        <span className="font-serif font-medium text-base text-ink truncate">{prize.name}</span>
 
-        {prize.franchiseTags && prize.franchiseTags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {prize.franchiseTags.map((t) => (
-              <span
-                key={t.id}
-                className="text-xs px-2 py-0.5 rounded-full bg-page text-muted"
-              >
-                {t.name}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="text-xs text-muted flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${STATUS_DOT[prize.status]}`} />
-            {STATUS_LABELS[prize.status]}
+        <div className="text-xs text-muted flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[prize.status]}`} />
+            {prize.status === "in_stock" ? `In stock: ${prize.stock_count}` : "Print-on-request"}
           </span>
-          <span>
-            Stock: <span className="text-ink">{prize.stock_count}</span>
-          </span>
-        </div>
-
-        <div className="text-xs text-muted flex items-center justify-between">
-          {prize.size && <span>{SIZE_LABELS[prize.size] ?? prize.size}</span>}
           {dateLabel && (
-            <span className="ml-auto">
+            <span className="truncate">
               {soldDateKnown ? "Sold" : "Added"} {dateLabel}
             </span>
           )}
         </div>
 
-        <div className="mt-auto pt-3 border-t border-border-warm flex items-center justify-between gap-2">
+        <div className="text-xs text-muted truncate">
+          {[
+            prize.size ? SIZE_LABELS[prize.size] ?? prize.size : null,
+            (prize.filaments ?? []).map((f) => f.color_name).join(", ") || null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </div>
+
+        <div className="mt-auto pt-2.5 border-t border-border-warm flex items-center justify-between gap-2">
           {priceTag ? (
             <span className="text-sm font-medium text-sage">{priceTag}</span>
           ) : (
@@ -143,7 +125,7 @@ export default function PrizeCard({
       </div>
 
       {showBuyerModal && (
-        <div onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
           <BuyerNameModal
             prizeName={prize.name}
             onCancel={() => setShowBuyerModal(false)}

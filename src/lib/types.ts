@@ -4,7 +4,7 @@
 
 export type CoinTier = "silver" | "gold" | "obsidian";
 
-export type PrizeStatus = "in_stock" | "low_stock" | "print_on_request";
+export type PrizeStatus = "in_stock" | "print_on_request";
 
 export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled";
 
