@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -196,23 +196,18 @@ export default function RequestsKanban({
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
-  // The single most-recently-created card, if any -- gets the celebratory
-  // pop-in (.card-added-in) once, instead of the page-load stagger every
-  // other card uses. Cleared after the animation plays or on the next
-  // successful add, whichever comes first.
-  const [justAddedId, setJustAddedId] = useState<string | null>(null);
+  // The card that should play its pop-in animation, if any. Previously
+  // this was set automatically on create and paired with an effect that
+  // tried to auto-scroll to it -- that turned out unreliable in practice
+  // (see git history), so now it's set only when the person clicks
+  // "View" on the "New request added" toast, tying the animation to the
+  // moment they're actually looking rather than trying to guess it.
+  const [revealId, setRevealId] = useState<string | null>(null);
   // Cards mid-delete: hidden immediately (optimistic), restored if Undo
   // is clicked, actually gone once the undo window elapses and the
   // server delete + refresh completes (at which point the id just stops
   // existing in `requests` anyway).
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
-  // Every currently-rendered card's DOM node, keyed by request id -- kept
-  // passively up to date by each card's ref (register on mount, remove
-  // on unmount). Scrolling itself happens in the effect below, not here,
-  // so it isn't at the mercy of exactly when/how often React re-invokes
-  // an inline ref callback.
-  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const scrolledIdRef = useRef<string | null>(null);
   const router = useRouter();
 
   // Effective requests: server data with any not-yet-persisted optimistic
@@ -232,36 +227,6 @@ export default function RequestsKanban({
   );
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
-
-  // Scrolls the just-added card into view once its real DOM node exists.
-  // Runs on every effectiveRequests change (not just on mount) because
-  // the card frequently doesn't exist yet on the render where justAddedId
-  // is first set -- router.refresh() hasn't returned the new row yet at
-  // that point. Re-checking here, once fresh data actually lands and
-  // re-renders this component, is what makes this reliable regardless of
-  // that timing gap.
-  //
-  // The scrollIntoView call itself is deferred two animation frames --
-  // calling it synchronously in the effect body was measuring the
-  // card's position before the browser had finished laying out the
-  // newly-inserted row (it was still mid-reflow, sometimes still at its
-  // pre-animation scale(0.85)/opacity:0 starting state), so the computed
-  // scroll target was wrong and nothing visibly moved. Two rAFs is the
-  // standard way to guarantee layout has actually settled before reading
-  // element position. block: "center" (not "nearest") so the movement is
-  // unambiguous rather than a browser judgment call that can end up as
-  // a no-op if it decides the element is "close enough" already.
-  useEffect(() => {
-    if (!justAddedId || scrolledIdRef.current === justAddedId) return;
-    const el = cardRefs.current.get(justAddedId);
-    if (!el) return;
-    scrolledIdRef.current = justAddedId;
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    });
-  }, [justAddedId, effectiveRequests]);
 
   const visibleColumns = useMemo(
     () => COLUMNS.filter((c) => !hidden.has(c.status)),
@@ -483,10 +448,7 @@ export default function RequestsKanban({
                   return (
                     <div
                       key={r.id}
-                      ref={(el) => {
-                        if (el) cardRefs.current.set(r.id, el);
-                        else cardRefs.current.delete(r.id);
-                      }}
+                      id={`request-card-${r.id}`}
                       draggable
                       onDragStart={(e) => {
                         setDraggingId(r.id);
@@ -502,10 +464,10 @@ export default function RequestsKanban({
                       }}
                       style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
                       onAnimationEnd={() => {
-                        if (r.id === justAddedId) setJustAddedId(null);
+                        if (r.id === revealId) setRevealId(null);
                       }}
                       className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
-                        r.id === justAddedId ? "card-added-in" : "stagger-in"
+                        r.id === revealId ? "card-added-in" : "stagger-in"
                       } ${draggingId === r.id ? "opacity-40" : ""}`}
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -768,8 +730,21 @@ export default function RequestsKanban({
               onCancel={() => setCreatingStatus(null)}
               onSuccess={(result) => {
                 setCreatingStatus(null);
-                if (result?.requestId) setJustAddedId(result.requestId);
                 router.refresh();
+                if (result?.requestId) {
+                  const id = result.requestId;
+                  showToast("New request added", {
+                    action: {
+                      label: "View",
+                      onClick: () => {
+                        const el = document.getElementById(`request-card-${id}`);
+                        if (!el) return;
+                        setRevealId(id);
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                      },
+                    },
+                  });
+                }
               }}
               prizes={prizes}
               filaments={filaments}
