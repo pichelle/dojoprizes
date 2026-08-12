@@ -10,8 +10,8 @@ const STATUS_META: Record<
   { label: string; bg: string; text: string; icon: LucideIcon }
 > = {
   idea: { label: "Idea", bg: "var(--color-idea-bg)", text: "var(--color-idea-text)", icon: Lightbulb },
-  pending: { label: "Pending", bg: "var(--color-pending-bg)", text: "var(--color-pending-text)", icon: Clock },
-  printed: { label: "Printed", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: CircleDashed },
+  pending: { label: "Queue", bg: "var(--color-pending-bg)", text: "var(--color-pending-text)", icon: Clock },
+  printed: { label: "Pickup", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: CircleDashed },
   fulfilled: { label: "Fulfilled", bg: "var(--color-fulfilled-bg)", text: "var(--color-fulfilled-text)", icon: Check },
   cancelled: { label: "Cancelled", bg: "var(--color-cancelled-bg)", text: "var(--color-cancelled-text)", icon: XIcon },
 };

@@ -32,6 +32,7 @@ const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
+  { value: "true_to_size", label: "True to size" },
 ];
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
@@ -122,7 +123,9 @@ export default function RequestForm({
   function validate(form: HTMLFormElement): boolean {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
-    const loggingIdea = isCreating && String(fd.get("initial_status") ?? "") === "idea";
+    // initialStatus (not the form's own initial_status field, which only
+    // exists while creating) covers both creating and editing an idea.
+    const loggingIdea = initialStatus === "idea";
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
@@ -234,46 +237,50 @@ export default function RequestForm({
       <div className="py-6 border-t border-border-warm">
         <SectionLabel>Details</SectionLabel>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-ink">
-              Prize (from catalog)
-            </label>
-            <div className="mt-1">
-              <Select
-                name="prize_id"
-                value={prizeId}
-                onValueChange={setPrizeId}
-                className="w-full"
-                options={[
-                  { value: NONE_VALUE, label: "Not catalogued yet / other" },
-                  ...prizes.map((p) => ({ value: p.id, label: p.name })),
-                ]}
-              />
-            </div>
-          </div>
+          {initialStatus !== "idea" && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-ink">
+                  Title of print
+                </label>
+                <input
+                  name="free_text_prize"
+                  disabled={prizeId !== NONE_VALUE}
+                  defaultValue={initial?.free_text_prize ?? ""}
+                  placeholder="e.g. custom Bulbasaur keychain"
+                  className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-ink">
-              If not catalogued, describe it
-            </label>
-            <input
-              name="free_text_prize"
-              disabled={prizeId !== NONE_VALUE}
-              defaultValue={initial?.free_text_prize ?? ""}
-              placeholder="e.g. custom Bulbasaur keychain"
-              className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage disabled:bg-page"
-            />
-          </div>
+              <div>
+                <label className="block text-sm font-medium text-ink">
+                  OR select from existing
+                </label>
+                <div className="mt-1">
+                  <Select
+                    name="prize_id"
+                    value={prizeId}
+                    onValueChange={setPrizeId}
+                    className="w-full"
+                    options={[
+                      { value: NONE_VALUE, label: "Select" },
+                      ...prizes.map((p) => ({ value: p.id, label: p.name })),
+                    ]}
+                  />
+                </div>
+              </div>
 
-          <label className="sm:col-span-2 flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              name="is_print_club"
-              defaultChecked={initial?.is_print_club ?? false}
-              className="accent-sage"
-            />
-            3D Print Club
-          </label>
+              <label className="sm:col-span-2 flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="checkbox"
+                  name="is_print_club"
+                  defaultChecked={initial?.is_print_club ?? false}
+                  className="accent-sage"
+                />
+                3D Print Club
+              </label>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-ink">

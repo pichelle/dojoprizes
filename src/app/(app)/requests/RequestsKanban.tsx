@@ -2,7 +2,25 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, Eye, EyeOff, Maximize2, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronUp,
+  Clock,
+  Eye,
+  EyeOff,
+  Link2,
+  Maximize2,
+  Palette,
+  Pencil,
+  Ruler,
+  Coins,
+  StickyNote,
+  Tags,
+  User,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import Tooltip from "@/components/Tooltip";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
@@ -18,8 +36,8 @@ import { formatCoinPriceBreakdown } from "@/lib/coins";
 // fulfilled print's actual record lives on the Checkouts page instead.
 const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
   { status: "idea", label: "Ideas", dot: "var(--color-idea-dot)" },
-  { status: "pending", label: "Pending", dot: "var(--color-pending-dot)" },
-  { status: "printed", label: "Printed", dot: "var(--color-printed-dot)" },
+  { status: "pending", label: "Queue", dot: "var(--color-pending-dot)" },
+  { status: "printed", label: "Pickup", dot: "var(--color-printed-dot)" },
   { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
 
@@ -36,19 +54,21 @@ const UNDO_WINDOW_MS = 5000;
 
 type SortOverride = "asc" | "desc" | null;
 
+// Default (no manual override) is oldest-first everywhere -- that's the
+// order things actually need attention in. Pending/printed/idea also
+// bubble Print Club requests to the top within that.
 function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override: SortOverride) {
   const rows = requests.filter((r) => r.status === status);
-  if (override === "asc") {
-    return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
-  }
   if (override === "desc") {
     return [...rows].sort((a, b) => b.date_requested.localeCompare(a.date_requested));
   }
-  if (!PRIORITY_SORTED.includes(status)) return rows;
-  return [...rows].sort((a, b) => {
-    if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
-    return a.date_requested.localeCompare(b.date_requested);
-  });
+  if (override !== "asc" && PRIORITY_SORTED.includes(status)) {
+    return [...rows].sort((a, b) => {
+      if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
+      return a.date_requested.localeCompare(b.date_requested);
+    });
+  }
+  return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
 }
 
 function daysAgo(iso: string) {
@@ -66,12 +86,35 @@ function formatRequestedAgo(iso: string) {
   return `Requested ${age} days ago`;
 }
 
+function formatCalendarDate(iso: string) {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// Same relative time as formatRequestedAgo, but without the "Requested"
+// prefix and with the calendar date alongside it -- used only in the
+// peek's Request date row, not on the card.
+function formatRequestDateDetailed(iso: string) {
+  const age = daysAgo(iso);
+  const relative = age === null ? iso : age === 0 ? "Today" : age === 1 ? "1 day ago" : `${age} days ago`;
+  return `${relative} (${formatCalendarDate(iso)})`;
+}
+
 // Requests are logged under whichever staff name is on duty -- most people
 // just type their first name, so this prefixes "sensei" for display without
 // changing what's actually stored.
 function formatSensei(name: string | null) {
   if (!name) return "—";
   return /^sensei\b/i.test(name.trim()) ? name : `sensei ${name}`;
+}
+
+// Ideas don't have a prize/free-text title -- the "idea title" field
+// captured at creation is stored in student_name instead, so use that
+// as the display title for idea-status cards.
+function printTitle(r: PrizeRequest) {
+  if (r.status === "idea") return r.student_name || "Untitled idea";
+  return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }
 
 function initials(name: string) {
@@ -102,6 +145,26 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
   );
 }
 
+function DetailRow({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string;
+  icon: LucideIcon;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-2 py-2.5 border-b border-border-warm/50 last:border-b-0 text-left">
+      <span className="flex items-center gap-1.5 text-muted w-32 shrink-0 pt-px">
+        <Icon size={13} className="shrink-0" aria-hidden="true" />
+        {label}
+      </span>
+      <span className="text-ink leading-relaxed">{children}</span>
+    </div>
+  );
+}
+
 type Override = { status: RequestStatus; salePrice: number | null };
 
 export default function RequestsKanban({
@@ -120,6 +183,7 @@ export default function RequestsKanban({
   onDelete: (requestId: string) => Promise<void>;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
@@ -314,11 +378,14 @@ export default function RequestsKanban({
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
                   const age = daysAgo(r.date_requested);
                   const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
-                  const printName = r.prize?.name ?? r.free_text_prize ?? "Untitled print";
+                  const printName = printTitle(r);
                   return (
                     <div
                       key={r.id}
-                      onClick={() => setActiveId(r.id)}
+                      onClick={() => {
+                        setActiveId(r.id);
+                        setPeekMode("view");
+                      }}
                       className="card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4"
                     >
                       <div className="flex items-start justify-between gap-2">
@@ -345,7 +412,7 @@ export default function RequestsKanban({
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
-                          r.student_name,
+                          r.status === "idea" ? null : r.student_name,
                           r.size,
                           (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
                         ]
@@ -399,41 +466,140 @@ export default function RequestsKanban({
             aria-hidden="true"
           />
           <div className="slide-in-right relative w-full max-w-lg bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4">
+            {(active.photo_url || active.prize?.photo_url) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={active.photo_url || active.prize?.photo_url || ""}
+                alt=""
+                className="w-full h-40 object-cover rounded-xl border border-border-warm"
+              />
+            )}
             <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Edit request</h2>
+              <div className="flex items-center gap-2 min-w-0">
+                {peekMode === "edit" && (
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("view")}
+                    aria-label="Back"
+                    className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
+                  >
+                    <ChevronLeft size={18} aria-hidden="true" />
+                  </button>
+                )}
+                <h2 className="font-serif text-xl text-ink truncate">
+                  {peekMode === "edit" ? "Edit request" : printTitle(active)}
+                </h2>
+                {peekMode === "view" && active.is_print_club && (
+                  <span
+                    className="shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1"
+                    style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
+                  >
+                    Print club
+                  </span>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => setActiveId(null)}
-                className="text-muted hover:text-ink"
+                className="shrink-0 text-muted hover:text-ink"
                 aria-label="Close"
               >
                 <X size={18} />
               </button>
             </div>
-            <RequestForm
-              key={active.id}
-              action={updateRequestInline.bind(null, active.id)}
-              onCancel={() => setActiveId(null)}
-              onSuccess={() => {
-                setActiveId(null);
-                router.refresh();
-              }}
-              initial={active}
-              initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
-              initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}
-              prizes={prizes}
-              filaments={filaments}
-              allFranchiseTags={allFranchiseTags}
-              submitLabel="Save changes"
-            />
-            <ActionButton
-              action={onDelete.bind(null, active.id)}
-              toastMessage="Request deleted"
-              confirmMessage={`Delete ${active.student_name}'s request? This can't be undone.`}
-              className="text-sm text-rust hover:underline"
-            >
-              Delete this request
-            </ActionButton>
+
+            {peekMode === "view" ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <StatusPill
+                    status={active.status}
+                    catalogPrice={active.prize?.coin_price ?? null}
+                    onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("edit")}
+                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+                  >
+                    <Pencil size={13} aria-hidden="true" />
+                    Edit
+                  </button>
+                </div>
+
+                <div className="text-sm">
+                  {active.status !== "idea" && (
+                    <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
+                  )}
+                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
+                  {(active.colorFilaments ?? []).length > 0 && (
+                    <DetailRow label="Color" icon={Palette}>
+                      {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
+                    </DetailRow>
+                  )}
+                  {(active.franchiseTags ?? []).length > 0 && (
+                    <DetailRow label="Theme" icon={Tags}>
+                      {(active.franchiseTags ?? []).map((t) => t.name).join(", ")}
+                    </DetailRow>
+                  )}
+                  {formatCoinPriceBreakdown(active.sale_price) && (
+                    <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
+                  )}
+                  {active.links && (
+                    <DetailRow label="Link" icon={Link2}>
+                      <a
+                        href={active.links}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sage underline underline-offset-2"
+                      >
+                        Open ↗
+                      </a>
+                    </DetailRow>
+                  )}
+                  {active.notes && (
+                    <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>
+                  )}
+                </div>
+
+                <ActionButton
+                  action={onDelete.bind(null, active.id)}
+                  toastMessage="Request deleted"
+                  confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  className="text-sm text-rust hover:underline"
+                >
+                  Delete this request
+                </ActionButton>
+              </>
+            ) : (
+              <>
+                <RequestForm
+                  key={active.id}
+                  action={updateRequestInline.bind(null, active.id)}
+                  onCancel={() => setPeekMode("view")}
+                  onSuccess={() => {
+                    setActiveId(null);
+                    router.refresh();
+                  }}
+                  initial={active}
+                  initialFranchiseTags={(active.franchiseTags ?? []).map((t) => t.name)}
+                  initialColorFilamentIds={(active.colorFilaments ?? []).map((c) => c.id)}
+                  prizes={prizes}
+                  filaments={filaments}
+                  allFranchiseTags={allFranchiseTags}
+                  submitLabel="Save changes"
+                />
+                <ActionButton
+                  action={onDelete.bind(null, active.id)}
+                  toastMessage="Request deleted"
+                  confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                  className="text-sm text-rust hover:underline"
+                >
+                  Delete this request
+                </ActionButton>
+              </>
+            )}
           </div>
         </div>
       )}

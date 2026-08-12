@@ -29,7 +29,7 @@ const SOURCE_META = {
   request: { label: "Request", bg: "var(--color-print-club-bg)", text: "var(--color-print-club-text)" },
 };
 
-const SIZE_RANK: Record<string, number> = { small: 0, medium: 1, large: 2, xlarge: 3 };
+const SIZE_RANK: Record<string, number> = { small: 0, medium: 1, large: 2, xlarge: 3, true_to_size: 4 };
 
 type Period = "month" | "year" | "all";
 const PERIOD_LABEL: Record<Period, string> = { month: "Past month", year: "Past year", all: "All time" };
