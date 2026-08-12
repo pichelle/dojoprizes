@@ -31,6 +31,11 @@ export default function CatalogBoard({
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<null | { id: string }>(null);
+  // Same optimistic-hide pattern as Requests: instant removal on delete,
+  // restored if Undo is clicked, actually gone once the undo window
+  // elapses and prizes stops including it anyway.
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const visiblePrizes = prizes.filter((p) => !pendingDeleteIds.has(p.id));
 
   // Derived from the current `prizes` prop by id (not stored directly) so
   // that after a delete + router.refresh(), the prize disappearing from
@@ -42,8 +47,20 @@ export default function CatalogBoard({
     setMode(null);
   }
 
-  const inStockPrizes = prizes.filter((p) => p.status === "in_stock");
-  const printOnRequestPrizes = prizes.filter((p) => p.status !== "in_stock");
+  function hideForDelete(id: string) {
+    setPendingDeleteIds((prev) => new Set(prev).add(id));
+  }
+
+  function restoreFromDelete(id: string) {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  const inStockPrizes = visiblePrizes.filter((p) => p.status === "in_stock");
+  const printOnRequestPrizes = visiblePrizes.filter((p) => p.status !== "in_stock");
 
   function renderCard(prize: Prize, index: number) {
     return (
@@ -141,7 +158,11 @@ export default function CatalogBoard({
               action={deletePrize.bind(null, active.id)}
               toastMessage="Prize deleted"
               confirmMessage={`Delete ${active.name}? This can't be undone.`}
-              onStart={close}
+              onStart={() => {
+                close();
+                hideForDelete(active.id);
+              }}
+              onUndo={() => restoreFromDelete(active.id)}
               className="text-sm text-rust hover:underline"
             >
               Delete this prize

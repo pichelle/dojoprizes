@@ -196,19 +196,27 @@ export default function RequestsKanban({
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // Cards mid-delete: hidden immediately (optimistic), restored if Undo
+  // is clicked, actually gone once the undo window elapses and the
+  // server delete + refresh completes (at which point the id just stops
+  // existing in `requests` anyway).
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const router = useRouter();
 
   // Effective requests: server data with any not-yet-persisted optimistic
   // status/price changes applied, so cards move columns the instant a new
   // status is picked instead of waiting for the undo window to elapse.
+  // Anything mid-delete is filtered out here too, for the same reason.
   const effectiveRequests = useMemo(
     () =>
-      requests.map((r) => {
-        const o = overrides[r.id];
-        if (!o) return r;
-        return { ...r, status: o.status, sale_price: o.salePrice };
-      }),
-    [requests, overrides],
+      requests
+        .filter((r) => !pendingDeleteIds.has(r.id))
+        .map((r) => {
+          const o = overrides[r.id];
+          if (!o) return r;
+          return { ...r, status: o.status, sale_price: o.salePrice };
+        }),
+    [requests, overrides, pendingDeleteIds],
   );
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
@@ -291,6 +299,18 @@ export default function RequestsKanban({
         clearTimeout(timeoutId);
         setOverrides((prev) => ({ ...prev, [requestId]: previous }));
       },
+    });
+  }
+
+  function hideForDelete(requestId: string) {
+    setPendingDeleteIds((prev) => new Set(prev).add(requestId));
+  }
+
+  function restoreFromDelete(requestId: string) {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(requestId);
+      return next;
     });
   }
 
@@ -631,7 +651,11 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
-                  onStart={() => setActiveId(null)}
+                  onStart={() => {
+                    setActiveId(null);
+                    hideForDelete(active.id);
+                  }}
+                  onUndo={() => restoreFromDelete(active.id)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request
@@ -659,7 +683,11 @@ export default function RequestsKanban({
                   action={onDelete.bind(null, active.id)}
                   toastMessage="Request deleted"
                   confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
-                  onStart={() => setActiveId(null)}
+                  onStart={() => {
+                    setActiveId(null);
+                    hideForDelete(active.id);
+                  }}
+                  onUndo={() => restoreFromDelete(active.id)}
                   className="text-sm text-rust hover:underline"
                 >
                   Delete this request

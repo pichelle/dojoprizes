@@ -35,11 +35,25 @@ export default function FilamentBoard({
 }) {
   const router = useRouter();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const visibleFilaments = filaments.filter((f) => !pendingDeleteIds.has(f.id));
 
   const active = filaments.find((f) => f.id === activeId) ?? null;
 
   function close() {
     setActiveId(null);
+  }
+
+  function hideForDelete(id: string) {
+    setPendingDeleteIds((prev) => new Set(prev).add(id));
+  }
+
+  function restoreFromDelete(id: string) {
+    setPendingDeleteIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   }
 
   return (
@@ -65,7 +79,7 @@ export default function FilamentBoard({
       <SortSelect sort={sort} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filaments.map((f, i) => {
+        {visibleFilaments.map((f, i) => {
           const isLow =
             f.low_stock_threshold != null &&
             f.stock_level != null &&
@@ -173,7 +187,11 @@ export default function FilamentBoard({
                 action={deleteFilament.bind(null, active.id)}
                 toastMessage="Filament color deleted"
                 confirmMessage={`Delete ${active.color_name}? This can't be undone.`}
-                onStart={close}
+                onStart={() => {
+                  close();
+                  hideForDelete(active.id);
+                }}
+                onUndo={() => restoreFromDelete(active.id)}
                 className="text-sm text-rust hover:underline"
               >
                 Delete this filament color
