@@ -134,19 +134,35 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
 function DetailRow({
   label,
   icon: Icon,
+  onEdit,
   children,
 }: {
   label: string;
   icon: LucideIcon;
+  onEdit?: () => void;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2 border-b border-border-warm last:border-b-0">
-      <span className="flex items-center gap-2 text-muted">
-        <Icon size={14} className="shrink-0" aria-hidden="true" />
+    <div
+      role={onEdit ? "button" : undefined}
+      tabIndex={onEdit ? 0 : undefined}
+      onClick={onEdit}
+      onKeyDown={
+        onEdit
+          ? (e) => {
+              if (e.key === "Enter") onEdit();
+            }
+          : undefined
+      }
+      className={`py-2.5 border-b border-border-warm last:border-b-0 text-left ${
+        onEdit ? "cursor-pointer rounded-md -mx-2 px-2 hover:bg-page transition-colors" : ""
+      }`}
+    >
+      <span className="flex items-center gap-1.5 text-xs text-muted mb-1">
+        <Icon size={13} className="shrink-0" aria-hidden="true" />
         {label}
       </span>
-      <span className="text-ink text-right">{children}</span>
+      <div className="text-ink">{children}</div>
     </div>
   );
 }
@@ -497,11 +513,22 @@ export default function RequestsKanban({
             {peekMode === "view" ? (
               <>
                 <div className="flex items-center justify-between">
-                  <StatusPill
-                    status={active.status}
-                    catalogPrice={active.prize?.coin_price ?? null}
-                    onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
-                  />
+                  <div className="flex items-center gap-2">
+                    <StatusPill
+                      status={active.status}
+                      catalogPrice={active.prize?.coin_price ?? null}
+                      onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
+                    />
+                    {active.is_print_club && (
+                      <span
+                        className="flex items-center gap-1 text-[11px] font-semibold rounded-full px-2.5 py-1"
+                        style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
+                      >
+                        <Sparkles size={11} aria-hidden="true" />
+                        Print club
+                      </span>
+                    )}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setPeekMode("edit")}
@@ -514,38 +541,54 @@ export default function RequestsKanban({
 
                 <div className="text-sm">
                   {active.status !== "idea" && (
-                    <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
+                    <DetailRow label="Ninja" icon={User} onEdit={() => setPeekMode("edit")}>
+                      {active.student_name}
+                    </DetailRow>
                   )}
-                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
-                  <DetailRow label="Requested" icon={Clock}>{formatRequestedAgo(active.date_requested)}</DetailRow>
-                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
+                  <DetailRow label="Requested by" icon={User} onEdit={() => setPeekMode("edit")}>
+                    {formatSensei(active.requested_by)}
+                  </DetailRow>
+                  <DetailRow label="Request date" icon={Clock} onEdit={() => setPeekMode("edit")}>
+                    {formatRequestedAgo(active.date_requested)}
+                  </DetailRow>
+                  {active.size && (
+                    <DetailRow label="Size" icon={Ruler} onEdit={() => setPeekMode("edit")}>
+                      {active.size}
+                    </DetailRow>
+                  )}
                   {(active.colorFilaments ?? []).length > 0 && (
-                    <DetailRow label="Color" icon={Palette}>
+                    <DetailRow label="Color" icon={Palette} onEdit={() => setPeekMode("edit")}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
                     </DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (
-                    <DetailRow label="Theme" icon={Tags}>
+                    <DetailRow label="Theme" icon={Tags} onEdit={() => setPeekMode("edit")}>
                       {(active.franchiseTags ?? []).map((t) => t.name).join(", ")}
                     </DetailRow>
                   )}
-                  {active.is_print_club && <DetailRow label="Print club" icon={Sparkles}>Yes</DetailRow>}
                   {formatCoinPriceBreakdown(active.sale_price) && (
-                    <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
+                    <DetailRow label="Price" icon={Coins} onEdit={() => setPeekMode("edit")}>
+                      {formatCoinPriceBreakdown(active.sale_price)}
+                    </DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link" icon={Link2}>
+                    <DetailRow label="Link" icon={Link2} onEdit={() => setPeekMode("edit")}>
                       <a
                         href={active.links}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className="text-sage underline underline-offset-2"
                       >
                         Open ↗
                       </a>
                     </DetailRow>
                   )}
-                  {active.notes && <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>}
+                  {active.notes && (
+                    <DetailRow label="Notes" icon={StickyNote} onEdit={() => setPeekMode("edit")}>
+                      {active.notes}
+                    </DetailRow>
+                  )}
                 </div>
 
                 <ActionButton
