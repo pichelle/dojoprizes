@@ -71,25 +71,25 @@ export default function PrizeCard({
       <div className="p-3.5 flex-1 flex flex-col gap-1.5">
         <span className="font-serif font-medium text-base text-ink truncate">{prize.name}</span>
 
-        <div className="text-xs text-muted flex items-center gap-1.5">
-          <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[prize.status]}`} />
-          {prize.status === "in_stock" ? `In stock: ${prize.stock_count}` : "Print-on-request"}
-        </div>
-
         <div className="text-xs text-muted flex items-center justify-between gap-2">
-          <span className="truncate">
-            {[
-              prize.size ? SIZE_LABELS[prize.size] ?? prize.size : null,
-              (prize.filaments ?? []).map((f) => f.color_name).join(", ") || null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[prize.status]}`} />
+            {prize.status === "in_stock" ? `In stock: ${prize.stock_count}` : "Print-on-request"}
           </span>
           {dateLabel && (
-            <span className="shrink-0">
+            <span className="truncate">
               {soldDateKnown ? "Sold" : "Added"} {dateLabel}
             </span>
           )}
+        </div>
+
+        <div className="text-xs text-muted truncate">
+          {[
+            prize.size ? SIZE_LABELS[prize.size] ?? prize.size : null,
+            (prize.filaments ?? []).map((f) => f.color_name).join(", ") || null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
         </div>
 
         <div className="mt-auto pt-2.5 border-t border-border-warm flex items-center justify-between gap-2">
