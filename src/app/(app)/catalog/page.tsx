@@ -150,7 +150,7 @@ export default async function CatalogPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl text-ink">Prize catalog</h1>
+          <h1 className="font-serif text-2xl text-ink">Prize Bin</h1>
           <p className="text-sm text-muted mt-1">
             Full prize bin history: see what&apos;s currently in stock, what&apos;s
             been printed before.

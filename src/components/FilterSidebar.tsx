@@ -76,46 +76,51 @@ export default function FilterSidebar({
   const hasAny = Object.values(selected).some((v) => v.length > 0);
 
   return (
-    <div className="bg-card border border-border-warm rounded-xl p-4 space-y-5 h-fit min-w-0">
-      {groups.map((g) => (
-        <div key={g.key} className="min-w-0">
-          <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
-            {g.label}
-          </div>
-          {g.options.length === 0 ? (
-            <p className="text-xs text-muted">Nothing to filter by yet.</p>
-          ) : (
-            <div className="scroll-warm space-y-1.5 max-h-44 overflow-y-auto overflow-x-hidden pr-1">
-              {g.options.map((opt) => {
-                const checked = (selected[g.key] ?? []).includes(opt.value);
-                return (
-                  <label
-                    key={opt.value}
-                    className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
-                  >
-                    <input
-                      type={g.type}
-                      name={g.key}
-                      checked={checked}
-                      onChange={() => toggle(g, opt.value)}
-                      className="accent-sage shrink-0"
-                    />
-                    {opt.swatch && (
-                      <span
-                        className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
-                        style={{ background: opt.swatch }}
-                        aria-hidden="true"
-                      />
-                    )}
-                    <span className="truncate">{opt.label}</span>
-                  </label>
-                );
-              })}
+    <div className="bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)] flex flex-col">
+      {/* The group list scrolls on its own so the Apply/Clear footer below
+          always stays on screen -- it never gets pushed past the fold by a
+          long list of filter options. */}
+      <div className="scroll-warm space-y-4 overflow-y-auto min-h-0 flex-1">
+        {groups.map((g) => (
+          <div key={g.key} className="min-w-0">
+            <div className="text-xs font-medium text-muted uppercase tracking-wide mb-2">
+              {g.label}
             </div>
-          )}
-        </div>
-      ))}
-      <div className="flex flex-col gap-2 pt-3 border-t border-border-warm">
+            {g.options.length === 0 ? (
+              <p className="text-xs text-muted">Nothing to filter by yet.</p>
+            ) : (
+              <div className="scroll-warm space-y-1.5 max-h-28 overflow-y-auto overflow-x-hidden pr-1">
+                {g.options.map((opt) => {
+                  const checked = (selected[g.key] ?? []).includes(opt.value);
+                  return (
+                    <label
+                      key={opt.value}
+                      className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
+                    >
+                      <input
+                        type={g.type}
+                        name={g.key}
+                        checked={checked}
+                        onChange={() => toggle(g, opt.value)}
+                        className="accent-sage shrink-0"
+                      />
+                      {opt.swatch && (
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full border border-border-warm-strong shrink-0"
+                          style={{ background: opt.swatch }}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span className="truncate">{opt.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-col gap-2 pt-3 mt-4 border-t border-border-warm shrink-0">
         <button
           type="button"
           onClick={apply}
