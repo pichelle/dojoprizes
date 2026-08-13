@@ -79,6 +79,11 @@ body {
    instead of looking blurry. Hotspot (4 1) is near the top-left of the
    head, scaled proportionally from the earlier (5 2) on the larger
    34x40 version.
+   Filename is cursor-idle-v2.png, not cursor-idle.png -- deliberately
+   renamed rather than overwriting the old file in place, since keeping
+   the same path risked the browser/CDN continuing to serve the old
+   cached bytes at that URL after deploy. Bump the suffix again if this
+   asset changes in the future for the same reason.
    Applied to `*` with !important so it wins over the cursor-pointer
    utility class used on buttons/links throughout the app -- this is a
    single cursor for every state right now (idle, hover, everything).
@@ -87,7 +92,7 @@ body {
    being forced to match. `auto` is the fallback if the image fails to
    load. */
 * {
-  cursor: url("/cursor-idle.png") 4 1, auto !important;
+  cursor: url("/cursor-idle-v2.png") 4 1, auto !important;
 }
 
 h1.font-serif,
