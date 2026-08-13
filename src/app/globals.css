@@ -70,17 +70,24 @@ body {
   background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  /* Hand-drawn idle cursor -- reuses the ninja mark's silhouette rather
-     than a separate shape, so the same character shows up in the nav,
-     the empty states, and now the cursor itself. Hotspot (2 2) sits at
-     the top-left of the head, which is where a normal cursor's point
-     would be -- keeps clicks feeling predictable despite the shape
-     being a face rather than a sharp arrow.
-     Buttons/links with an explicit cursor-pointer class intentionally
-     keep the plain browser hand on hover -- no custom hover cursor yet,
-     this is idle-state only. `auto` is the fallback if the image
-     somehow fails to load. */
-  cursor: url("/cursor-idle.png") 2 2, auto;
+}
+
+/* Hand-drawn cursor -- reuses the ninja mark's silhouette rather than a
+   separate shape, so the same character shows up in the nav, the empty
+   states, and the cursor itself. Rasterized from the source SVG (not
+   the original raw export) so it stays crisp at this smaller 24x28 size
+   instead of looking blurry. Hotspot (4 1) is near the top-left of the
+   head, scaled proportionally from the earlier (5 2) on the larger
+   34x40 version.
+   Applied to `*` with !important so it wins over the cursor-pointer
+   utility class used on buttons/links throughout the app -- this is a
+   single cursor for every state right now (idle, hover, everything).
+   Revisit/loosen this once distinct hover or drag cursors exist, at
+   which point cursor-pointer elements should get their own instead of
+   being forced to match. `auto` is the fallback if the image fails to
+   load. */
+* {
+  cursor: url("/cursor-idle.png") 4 1, auto !important;
 }
 
 h1.font-serif,
