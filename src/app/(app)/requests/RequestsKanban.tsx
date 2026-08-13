@@ -32,6 +32,7 @@ import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { staggerDelay } from "@/lib/stagger";
+import EmptyStateMascot from "@/components/EmptyStateMascot";
 
 // "Fulfilled" isn't a visible column -- it's tracked (status still gets
 // set to "fulfilled" via the status pill, and still counts toward the
@@ -43,6 +44,18 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
   { status: "printed", label: "Pickup", dot: "var(--color-printed-dot)" },
   { status: "cancelled", label: "Cancelled", dot: "var(--color-cancelled-dot)" },
 ];
+
+// Only shown when a column is genuinely empty (not just filtered-empty --
+// see the filtersActive check at the render site). Ideas being empty is
+// the rare/odd one (kids never stop having ideas), so that gets the
+// question-mark pose instead of a celebratory one.
+const EMPTY_COLUMN_COPY: Record<RequestStatus, { pose: "happy" | "sparkle" | "huh"; message: string }> = {
+  idea: { pose: "huh", message: "no ideas pending? add some." },
+  pending: { pose: "happy", message: "all caught up, go take a break sensei." },
+  printed: { pose: "happy", message: "shelf's clear, everyone's got their prize." },
+  fulfilled: { pose: "happy", message: "all caught up." },
+  cancelled: { pose: "sparkle", message: "nothing cancelled. not one request lost." },
+};
 
 // Requests carrying a priority sort (pending/printed) show 3D Print Club
 // first, then oldest-waiting first -- the same order the old Queue page
@@ -178,6 +191,7 @@ export default function RequestsKanban({
   onStatusChange,
   onDelete,
   onClearCancelled,
+  filtersActive,
 }: {
   requests: PrizeRequest[];
   prizes: Pick<Prize, "id" | "name">[];
@@ -186,6 +200,12 @@ export default function RequestsKanban({
   onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
   onClearCancelled: () => Promise<void>;
+  // True if a color/size/search filter is currently narrowing `requests`.
+  // A column reading empty because of an active filter is not the same
+  // thing as a column that's genuinely empty -- only the latter should
+  // get the celebratory mascot copy ("all caught up!"), since showing
+  // that over a filter side-effect would just be wrong.
+  filtersActive: boolean;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
@@ -562,7 +582,14 @@ export default function RequestsKanban({
                     </div>
                   );
                 })}
-                {rows.length === 0 && (
+                {rows.length === 0 && !filtersActive && (
+                  <EmptyStateMascot
+                    pose={EMPTY_COLUMN_COPY[col.status].pose}
+                    message={EMPTY_COLUMN_COPY[col.status].message}
+                    className="border border-dashed border-border-warm-strong rounded-xl bg-card/60"
+                  />
+                )}
+                {rows.length === 0 && filtersActive && (
                   <p className="text-xs text-muted border border-dashed border-border-warm-strong rounded-xl p-3 text-center bg-card/60">
                     Nothing here
                   </p>

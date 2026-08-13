@@ -8,6 +8,7 @@ import ActionButton from "@/components/ActionButton";
 import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
+import EmptyStateMascot from "@/components/EmptyStateMascot";
 
 export type MergedCheckoutRow = {
   id: string;
@@ -307,7 +308,13 @@ export default function CheckoutsTable({
             })}
           </tbody>
         </table>
-        {sorted.length === 0 && (
+        {sorted.length === 0 && rows.length === 0 && (
+          <EmptyStateMascot
+            pose="sparkle"
+            message="nothing checked out yet — it'll show up here the first time a prize leaves the shelf"
+          />
+        )}
+        {sorted.length === 0 && rows.length > 0 && (
           <p className="p-4 text-sm text-muted">Nothing matches yet.</p>
         )}
       </div>
