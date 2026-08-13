@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   ChevronLeft,
@@ -196,12 +196,21 @@ export default function RequestsKanban({
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // The card that should play its pop-in animation, if any. Previously
+  // this was set automatically on create and paired with an effect that
+  // tried to auto-scroll to it -- that turned out unreliable in practice
+  // (see git history), so now it's set only when the person clicks
+  // "View" on the "New request added" toast, tying the animation to the
+  // moment they're actually looking rather than trying to guess it.
+  const [revealId, setRevealId] = useState<string | null>(null);
   // Cards mid-delete: hidden immediately (optimistic), restored if Undo
   // is clicked, actually gone once the undo window elapses and the
   // server delete + refresh completes (at which point the id just stops
   // existing in `requests` anyway).
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const addedToastFired = useRef(false);
 
   // Effective requests: server data with any not-yet-persisted optimistic
   // status/price changes applied, so cards move columns the instant a new
@@ -220,6 +229,37 @@ export default function RequestsKanban({
   );
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
+
+  // Same "New request added" toast used by the inline "+ Add new" flow's
+  // onSuccess below -- factored out because the dedicated /requests/new
+  // page also needs to trigger it, but can't call onSuccess directly
+  // (it redirects server-side before any client code here would run).
+  // Instead createRequest carries the new id through as ?added=<id>,
+  // and the effect right after this picks it up on arrival.
+  function showAddedToast(id: string) {
+    showToast("New request added", {
+      action: {
+        label: "View",
+        onClick: () => {
+          const el = document.getElementById(`request-card-${id}`);
+          if (!el) return;
+          setRevealId(id);
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        },
+      },
+    });
+  }
+
+  useEffect(() => {
+    if (addedToastFired.current) return;
+    const addedId = searchParams.get("added");
+    if (!addedId) return;
+    addedToastFired.current = true;
+    showAddedToast(addedId);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("added");
+    router.replace(params.size > 0 ? `?${params.toString()}` : "/requests", { scroll: false });
+  }, [searchParams, router]);
 
   const visibleColumns = useMemo(
     () => COLUMNS.filter((c) => !hidden.has(c.status)),
@@ -293,7 +333,7 @@ export default function RequestsKanban({
       })();
     }, UNDO_WINDOW_MS);
 
-    showToast("Status updated", {
+    showToast(next === "fulfilled" ? "Marked fulfilled!" : "Status updated", {
       onUndo: () => {
         cancelled = true;
         clearTimeout(timeoutId);
@@ -441,6 +481,7 @@ export default function RequestsKanban({
                   return (
                     <div
                       key={r.id}
+                      id={`request-card-${r.id}`}
                       draggable
                       onDragStart={(e) => {
                         setDraggingId(r.id);
@@ -455,9 +496,12 @@ export default function RequestsKanban({
                         setPeekMode("view");
                       }}
                       style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
-                      className={`card-hover stagger-in cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
-                        draggingId === r.id ? "opacity-40" : ""
-                      }`}
+                      onAnimationEnd={() => {
+                        if (r.id === revealId) setRevealId(null);
+                      }}
+                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                        r.id === revealId ? "card-added-in" : "stagger-in"
+                      } ${draggingId === r.id ? "opacity-40" : ""}`}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <span
@@ -717,9 +761,10 @@ export default function RequestsKanban({
               action={createRequestInline}
               presetStatus={creatingStatus}
               onCancel={() => setCreatingStatus(null)}
-              onSuccess={() => {
+              onSuccess={(result) => {
                 setCreatingStatus(null);
                 router.refresh();
+                if (result?.requestId) showAddedToast(result.requestId);
               }}
               prizes={prizes}
               filaments={filaments}

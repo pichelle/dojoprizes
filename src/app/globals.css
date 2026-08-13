@@ -310,3 +310,27 @@ textarea:hover {
   animation: overlay-fade-in 0.4s ease-out backwards;
   animation-delay: var(--stagger-delay, 0ms);
 }
+
+/* A card that was *just* created by the person looking at the screen --
+   distinct from .stagger-in (which plays on every page load/refresh for
+   every card). This one plays once, only for the specific card that was
+   added, so submitting a form reads as "that appeared because I did
+   that" rather than the whole column silently re-rendering. */
+@keyframes card-added-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.card-added-in {
+  animation: card-added-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

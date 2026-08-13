@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 
-type ToastItem = { id: number; message: string; onUndo?: () => void };
+type ToastAction = { label: string; onClick: () => void };
 
-type Listener = (message: string, options?: { onUndo?: () => void }) => void;
+type ToastItem = { id: number; message: string; onUndo?: () => void; action?: ToastAction };
+
+type Listener = (message: string, options?: { onUndo?: () => void; action?: ToastAction }) => void;
 let listeners: Listener[] = [];
 
-export function showToast(message: string, options?: { onUndo?: () => void }) {
+export function showToast(
+  message: string,
+  options?: { onUndo?: () => void; action?: ToastAction },
+) {
   listeners.forEach((l) => l(message, options));
 }
 
@@ -20,7 +25,10 @@ export default function ToastHost() {
   useEffect(() => {
     const handler: Listener = (message, options) => {
       const id = Date.now() + Math.random();
-      setToasts((prev) => [...prev, { id, message, onUndo: options?.onUndo }]);
+      setToasts((prev) => [
+        ...prev,
+        { id, message, onUndo: options?.onUndo, action: options?.action },
+      ]);
       setTimeout(() => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
       }, TOAST_DURATION_MS);
@@ -62,6 +70,19 @@ export default function ToastHost() {
               style={{ color: "var(--color-printed-text)" }}
             >
               Undo
+            </button>
+          )}
+          {t.action && (
+            <button
+              type="button"
+              onClick={() => {
+                t.action?.onClick();
+                dismiss(t.id);
+              }}
+              className="text-xs font-semibold underline underline-offset-2"
+              style={{ color: "var(--color-printed-text)" }}
+            >
+              {t.action.label}
             </button>
           )}
           <button
