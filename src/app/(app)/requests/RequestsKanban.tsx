@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   ChevronLeft,
@@ -209,6 +209,8 @@ export default function RequestsKanban({
   // existing in `requests` anyway).
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const addedToastFired = useRef(false);
 
   // Effective requests: server data with any not-yet-persisted optimistic
   // status/price changes applied, so cards move columns the instant a new
@@ -227,6 +229,37 @@ export default function RequestsKanban({
   );
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
+
+  // Same "New request added" toast used by the inline "+ Add new" flow's
+  // onSuccess below -- factored out because the dedicated /requests/new
+  // page also needs to trigger it, but can't call onSuccess directly
+  // (it redirects server-side before any client code here would run).
+  // Instead createRequest carries the new id through as ?added=<id>,
+  // and the effect right after this picks it up on arrival.
+  function showAddedToast(id: string) {
+    showToast("New request added", {
+      action: {
+        label: "View",
+        onClick: () => {
+          const el = document.getElementById(`request-card-${id}`);
+          if (!el) return;
+          setRevealId(id);
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        },
+      },
+    });
+  }
+
+  useEffect(() => {
+    if (addedToastFired.current) return;
+    const addedId = searchParams.get("added");
+    if (!addedId) return;
+    addedToastFired.current = true;
+    showAddedToast(addedId);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("added");
+    router.replace(params.size > 0 ? `?${params.toString()}` : "/requests", { scroll: false });
+  }, [searchParams, router]);
 
   const visibleColumns = useMemo(
     () => COLUMNS.filter((c) => !hidden.has(c.status)),
@@ -731,20 +764,7 @@ export default function RequestsKanban({
               onSuccess={(result) => {
                 setCreatingStatus(null);
                 router.refresh();
-                if (result?.requestId) {
-                  const id = result.requestId;
-                  showToast("New request added", {
-                    action: {
-                      label: "View",
-                      onClick: () => {
-                        const el = document.getElementById(`request-card-${id}`);
-                        if (!el) return;
-                        setRevealId(id);
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      },
-                    },
-                  });
-                }
+                if (result?.requestId) showAddedToast(result.requestId);
               }}
               prizes={prizes}
               filaments={filaments}

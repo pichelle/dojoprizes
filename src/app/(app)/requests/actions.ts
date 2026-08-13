@@ -180,7 +180,10 @@ export async function createRequest(
 ): Promise<RequestFormState> {
   const result = await performCreateRequest(formData);
   if (result.error) return result;
-  redirect("/requests");
+  // Carries the new id across the redirect so /requests can fire the
+  // same "New request added" toast this flow would otherwise skip
+  // entirely -- see RequestsKanban's `added` query param handling.
+  redirect(result.requestId ? `/requests?added=${result.requestId}` : "/requests");
 }
 
 export async function updateRequest(
