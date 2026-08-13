@@ -95,10 +95,6 @@ export default function SidebarNav() {
           </button>
         </form>
       </div>
-
-      <div className={GROUP_DIVIDER} />
-
-      <Image src="/signature.png" alt="by sensei michelle" width={110} height={18} className="opacity-80" />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export default function AppLayout({
         </div>
       </aside>
       <main className="flex-1 min-w-0">
-        <div className="page-fade-in px-6 sm:pl-36 sm:pr-16 py-10 sm:py-12 max-w-none">
+        <div className="page-fade-in px-6 sm:pl-32 sm:pr-16 py-10 sm:py-12 max-w-none">
           {children}
         </div>
       </main>
