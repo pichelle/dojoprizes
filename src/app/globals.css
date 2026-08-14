@@ -72,29 +72,6 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Hand-drawn cursor -- reuses the ninja mark's silhouette rather than a
-   separate shape, so the same character shows up in the nav, the empty
-   states, and the cursor itself. Rasterized from the source SVG (not
-   the original raw export) so it stays crisp at this smaller 24x28 size
-   instead of looking blurry. Hotspot (4 1) is near the top-left of the
-   head, scaled proportionally from the earlier (5 2) on the larger
-   34x40 version.
-   Filename is cursor-idle-v2.png, not cursor-idle.png -- deliberately
-   renamed rather than overwriting the old file in place, since keeping
-   the same path risked the browser/CDN continuing to serve the old
-   cached bytes at that URL after deploy. Bump the suffix again if this
-   asset changes in the future for the same reason.
-   Applied to `*` with !important so it wins over the cursor-pointer
-   utility class used on buttons/links throughout the app -- this is a
-   single cursor for every state right now (idle, hover, everything).
-   Revisit/loosen this once distinct hover or drag cursors exist, at
-   which point cursor-pointer elements should get their own instead of
-   being forced to match. `auto` is the fallback if the image fails to
-   load. */
-* {
-  cursor: url("/cursor-idle-v2.png") 4 1, auto !important;
-}
-
 h1.font-serif,
 h2.font-serif {
   font-weight: 700;
