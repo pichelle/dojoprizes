@@ -104,12 +104,14 @@ export default function StatusPill({
         ref={buttonRef}
         type="button"
         onClick={toggleOpen}
-        className="flex items-center gap-1.5 leading-none text-xs font-medium rounded-full px-3 py-2 hover:brightness-95 transition-[filter]"
+        className="flex items-center leading-none text-xs font-medium rounded-full px-2.5 py-2 hover:brightness-95 transition-[filter]"
         style={{ background: meta.bg, color: meta.text }}
       >
-        <Icon size={13} className="shrink-0" aria-hidden="true" />
-        <span>{meta.label}</span>
-        <ChevronDown size={13} className="shrink-0" aria-hidden="true" />
+        <span className="flex items-center gap-1">
+          <Icon size={13} className="shrink-0" aria-hidden="true" />
+          <span>{meta.label}</span>
+        </span>
+        <ChevronDown size={13} className="shrink-0 ml-[5px] opacity-60" aria-hidden="true" />
       </button>
 
       {/* Portaled straight to <body> -- a card that's part of a hoverable

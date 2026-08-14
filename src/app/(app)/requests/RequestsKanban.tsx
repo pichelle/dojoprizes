@@ -519,7 +519,7 @@ export default function RequestsKanban({
                       } ${draggingId === r.id ? "opacity-40" : ""}`}
                     >
                       {r.is_print_club && (
-                        <div className="absolute -top-2.5 -right-2.5 z-10">
+                        <div className="absolute top-2 right-2 z-10">
                           <Tooltip label="3D Print Club">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
