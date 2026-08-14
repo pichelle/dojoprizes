@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import type { Prize } from "@/lib/types";
-import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { coinPriceToBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
 import { burstConfetti } from "@/lib/confetti";
 import BuyerNameModal from "@/components/BuyerNameModal";
@@ -20,6 +20,13 @@ const SIZE_LABELS: Record<string, string> = {
   large: "Large",
   xlarge: "X-Large",
   true_to_size: "True to size",
+};
+
+// Obsidian/Gold have dedicated coin icons; Silver has none yet, so it stays
+// as plain text in the breakdown below.
+const COIN_ICONS: Record<"obsidian" | "gold", string> = {
+  obsidian: "/icons/coin-obsidian.png",
+  gold: "/icons/coin-gold.png",
 };
 
 function formatDate(iso: string) {
@@ -45,7 +52,8 @@ export default function PrizeCard({
   // animation -- optional so PrizeCard doesn't require it everywhere.
   staggerDelay?: string;
 }) {
-  const priceTag = formatCoinPriceBreakdown(prize.coin_price);
+  const coinBreakdown = coinPriceToBreakdown(prize.coin_price);
+  const hasPrice = coinBreakdown.obsidian > 0 || coinBreakdown.gold > 0 || coinBreakdown.silver > 0;
   const [showBuyerModal, setShowBuyerModal] = useState(false);
   const soldButtonRef = useRef<HTMLButtonElement>(null);
   const isPrintOnRequest = prize.stock_count === 0;
@@ -64,17 +72,19 @@ export default function PrizeCard({
         staggerDelay ? "stagger-in" : ""
       }`}
     >
-      <div className="h-44 bg-page flex items-center justify-center">
-        {prize.photo_url ? (
-          <ImageWithFallback
-            src={prize.photo_url}
-            alt={prize.name}
-            className="h-full w-full object-cover"
-            fallback={<span className="text-4xl">🎁</span>}
-          />
-        ) : (
-          <span className="text-4xl">🎁</span>
-        )}
+      <div className="h-44 bg-card p-2.5">
+        <div className="h-full w-full rounded-[10px] bg-page flex items-center justify-center overflow-hidden">
+          {prize.photo_url ? (
+            <ImageWithFallback
+              src={prize.photo_url}
+              alt={prize.name}
+              className="h-full w-full object-cover"
+              fallback={<span className="text-4xl">🎁</span>}
+            />
+          ) : (
+            <span className="text-4xl">🎁</span>
+          )}
+        </div>
       </div>
       <div className="p-3.5 flex-1 flex flex-col gap-1.5">
         <span className="font-serif font-medium text-base text-ink truncate">{prize.name}</span>
@@ -101,8 +111,24 @@ export default function PrizeCard({
         </div>
 
         <div className="mt-auto pt-2.5 border-t border-border-warm flex items-center justify-between gap-2">
-          {priceTag ? (
-            <span className="text-sm font-medium text-sage">{priceTag}</span>
+          {hasPrice ? (
+            <span className="flex items-center gap-2.5">
+              {coinBreakdown.obsidian > 0 && (
+                <span className="flex items-center gap-1">
+                  <img src={COIN_ICONS.obsidian} alt="Obsidian" className="w-[18px] h-[18px] object-contain" />
+                  <span className="text-sm font-medium text-ink">{coinBreakdown.obsidian}</span>
+                </span>
+              )}
+              {coinBreakdown.gold > 0 && (
+                <span className="flex items-center gap-1">
+                  <img src={COIN_ICONS.gold} alt="Gold" className="w-[18px] h-[18px] object-contain" />
+                  <span className="text-sm font-medium text-ink">{coinBreakdown.gold}</span>
+                </span>
+              )}
+              {coinBreakdown.silver > 0 && (
+                <span className="text-sm font-medium text-ink">{coinBreakdown.silver} Silver</span>
+              )}
+            </span>
           ) : (
             <span className="text-xs text-muted">No price set</span>
           )}
