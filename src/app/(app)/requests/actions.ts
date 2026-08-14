@@ -270,6 +270,18 @@ export async function addRequestComment(requestId: string, author: string | null
   return data;
 }
 
+export async function updateRequestComment(commentId: string, body: string) {
+  const trimmedBody = body.trim();
+  if (!trimmedBody) throw new Error("Comment can't be empty.");
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("request_comments")
+    .update({ body: trimmedBody })
+    .eq("id", commentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+}
+
 export async function deleteRequestComment(commentId: string) {
   const supabase = createServerClient();
   const { error } = await supabase.from("request_comments").delete().eq("id", commentId);

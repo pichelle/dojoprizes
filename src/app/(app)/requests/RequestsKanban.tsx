@@ -33,6 +33,7 @@ import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { formatSensei } from "@/lib/formatSensei";
 import { staggerDelay } from "@/lib/stagger";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
 
@@ -117,14 +118,6 @@ function formatRequestDateDetailed(iso: string) {
   const age = daysAgo(iso);
   const relative = age === null ? iso : age === 0 ? "Today" : age === 1 ? "1 day ago" : `${age} days ago`;
   return `${relative} (${formatCalendarDate(iso)})`;
-}
-
-// Requests are logged under whichever staff name is on duty -- most people
-// just type their first name, so this prefixes "sensei" for display without
-// changing what's actually stored.
-function formatSensei(name: string | null) {
-  if (!name) return "—";
-  return /^sensei\b/i.test(name.trim()) ? name : `sensei ${name}`;
 }
 
 // Ideas don't have a prize/free-text title -- the "idea title" field
@@ -574,9 +567,9 @@ export default function RequestsKanban({
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           {(r.comments ?? []).length > 0 && (
-                            <span className="flex items-center gap-1 text-[11px] font-semibold text-muted">
-                              <MessageCircle size={13} aria-hidden="true" />
-                              {(r.comments ?? []).length}
+                            <span className="flex items-center gap-1.5 leading-none text-[11px] font-semibold text-muted">
+                              <MessageCircle size={13} className="shrink-0" aria-hidden="true" />
+                              <span>{(r.comments ?? []).length}</span>
                             </span>
                           )}
                           {/* Only the status pill itself needs to stop the
