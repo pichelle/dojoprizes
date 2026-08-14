@@ -39,6 +39,7 @@ export default async function RequestsPage({
     { data: franchiseTagRows },
     { data: prizes },
     { data: allFilamentLinks },
+    { data: allComments },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
@@ -46,6 +47,10 @@ export default async function RequestsPage({
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("prizes").select("id, name").order("name"),
     supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
+    supabase
+      .from("request_comments")
+      .select("id, request_id, author, body, created_at")
+      .order("created_at", { ascending: true }),
   ]);
 
   const tagsByRequestId = new Map<string, { id: string; name: string }[]>();
@@ -91,10 +96,21 @@ export default async function RequestsPage({
 
   const { data: requestsRaw, error } = await query;
 
+  const commentsByRequestId = new Map<
+    string,
+    { id: string; request_id: string; author: string | null; body: string; created_at: string }[]
+  >();
+  for (const comment of allComments ?? []) {
+    const list = commentsByRequestId.get(comment.request_id) ?? [];
+    list.push(comment);
+    commentsByRequestId.set(comment.request_id, list);
+  }
+
   let requests = (requestsRaw ?? []).map((r) => ({
     ...r,
     franchiseTags: tagsByRequestId.get(r.id) ?? [],
     colorFilaments: filamentsByRequestId.get(r.id) ?? [],
+    comments: commentsByRequestId.get(r.id) ?? [],
   }));
 
   if (params.q) {

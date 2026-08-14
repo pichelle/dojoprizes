@@ -11,6 +11,7 @@ import {
   EyeOff,
   Link2,
   Maximize2,
+  MessageCircle,
   Palette,
   Pencil,
   Plus,
@@ -26,6 +27,7 @@ import Tooltip from "@/components/Tooltip";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
+import RequestComments from "./RequestComments";
 import ActionButton from "@/components/ActionButton";
 import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
@@ -573,11 +575,19 @@ export default function RequestsKanban({
                         <span className="text-[11px] font-medium text-muted truncate">
                           {formatSensei(r.requested_by)}
                         </span>
-                        <StatusPill
-                          status={r.status}
-                          catalogPrice={catalogPrice}
-                          onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
-                        />
+                        <div className="flex items-center gap-2 shrink-0">
+                          {(r.comments ?? []).length > 0 && (
+                            <span className="flex items-center gap-1 text-[11px] font-semibold text-muted">
+                              <MessageCircle size={13} aria-hidden="true" />
+                              {(r.comments ?? []).length}
+                            </span>
+                          )}
+                          <StatusPill
+                            status={r.status}
+                            catalogPrice={catalogPrice}
+                            onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
+                          />
+                        </div>
                       </div>
                     </div>
                   );
@@ -717,6 +727,8 @@ export default function RequestsKanban({
                     <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>
                   )}
                 </div>
+
+                <RequestComments requestId={active.id} comments={active.comments ?? []} />
 
                 <ActionButton
                   action={onDelete.bind(null, active.id)}

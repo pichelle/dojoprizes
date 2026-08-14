@@ -253,3 +253,26 @@ export async function clearCancelledRequests() {
   revalidatePath("/requests");
   revalidatePath("/");
 }
+
+// Comments: there's no login system, so `author` is whatever name the
+// sensei typed into the field (same free-text pattern as requested_by).
+export async function addRequestComment(requestId: string, author: string | null, body: string) {
+  const trimmedBody = body.trim();
+  if (!trimmedBody) throw new Error("Comment can't be empty.");
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("request_comments")
+    .insert({ request_id: requestId, author: author?.trim() || null, body: trimmedBody })
+    .select("id, request_id, author, body, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+  return data;
+}
+
+export async function deleteRequestComment(commentId: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("request_comments").delete().eq("id", commentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+}
