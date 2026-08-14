@@ -112,6 +112,19 @@ create table if not exists request_filaments (
   primary key (request_id, filament_id)
 );
 
+-- A running thread of timestamped comments on a request, distinct from the
+-- single `notes` field above. No login system, so `author` is a free-typed
+-- sensei name, same pattern as requests.requested_by.
+create table if not exists request_comments (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references requests (id) on delete cascade,
+  author text,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists request_comments_request_id_idx on request_comments (request_id);
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- Checkouts
 -- ─────────────────────────────────────────────────────────────────────────
@@ -163,6 +176,7 @@ alter table franchise_tags enable row level security;
 alter table prize_franchise_tags enable row level security;
 alter table request_franchise_tags enable row level security;
 alter table request_filaments enable row level security;
+alter table request_comments enable row level security;
 
 drop policy if exists "anon full access" on prizes;
 create policy "anon full access" on prizes for all
@@ -198,4 +212,8 @@ create policy "anon full access" on request_franchise_tags for all
 
 drop policy if exists "anon full access" on request_filaments;
 create policy "anon full access" on request_filaments for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on request_comments;
+create policy "anon full access" on request_comments for all
   using (true) with check (true);
