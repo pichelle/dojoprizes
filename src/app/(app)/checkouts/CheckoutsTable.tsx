@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import ActionButton from "@/components/ActionButton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
@@ -325,8 +326,10 @@ export default function CheckoutsTable({
             <h2 className="font-serif text-xl text-ink pr-8">{active.itemName}</h2>
 
             {active.photoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={active.photoUrl} alt="" className="w-full h-40 object-cover rounded-xl border border-border-warm" />
+              <ImageWithFallback
+                src={active.photoUrl}
+                className="w-full h-40 rounded-xl border border-border-warm object-cover"
+              />
             )}
 
             <div className="space-y-2 text-sm">
@@ -381,7 +384,7 @@ export default function CheckoutsTable({
                     href={active.makerworldLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sage underline underline-offset-2"
+                    className="text-link hover:text-link-hover underline underline-offset-2"
                   >
                     Open link ↗
                   </a>

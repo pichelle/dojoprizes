@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Search, X } from "lucide-react";
-import ColorFilterDropdown from "@/components/ColorFilterDropdown";
+import FiltersDropdown, { type FilterSection } from "@/components/FiltersDropdown";
 
 const SIZE_OPTIONS = [
   { value: "small", label: "Small" },
@@ -13,10 +13,24 @@ const SIZE_OPTIONS = [
   { value: "true_to_size", label: "True to size" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "idea", label: "Idea" },
+  { value: "pending", label: "Pending" },
+  { value: "printed", label: "Printed" },
+  { value: "fulfilled", label: "Fulfilled" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export default function RequestsFilterBar({
   colorOptions,
+  // Status only makes sense to filter by in the table view -- the board
+  // already separates by status via its columns, so showing a redundant
+  // (and partially misleading, since Fulfilled isn't a board column)
+  // status filter there would just be confusing.
+  showStatus,
 }: {
   colorOptions: { value: string; label: string; swatch?: string | null }[];
+  showStatus: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -32,6 +46,7 @@ export default function RequestsFilterBar({
   const hasActiveFilters =
     Boolean(searchParams.get("color")) ||
     Boolean(searchParams.get("size")) ||
+    Boolean(searchParams.get("status")) ||
     Boolean(searchParams.get("q"));
 
   function clearFilters() {
@@ -39,16 +54,20 @@ export default function RequestsFilterBar({
     router.push("/requests");
   }
 
+  const sections: FilterSection[] = [
+    { key: "color", label: "Color", options: colorOptions },
+    { key: "size", label: "Size", options: SIZE_OPTIONS },
+    ...(showStatus ? [{ key: "status", label: "Status", options: STATUS_OPTIONS }] : []),
+  ];
+
   return (
     <div className="flex flex-wrap items-center justify-start gap-2 text-sm">
-      <ColorFilterDropdown basePath="/requests" options={colorOptions} />
-      <ColorFilterDropdown
-        basePath="/requests"
-        options={SIZE_OPTIONS}
-        paramName="size"
-        label="Size"
-      />
       <div className="relative">
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+          aria-hidden="true"
+        />
         <input
           type="text"
           placeholder="Search by ninja or prize..."
@@ -58,14 +77,10 @@ export default function RequestsFilterBar({
             if (e.key === "Enter") updateParam("q", q);
           }}
           onBlur={() => updateParam("q", q)}
-          className="rounded-md border border-border-warm-strong pl-3 pr-8 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
-        />
-        <Search
-          size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-          aria-hidden="true"
+          className="rounded-md border border-border-warm-strong pl-9 pr-3 py-2 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
         />
       </div>
+      <FiltersDropdown basePath="/requests" sections={sections} />
       {hasActiveFilters && (
         <button
           type="button"

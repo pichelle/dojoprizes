@@ -7,6 +7,7 @@ import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
 import { burstConfetti } from "@/lib/confetti";
 import BuyerNameModal from "@/components/BuyerNameModal";
+import ImageWithFallback from "@/components/ImageWithFallback";
 
 const STATUS_DOT: Record<Prize["status"], string> = {
   in_stock: "bg-sage",
@@ -65,11 +66,11 @@ export default function PrizeCard({
     >
       <div className="h-44 bg-page flex items-center justify-center">
         {prize.photo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <ImageWithFallback
             src={prize.photo_url}
             alt={prize.name}
             className="h-full w-full object-cover"
+            fallback={<span className="text-4xl">🎁</span>}
           />
         ) : (
           <span className="text-4xl">🎁</span>

@@ -7,9 +7,9 @@ import {
   ChevronLeft,
   ChevronUp,
   Clock,
+  ExternalLink,
   Eye,
   EyeOff,
-  Link2,
   Maximize2,
   MessageCircle,
   Palette,
@@ -29,11 +29,13 @@ import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import RequestComments from "./RequestComments";
 import ActionButton from "@/components/ActionButton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
+import { formatSize } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
 
@@ -128,32 +130,26 @@ function printTitle(r: PrizeRequest) {
   return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
-function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string }) {
+function CardAvatar({ photoUrl }: { photoUrl: string | null }) {
+  const smileFallback = (
+    <span
+      aria-hidden="true"
+      className="w-8 h-8 rounded-lg shrink-0 bg-white flex items-center justify-center border border-border-warm p-1.5"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/mascot/smile.png" alt="" className="w-full h-full object-contain" />
+    </span>
+  );
   if (photoUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <ImageWithFallback
         src={photoUrl}
-        alt=""
-        aria-hidden="true"
-        className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-warm"
+        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border-warm"
+        fallback={smileFallback}
       />
     );
   }
-  return (
-    <span
-      aria-hidden="true"
-      className="w-8 h-8 rounded-full shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
-    >
-      {initials(name)}
-    </span>
-  );
+  return smileFallback;
 }
 
 function DetailRow({
@@ -442,7 +438,7 @@ export default function RequestsKanban({
                       <ChevronUp size={14} aria-hidden="true" />
                     </button>
                   </Tooltip>
-                  <Tooltip label="Most recent">
+                  <Tooltip label="Newest">
                     <button
                       type="button"
                       onClick={() => toggleSort(col.status, "desc")}
@@ -520,7 +516,7 @@ export default function RequestsKanban({
                     >
                       {r.is_print_club && (
                         <div className="absolute top-2 right-2 z-10">
-                          <Tooltip label="3D Print Club">
+                          <Tooltip label="3D Print Club" align="right" placement="bottom">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/icons/print-club.png"
@@ -540,16 +536,13 @@ export default function RequestsKanban({
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">
-                        <CardAvatar
-                          photoUrl={r.photo_url || r.prize?.photo_url || null}
-                          name={r.student_name}
-                        />
+                        <CardAvatar photoUrl={r.photo_url || r.prize?.photo_url || null} />
                         <p className="text-[15px] font-bold text-ink">{printName}</p>
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
                           r.status === "idea" ? null : r.student_name,
-                          r.size,
+                          formatSize(r.size),
                           (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
                         ]
                           .filter(Boolean)
@@ -635,11 +628,9 @@ export default function RequestsKanban({
         {active && (
           <>
             {(active.photo_url || active.prize?.photo_url) && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <ImageWithFallback
                 src={active.photo_url || active.prize?.photo_url || ""}
-                alt=""
-                className="w-full h-40 object-cover rounded-xl border border-border-warm"
+                className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
             <div className="flex items-center gap-2 min-w-0 pr-8">
@@ -705,7 +696,7 @@ export default function RequestsKanban({
                   )}
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
-                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {(active.colorFilaments ?? []).length > 0 && (
                     <DetailRow label="Color" icon={Palette}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
@@ -720,12 +711,12 @@ export default function RequestsKanban({
                     <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link" icon={Link2}>
+                    <DetailRow label="Link" icon={ExternalLink}>
                       <a
                         href={active.links}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sage underline underline-offset-2"
+                        className="text-link hover:text-link-hover underline underline-offset-2"
                       >
                         Open ↗
                       </a>

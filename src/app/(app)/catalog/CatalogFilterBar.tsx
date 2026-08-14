@@ -18,18 +18,13 @@ export default function CatalogFilterBar() {
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-      <Select
-        value={searchParams.get("sort") ?? "name"}
-        onValueChange={(v) => updateParam("sort", v === "name" ? "" : v)}
-        className="w-48"
-        options={[
-          { value: "name", label: "Sort: Name (A–Z)" },
-          { value: "price_asc", label: "Price: low to high" },
-          { value: "price_desc", label: "Price: high to low" },
-        ]}
-      />
+    <div className="flex flex-wrap items-center justify-start gap-2 text-sm">
       <div className="relative">
+        <Search
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+          aria-hidden="true"
+        />
         <input
           type="text"
           placeholder="Search by name..."
@@ -39,14 +34,20 @@ export default function CatalogFilterBar() {
             if (e.key === "Enter") updateParam("q", q);
           }}
           onBlur={() => updateParam("q", q)}
-          className="rounded-md border border-border-warm-strong pl-3 pr-8 py-1.5 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
-        />
-        <Search
-          size={14}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-          aria-hidden="true"
+          className="rounded-md border border-border-warm-strong pl-9 pr-3 py-2 w-56 bg-card focus:outline-none focus:ring-2 focus:ring-sage"
         />
       </div>
+      <Select
+        value={searchParams.get("sort") ?? "date_desc"}
+        onValueChange={(v) => updateParam("sort", v === "date_desc" ? "" : v)}
+        className="w-52"
+        options={[
+          { value: "date_desc", label: "Sort: Newest to oldest" },
+          { value: "date_asc", label: "Sort: Oldest to newest" },
+          { value: "price_asc", label: "Price: low to high" },
+          { value: "price_desc", label: "Price: high to low" },
+        ]}
+      />
     </div>
   );
 }

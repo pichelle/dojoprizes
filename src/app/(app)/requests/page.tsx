@@ -1,10 +1,8 @@
-import Link from "next/link";
-import { Clock, Plus, Timer } from "lucide-react";
+import { Clock, Timer } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
-import RequestsFilterBar from "./RequestsFilterBar";
 import ErrorNote from "@/components/ErrorNote";
-import RequestsKanban from "./RequestsKanban";
+import RequestsView from "./RequestsView";
 
 // Force dynamic rendering (belt-and-suspenders alongside reading
 // searchParams below) so this page always reflects the latest requests
@@ -23,13 +21,17 @@ export default async function RequestsPage({
   searchParams: Promise<{
     color?: string;
     size?: string;
+    status?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
   const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
-  const filtersActive = Boolean(selectedColors.length > 0 || selectedSizes.length > 0 || params.q);
+  const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
+  const filtersActive = Boolean(
+    selectedColors.length > 0 || selectedSizes.length > 0 || selectedStatuses.length > 0 || params.q,
+  );
   const supabase = createServerClient();
 
   const [
@@ -98,6 +100,7 @@ export default async function RequestsPage({
 
   if (requestIdsForColor) query = query.in("id", requestIdsForColor);
   if (selectedSizes.length > 0) query = query.in("size", selectedSizes);
+  if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
 
   const { data: requestsRaw, error } = await query;
 
@@ -185,30 +188,18 @@ export default async function RequestsPage({
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Link
-            href="/requests/new"
-            className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0"
-          >
-            <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-            Add a request
-          </Link>
-          <RequestsFilterBar
-            colorOptions={(filaments ?? []).map((f) => ({
-              value: f.id,
-              label: f.color_name,
-              swatch: f.swatch_hex,
-            }))}
-          />
-        </div>
-
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
 
-        <RequestsKanban
+        <RequestsView
           requests={requests}
           prizes={prizes ?? []}
           filaments={filaments ?? []}
           allFranchiseTags={franchiseTagRows ?? []}
+          colorOptions={(filaments ?? []).map((f) => ({
+            value: f.id,
+            label: f.color_name,
+            swatch: f.swatch_hex,
+          }))}
           onStatusChange={updateRequestStatus}
           onDelete={deleteRequest}
           onClearCancelled={clearCancelledRequests}

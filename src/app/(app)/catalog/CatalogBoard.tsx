@@ -88,6 +88,7 @@ export default function CatalogBoard({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
+        <CatalogFilterBar />
         <Link
           href="/catalog/new"
           className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
@@ -95,7 +96,6 @@ export default function CatalogBoard({
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a prize
         </Link>
-        <CatalogFilterBar />
       </div>
 
       <ActiveFilters colorOptions={allFilaments} />
