@@ -79,26 +79,27 @@ export default function RequestComments({
 
       <form
         onSubmit={handleSubmit}
-        className="flex gap-2 items-start border-t border-border-warm pt-3"
+        className="flex flex-col gap-2 border-t border-border-warm pt-3"
       >
         <input
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
-          placeholder="sensei name"
+          placeholder="Your name"
           aria-label="Your name"
-          className="w-24 shrink-0 text-xs px-2 py-2 rounded-lg border border-border-warm-strong"
+          className="text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong"
         />
-        <input
+        <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Add a comment"
           aria-label="Comment"
-          className="flex-1 min-w-0 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong"
+          rows={2}
+          className="text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong resize-none"
         />
         <button
           type="submit"
           disabled={submitting || !body.trim()}
-          className="shrink-0 bg-ink text-page rounded-lg px-3 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+          className="self-end bg-ink text-page rounded-lg px-3 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50"
         >
           Post
         </button>

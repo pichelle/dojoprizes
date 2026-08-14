@@ -568,10 +568,7 @@ export default function RequestsKanban({
                           </p>
                         )
                       )}
-                      <div
-                        className="flex items-center justify-between gap-2 mt-3"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <div className="flex items-center justify-between gap-2 mt-3">
                         <span className="text-[11px] font-medium text-muted truncate">
                           {formatSensei(r.requested_by)}
                         </span>
@@ -582,11 +579,18 @@ export default function RequestsKanban({
                               {(r.comments ?? []).length}
                             </span>
                           )}
-                          <StatusPill
-                            status={r.status}
-                            catalogPrice={catalogPrice}
-                            onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
-                          />
+                          {/* Only the status pill itself needs to stop the
+                              click from bubbling up to the card's onClick
+                              (which would open the peek) -- the rest of this
+                              row (sensei name, comment count) should behave
+                              like the rest of the card and open it. */}
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <StatusPill
+                              status={r.status}
+                              catalogPrice={catalogPrice}
+                              onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
