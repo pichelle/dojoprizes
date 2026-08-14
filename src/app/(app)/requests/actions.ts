@@ -105,6 +105,10 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
           String(formData.get("date_requested") ?? "").trim() ||
           new Date().toISOString().slice(0, 10),
         status: initialStatus,
+        // A request created directly into pending (or past it) has, by
+        // definition, entered the queue right now -- powers the average
+        // turnaround stat. "idea" hasn't entered the queue yet.
+        pending_at: initialStatus === "idea" ? null : new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -220,12 +224,35 @@ export async function updateRequestStatus(
   salePrice?: number | null,
 ) {
   const supabase = createServerClient();
-  const update: { status: RequestStatus; sale_price?: number | null } = { status };
+  const update: {
+    status: RequestStatus;
+    sale_price?: number | null;
+    pending_at?: string;
+    fulfilled_at?: string;
+  } = { status };
   // Price is locked in when a request moves to Printed (that's when actual
   // size/color availability is known), and carries forward through
   // Fulfilled -- so it's only ever set here, not re-asked for later.
   if (salePrice !== undefined) {
     update.sale_price = salePrice;
+  }
+  // Powers the average turnaround stat. pending_at is only stamped the
+  // first time a request enters the queue (checked below, not
+  // unconditionally overwritten here) so a request that gets bounced back
+  // to pending later doesn't lose its original wait-start time.
+  // fulfilled_at is stamped every time -- it always reflects this moment.
+  if (status === "fulfilled") {
+    update.fulfilled_at = new Date().toISOString();
+  }
+  if (status === "pending") {
+    const { data: existing } = await supabase
+      .from("requests")
+      .select("pending_at")
+      .eq("id", requestId)
+      .single();
+    if (!existing?.pending_at) {
+      update.pending_at = new Date().toISOString();
+    }
   }
   const { error } = await supabase
     .from("requests")

@@ -51,6 +51,8 @@ export interface PrizeRequest {
   notes: string | null;
   photo_url: string | null;
   sale_price: number | null;
+  pending_at: string | null;
+  fulfilled_at: string | null;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
