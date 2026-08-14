@@ -74,7 +74,7 @@ export default function Select({
                 )}
                 <RadixSelect.ItemText>{opt.label}</RadixSelect.ItemText>
                 <RadixSelect.ItemIndicator className="absolute right-2 inline-flex items-center">
-                  <Check size={14} className="text-sage" aria-hidden="true" />
+                  <Check size={14} className="text-ink" aria-hidden="true" />
                 </RadixSelect.ItemIndicator>
               </RadixSelect.Item>
             ))}

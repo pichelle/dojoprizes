@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   Clock,
   Coins,
-  Link2,
+  ExternalLink,
   Palette,
   Pencil,
   Ruler,
@@ -29,6 +29,7 @@ import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
 import { formatRequestedAgo, formatRequestDateDetailed, printTitle } from "@/lib/requestFormatting";
+import { staggerDelay } from "@/lib/stagger";
 
 const UNDO_WINDOW_MS = 5000;
 
@@ -178,7 +179,7 @@ export default function RequestsTable({
             </tr>
           </thead>
           <tbody>
-            {sortedRequests.map((r) => {
+            {sortedRequests.map((r, i) => {
               const catalogPrice = r.prize?.coin_price ?? null;
               const colors = r.colorFilaments ?? [];
               return (
@@ -188,7 +189,8 @@ export default function RequestsTable({
                     setActiveId(r.id);
                     setPeekMode("view");
                   }}
-                  className="group border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-nav-hover cursor-pointer transition-colors"
+                  style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+                  className="group stagger-fade-in border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-nav-hover cursor-pointer transition-colors"
                 >
                   <td className="sticky left-0 z-10 bg-card group-hover:bg-nav-hover font-semibold text-ink px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)] transition-colors">
                     {printTitle(r)}
@@ -332,7 +334,7 @@ export default function RequestsTable({
                     <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link" icon={Link2}>
+                    <DetailRow label="Link" icon={ExternalLink}>
                       <a
                         href={active.links}
                         target="_blank"

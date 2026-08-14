@@ -136,8 +136,11 @@ export default async function CatalogPage({
     query = query.order("coin_price", { ascending: true, nullsFirst: false });
   } else if (params.sort === "price_desc") {
     query = query.order("coin_price", { ascending: false, nullsFirst: false });
+  } else if (params.sort === "date_asc") {
+    query = query.order("created_at", { ascending: true });
   } else {
-    query = query.order("name", { ascending: true });
+    // Default: newest added first.
+    query = query.order("created_at", { ascending: false });
   }
 
   const { data: prizesRaw, error } = await query;

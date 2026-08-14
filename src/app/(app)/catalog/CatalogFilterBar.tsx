@@ -38,11 +38,12 @@ export default function CatalogFilterBar() {
         />
       </div>
       <Select
-        value={searchParams.get("sort") ?? "name"}
-        onValueChange={(v) => updateParam("sort", v === "name" ? "" : v)}
-        className="w-48"
+        value={searchParams.get("sort") ?? "date_desc"}
+        onValueChange={(v) => updateParam("sort", v === "date_desc" ? "" : v)}
+        className="w-52"
         options={[
-          { value: "name", label: "Sort: Name (A–Z)" },
+          { value: "date_desc", label: "Sort: Newest to oldest" },
+          { value: "date_asc", label: "Sort: Oldest to newest" },
           { value: "price_asc", label: "Price: low to high" },
           { value: "price_desc", label: "Price: high to low" },
         ]}

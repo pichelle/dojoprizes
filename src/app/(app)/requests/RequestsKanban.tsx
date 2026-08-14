@@ -7,9 +7,9 @@ import {
   ChevronLeft,
   ChevronUp,
   Clock,
+  ExternalLink,
   Eye,
   EyeOff,
-  Link2,
   Maximize2,
   MessageCircle,
   Palette,
@@ -442,7 +442,7 @@ export default function RequestsKanban({
                       <ChevronUp size={14} aria-hidden="true" />
                     </button>
                   </Tooltip>
-                  <Tooltip label="Most recent">
+                  <Tooltip label="Newest">
                     <button
                       type="button"
                       onClick={() => toggleSort(col.status, "desc")}
@@ -555,7 +555,7 @@ export default function RequestsKanban({
                               onClick={(e) => e.stopPropagation()}
                               className="shrink-0 text-link hover:text-link-hover"
                             >
-                              <Link2 size={13} aria-hidden="true" />
+                              <ExternalLink size={13} aria-hidden="true" />
                             </a>
                           )}
                         </p>
@@ -734,7 +734,7 @@ export default function RequestsKanban({
                     <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.sale_price)}</DetailRow>
                   )}
                   {active.links && (
-                    <DetailRow label="Link" icon={Link2}>
+                    <DetailRow label="Link" icon={ExternalLink}>
                       <a
                         href={active.links}
                         target="_blank"
