@@ -130,19 +130,14 @@ function printTitle(r: PrizeRequest) {
   return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }
 
-function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
-}
-
-function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string }) {
-  const initialsFallback = (
+function CardAvatar({ photoUrl }: { photoUrl: string | null }) {
+  const smileFallback = (
     <span
       aria-hidden="true"
-      className="w-8 h-8 rounded-lg shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
+      className="w-8 h-8 rounded-lg shrink-0 bg-white flex items-center justify-center border border-border-warm p-1.5"
     >
-      {initials(name)}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/mascot/smile.png" alt="" className="w-full h-full object-contain" />
     </span>
   );
   if (photoUrl) {
@@ -150,11 +145,11 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
       <ImageWithFallback
         src={photoUrl}
         className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border-warm"
-        fallback={initialsFallback}
+        fallback={smileFallback}
       />
     );
   }
-  return initialsFallback;
+  return smileFallback;
 }
 
 function DetailRow({
@@ -521,7 +516,7 @@ export default function RequestsKanban({
                     >
                       {r.is_print_club && (
                         <div className="absolute top-2 right-2 z-10">
-                          <Tooltip label="3D Print Club">
+                          <Tooltip label="3D Print Club" align="right">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/icons/print-club.png"
@@ -541,10 +536,7 @@ export default function RequestsKanban({
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">
-                        <CardAvatar
-                          photoUrl={r.photo_url || r.prize?.photo_url || null}
-                          name={r.student_name}
-                        />
+                        <CardAvatar photoUrl={r.photo_url || r.prize?.photo_url || null} />
                         <p className="text-[15px] font-bold text-ink">{printName}</p>
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
