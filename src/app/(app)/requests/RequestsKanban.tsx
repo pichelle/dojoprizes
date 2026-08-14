@@ -29,6 +29,7 @@ import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import RequestComments from "./RequestComments";
 import ActionButton from "@/components/ActionButton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
@@ -136,18 +137,7 @@ function initials(name: string) {
 }
 
 function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string }) {
-  if (photoUrl) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={photoUrl}
-        alt=""
-        aria-hidden="true"
-        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border-warm"
-      />
-    );
-  }
-  return (
+  const initialsFallback = (
     <span
       aria-hidden="true"
       className="w-8 h-8 rounded-lg shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
@@ -155,6 +145,16 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
       {initials(name)}
     </span>
   );
+  if (photoUrl) {
+    return (
+      <ImageWithFallback
+        src={photoUrl}
+        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border-warm"
+        fallback={initialsFallback}
+      />
+    );
+  }
+  return initialsFallback;
 }
 
 function DetailRow({
@@ -636,11 +636,9 @@ export default function RequestsKanban({
         {active && (
           <>
             {(active.photo_url || active.prize?.photo_url) && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <ImageWithFallback
                 src={active.photo_url || active.prize?.photo_url || ""}
-                alt=""
-                className="w-full h-40 object-cover rounded-xl border border-border-warm"
+                className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
             <div className="flex items-center gap-2 min-w-0 pr-8">

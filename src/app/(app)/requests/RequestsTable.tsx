@@ -23,6 +23,7 @@ import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import RequestComments from "./RequestComments";
 import ActionButton from "@/components/ActionButton";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
 import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
@@ -249,11 +250,9 @@ export default function RequestsTable({
         {active && (
           <>
             {(active.photo_url || active.prize?.photo_url) && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <ImageWithFallback
                 src={active.photo_url || active.prize?.photo_url || ""}
-                alt=""
-                className="w-full h-40 object-cover rounded-xl border border-border-warm"
+                className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
             <div className="flex items-center gap-2 min-w-0 pr-8">
