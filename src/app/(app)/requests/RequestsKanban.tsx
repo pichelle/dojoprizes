@@ -477,7 +477,7 @@ export default function RequestsKanban({
                 </div>
               </div>
               <div
-                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 ${
+                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 pt-1 -mt-1 ${
                   isExpanded ? "grid content-start items-start gap-2.5" : "space-y-2.5"
                 }`}
                 style={
