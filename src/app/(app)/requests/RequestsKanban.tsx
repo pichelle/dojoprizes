@@ -516,7 +516,7 @@ export default function RequestsKanban({
                     >
                       {r.is_print_club && (
                         <div className="absolute top-2 right-2 z-10">
-                          <Tooltip label="3D Print Club" align="right">
+                          <Tooltip label="3D Print Club" align="right" placement="bottom">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src="/icons/print-club.png"

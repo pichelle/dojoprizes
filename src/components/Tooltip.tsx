@@ -13,10 +13,16 @@ export default function Tooltip({
   // otherwise half of it renders past the edge and gets clipped by the
   // ancestor's overflow instead of just wrapping.
   align = "center",
+  // "top" (default) pops the tooltip above the trigger. Anything sitting
+  // right at the top edge of a clipped/scrollable container (again, the
+  // print club badge) needs it to open downward instead, since there's no
+  // room above it inside the clipped area.
+  placement = "top",
 }: {
   label: string;
   children: React.ReactNode;
   align?: "center" | "right";
+  placement?: "top" | "bottom";
 }) {
   const [show, setShow] = useState(false);
 
@@ -32,9 +38,9 @@ export default function Tooltip({
       {show && (
         <span
           role="tooltip"
-          className={`absolute bottom-full mb-1.5 whitespace-nowrap rounded-md bg-ink text-page text-[11px] font-medium px-2 py-1 z-30 pointer-events-none ${
-            align === "right" ? "right-0" : "left-1/2 -translate-x-1/2"
-          }`}
+          className={`absolute whitespace-nowrap rounded-md bg-ink text-page text-[11px] font-medium px-2 py-1 z-30 pointer-events-none ${
+            placement === "bottom" ? "top-full mt-1.5" : "bottom-full mb-1.5"
+          } ${align === "right" ? "right-0" : "left-1/2 -translate-x-1/2"}`}
         >
           {label}
         </span>
