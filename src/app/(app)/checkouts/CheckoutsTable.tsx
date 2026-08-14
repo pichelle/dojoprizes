@@ -381,7 +381,7 @@ export default function CheckoutsTable({
                     href={active.makerworldLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sage underline underline-offset-2"
+                    className="text-link hover:text-link-hover underline underline-offset-2"
                   >
                     Open link ↗
                   </a>

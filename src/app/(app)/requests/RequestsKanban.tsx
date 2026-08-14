@@ -544,7 +544,21 @@ export default function RequestsKanban({
                           photoUrl={r.photo_url || r.prize?.photo_url || null}
                           name={r.student_name}
                         />
-                        <p className="text-[15px] font-bold text-ink">{printName}</p>
+                        <p className="text-[15px] font-bold text-ink flex items-center gap-1.5 min-w-0">
+                          <span className="truncate">{printName}</span>
+                          {r.links && (
+                            <a
+                              href={r.links}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open print file link"
+                              onClick={(e) => e.stopPropagation()}
+                              className="shrink-0 text-link hover:text-link-hover"
+                            >
+                              <Link2 size={13} aria-hidden="true" />
+                            </a>
+                          )}
+                        </p>
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
@@ -725,7 +739,7 @@ export default function RequestsKanban({
                         href={active.links}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sage underline underline-offset-2"
+                        className="text-link hover:text-link-hover underline underline-offset-2"
                       >
                         Open ↗
                       </a>

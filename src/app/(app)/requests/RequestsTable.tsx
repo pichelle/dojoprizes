@@ -209,7 +209,7 @@ export default function RequestsTable({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="text-rust underline underline-offset-2"
+                        className="text-link hover:text-link-hover underline underline-offset-2"
                       >
                         Link
                       </a>
@@ -337,7 +337,7 @@ export default function RequestsTable({
                         href={active.links}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sage underline underline-offset-2"
+                        className="text-link hover:text-link-hover underline underline-offset-2"
                       >
                         Open ↗
                       </a>

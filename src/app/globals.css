@@ -23,6 +23,13 @@
   --color-taupe: #aba396;
   --color-border-hover: #c2c1bc;
 
+  /* Dedicated color for "open external link" text/icons (MakerWorld,
+     Tinkercad, etc.) so it reads consistently as a link everywhere it
+     appears, instead of borrowing whatever status color happened to be
+     nearby (sage in one place, rust in another). */
+  --color-link: #3d6fa5;
+  --color-link-hover: #2c5680;
+
   /* Pastel accent ramps -- pending/printed/fulfilled/cancelled + print club */
   --color-pending-bg: #fbf4dc;
   --color-pending-text: #7a6a12;
@@ -59,6 +66,8 @@
   --color-slate: var(--color-slate);
   --color-taupe: var(--color-taupe);
   --color-border-hover: var(--color-border-hover);
+  --color-link: var(--color-link);
+  --color-link-hover: var(--color-link-hover);
   --color-nav: var(--color-nav);
   --color-nav-active: var(--color-nav-active);
   --color-nav-hover: var(--color-nav-hover);
