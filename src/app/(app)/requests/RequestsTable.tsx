@@ -153,7 +153,7 @@ export default function RequestsTable({
         <table className="w-full text-sm border-collapse min-w-[720px]">
           <thead>
             <tr className="border-b border-border-warm">
-              <th className="sticky left-0 z-10 bg-nav text-left text-xs font-bold text-muted px-3 py-2.5 shadow-[1px_0_0_var(--color-border-warm)]">
+              <th className="sticky left-0 z-10 bg-nav text-left text-xs font-bold text-muted px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)]">
                 Prize
               </th>
               <th className="text-left text-xs font-bold text-muted px-3 py-2.5">
@@ -188,9 +188,9 @@ export default function RequestsTable({
                     setActiveId(r.id);
                     setPeekMode("view");
                   }}
-                  className="border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-page cursor-pointer transition-colors"
+                  className="group border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-nav-hover cursor-pointer transition-colors"
                 >
-                  <td className="sticky left-0 z-10 bg-card font-semibold text-ink px-3 py-2.5 shadow-[1px_0_0_var(--color-border-warm)]">
+                  <td className="sticky left-0 z-10 bg-card group-hover:bg-nav-hover font-semibold text-ink px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)] transition-colors">
                     {printTitle(r)}
                   </td>
                   <td className="text-muted px-3 py-2.5 whitespace-nowrap">{formatRequestedAgo(r.date_requested).replace("Requested ", "")}</td>

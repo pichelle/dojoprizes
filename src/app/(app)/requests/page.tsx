@@ -1,8 +1,6 @@
-import Link from "next/link";
-import { Clock, Plus, Timer } from "lucide-react";
+import { Clock, Timer } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
-import RequestsFilterBar from "./RequestsFilterBar";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsView from "./RequestsView";
 
@@ -190,23 +188,6 @@ export default async function RequestsPage({
       </div>
 
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Link
-            href="/requests/new"
-            className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0"
-          >
-            <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-            Add a request
-          </Link>
-          <RequestsFilterBar
-            colorOptions={(filaments ?? []).map((f) => ({
-              value: f.id,
-              label: f.color_name,
-              swatch: f.swatch_hex,
-            }))}
-          />
-        </div>
-
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
 
         <RequestsView
@@ -214,6 +195,11 @@ export default async function RequestsPage({
           prizes={prizes ?? []}
           filaments={filaments ?? []}
           allFranchiseTags={franchiseTagRows ?? []}
+          colorOptions={(filaments ?? []).map((f) => ({
+            value: f.id,
+            label: f.color_name,
+            swatch: f.swatch_hex,
+          }))}
           onStatusChange={updateRequestStatus}
           onDelete={deleteRequest}
           onClearCancelled={clearCancelledRequests}
