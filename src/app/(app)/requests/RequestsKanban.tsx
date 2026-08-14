@@ -19,8 +19,8 @@ import {
   Coins,
   StickyNote,
   Tags,
+  Trash2,
   User,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
@@ -477,7 +477,7 @@ export default function RequestsKanban({
                 </div>
               </div>
               <div
-                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 ${
+                className={`scroll-warm sm:flex-1 sm:overflow-y-auto sm:min-h-0 sm:pr-1 pt-1 -mt-1 ${
                   isExpanded ? "grid content-start items-start gap-2.5" : "space-y-2.5"
                 }`}
                 style={
@@ -514,24 +514,30 @@ export default function RequestsKanban({
                       onAnimationEnd={() => {
                         if (r.id === revealId) setRevealId(null);
                       }}
-                      className={`card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
+                      className={`relative card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
                         r.id === revealId ? "card-added-in" : "stagger-in"
                       } ${draggingId === r.id ? "opacity-40" : ""}`}
                     >
+                      {r.is_print_club && (
+                        <div className="absolute top-2 right-2 z-10">
+                          <Tooltip label="3D Print Club">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src="/icons/print-club.png"
+                              alt=""
+                              className="w-9 h-9 object-contain"
+                              style={{ filter: "drop-shadow(0 3px 5px rgba(0,0,0,0.22))" }}
+                              aria-hidden="true"
+                            />
+                          </Tooltip>
+                        </div>
+                      )}
                       <div className="flex items-start justify-between gap-2">
                         <span
                           className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
                         >
                           {formatRequestedAgo(r.date_requested)}
                         </span>
-                        {r.is_print_club && (
-                          <span
-                            className="shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5"
-                            style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
-                          >
-                            Print club
-                          </span>
-                        )}
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">
                         <CardAvatar
@@ -636,38 +642,27 @@ export default function RequestsKanban({
                 className="w-full h-40 object-cover rounded-xl border border-border-warm"
               />
             )}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 min-w-0">
-                {peekMode === "edit" && (
-                  <button
-                    type="button"
-                    onClick={() => setPeekMode("view")}
-                    aria-label="Back"
-                    className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
-                  >
-                    <ChevronLeft size={18} aria-hidden="true" />
-                  </button>
-                )}
-                <h2 className="font-serif text-xl text-ink truncate">
-                  {peekMode === "edit" ? "Edit request" : printTitle(active)}
-                </h2>
-                {peekMode === "view" && active.is_print_club && (
-                  <span
-                    className="shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1"
-                    style={{ background: "var(--color-print-club-bg)", color: "var(--color-print-club-text)" }}
-                  >
-                    Print club
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveId(null)}
-                className="shrink-0 text-muted hover:text-ink"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
+            <div className="flex items-center gap-2 min-w-0 pr-8">
+              {peekMode === "edit" && (
+                <button
+                  type="button"
+                  onClick={() => setPeekMode("view")}
+                  aria-label="Back"
+                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
+                >
+                  <ChevronLeft size={18} aria-hidden="true" />
+                </button>
+              )}
+              <h2 className="font-serif text-xl text-ink truncate">
+                {peekMode === "edit" ? "Edit request" : printTitle(active)}
+              </h2>
+              {peekMode === "view" && active.is_print_club && (
+                <span className="shrink-0 flex items-center gap-1.5 ml-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/print-club.png" alt="" className="w-6 h-6 object-contain" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-ink">3D Print Club</span>
+                </span>
+              )}
             </div>
 
             {peekMode === "view" ? (
@@ -678,14 +673,30 @@ export default function RequestsKanban({
                     catalogPrice={active.prize?.coin_price ?? null}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setPeekMode("edit")}
-                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
-                  >
-                    <Pencil size={13} aria-hidden="true" />
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setPeekMode("edit")}
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+                    >
+                      <Pencil size={13} aria-hidden="true" />
+                      Edit
+                    </button>
+                    <ActionButton
+                      action={onDelete.bind(null, active.id)}
+                      toastMessage="Request deleted"
+                      confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
+                      onStart={() => {
+                        setActiveId(null);
+                        hideForDelete(active.id);
+                      }}
+                      onUndo={() => restoreFromDelete(active.id)}
+                      className="flex items-center gap-1.5 text-sm text-rust"
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                      Delete
+                    </ActionButton>
+                  </div>
                 </div>
 
                 <div className="text-sm">
@@ -726,20 +737,6 @@ export default function RequestsKanban({
                 </div>
 
                 <RequestComments requestId={active.id} comments={active.comments ?? []} />
-
-                <ActionButton
-                  action={onDelete.bind(null, active.id)}
-                  toastMessage="Request deleted"
-                  confirmMessage={`Delete ${printTitle(active)}? This can't be undone.`}
-                  onStart={() => {
-                    setActiveId(null);
-                    hideForDelete(active.id);
-                  }}
-                  onUndo={() => restoreFromDelete(active.id)}
-                  className="text-sm text-rust hover:underline"
-                >
-                  Delete this request
-                </ActionButton>
               </>
             ) : (
               <>
@@ -781,17 +778,7 @@ export default function RequestsKanban({
       <SidePeek open={Boolean(creatingStatus)} onClose={() => setCreatingStatus(null)}>
         {creatingStatus && (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">Add to {COLUMNS.find((c) => c.status === creatingStatus)?.label}</h2>
-              <button
-                type="button"
-                onClick={() => setCreatingStatus(null)}
-                className="shrink-0 text-muted hover:text-ink"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
+            <h2 className="font-serif text-xl text-ink pr-8">Add to {COLUMNS.find((c) => c.status === creatingStatus)?.label}</h2>
             <RequestForm
               key={creatingStatus}
               action={createRequestInline}

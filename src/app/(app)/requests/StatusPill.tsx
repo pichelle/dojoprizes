@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
 import { burstConfetti } from "@/lib/confetti";
@@ -104,11 +104,14 @@ export default function StatusPill({
         ref={buttonRef}
         type="button"
         onClick={toggleOpen}
-        className="flex items-center gap-1 text-[11px] font-medium rounded-full px-2.5 py-1 hover:brightness-95 transition-[filter]"
+        className="flex items-center leading-none text-xs font-medium rounded-full px-2.5 py-2 hover:brightness-95 transition-[filter]"
         style={{ background: meta.bg, color: meta.text }}
       >
-        <Icon size={12} aria-hidden="true" />
-        {meta.label}
+        <span className="flex items-center gap-1">
+          <Icon size={13} className="shrink-0" aria-hidden="true" />
+          <span>{meta.label}</span>
+        </span>
+        <ChevronDown size={13} className="shrink-0 ml-[5px] opacity-60" aria-hidden="true" />
       </button>
 
       {/* Portaled straight to <body> -- a card that's part of a hoverable
@@ -134,12 +137,12 @@ export default function StatusPill({
                   key={s}
                   type="button"
                   onClick={() => pick(s)}
-                  className="flex items-center gap-1.5 text-[11px] font-medium rounded-full px-2.5 py-1 text-left hover:brightness-95 transition-[filter]"
+                  className="flex items-center gap-1.5 leading-none text-[11px] font-medium rounded-full px-2.5 py-1.5 text-left hover:brightness-95 transition-[filter]"
                   style={{ background: m.bg, color: m.text }}
                 >
-                  <OptIcon size={12} aria-hidden="true" />
-                  {m.label}
-                  {s === status && <Check size={12} className="ml-auto" aria-hidden="true" />}
+                  <OptIcon size={12} className="shrink-0" aria-hidden="true" />
+                  <span>{m.label}</span>
+                  {s === status && <Check size={12} className="ml-auto shrink-0" aria-hidden="true" />}
                 </button>
               );
             })}

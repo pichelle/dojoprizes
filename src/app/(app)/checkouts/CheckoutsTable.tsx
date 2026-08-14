@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import ActionButton from "@/components/ActionButton";
 import { staggerDelay } from "@/lib/stagger";
@@ -322,12 +322,7 @@ export default function CheckoutsTable({
       <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)} maxWidth="max-w-md">
         {active && (
           <>
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl text-ink">{active.itemName}</h2>
-              <button type="button" onClick={() => setActiveId(null)} aria-label="Close" className="text-muted hover:text-ink">
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
+            <h2 className="font-serif text-xl text-ink pr-8">{active.itemName}</h2>
 
             {active.photoUrl && (
               // eslint-disable-next-line @next/next/no-img-element

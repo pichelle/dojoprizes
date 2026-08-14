@@ -91,6 +91,13 @@ export default function SidebarNav() {
             type="submit"
             className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink w-full text-center"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/nav-logout.png"
+              alt=""
+              className="w-7 h-7 sm:w-6 sm:h-6 object-contain shrink-0"
+              aria-hidden="true"
+            />
             Log out
           </button>
         </form>
