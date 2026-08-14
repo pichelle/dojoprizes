@@ -142,14 +142,14 @@ function CardAvatar({ photoUrl, name }: { photoUrl: string | null; name: string 
         src={photoUrl}
         alt=""
         aria-hidden="true"
-        className="w-8 h-8 rounded-full object-cover shrink-0 border border-border-warm"
+        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-border-warm"
       />
     );
   }
   return (
     <span
       aria-hidden="true"
-      className="w-8 h-8 rounded-full shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
+      className="w-8 h-8 rounded-lg shrink-0 bg-white text-ink text-[11px] font-bold flex items-center justify-center border border-border-warm"
     >
       {initials(name)}
     </span>
@@ -544,21 +544,7 @@ export default function RequestsKanban({
                           photoUrl={r.photo_url || r.prize?.photo_url || null}
                           name={r.student_name}
                         />
-                        <p className="text-[15px] font-bold text-ink flex items-center gap-1.5 min-w-0">
-                          <span className="truncate">{printName}</span>
-                          {r.links && (
-                            <a
-                              href={r.links}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              aria-label="Open print file link"
-                              onClick={(e) => e.stopPropagation()}
-                              className="shrink-0 text-link hover:text-link-hover"
-                            >
-                              <ExternalLink size={13} aria-hidden="true" />
-                            </a>
-                          )}
-                        </p>
+                        <p className="text-[15px] font-bold text-ink">{printName}</p>
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
