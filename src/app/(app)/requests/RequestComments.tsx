@@ -215,20 +215,24 @@ export default function RequestComments({
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="border-t border-border-warm pt-3">
+          <label className="block text-sm font-medium text-ink" htmlFor="comment-author">
+            Your name
+          </label>
           <input
+            id="comment-author"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
-            placeholder="Your name"
-            aria-label="Your name"
-            className="w-36 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong"
+            className="w-36 mt-1 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong"
           />
+          <label className="block text-sm font-medium text-ink mt-3" htmlFor="comment-body">
+            Add a comment
+          </label>
           <textarea
+            id="comment-body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="Add a comment"
-            aria-label="Comment"
             rows={2}
-            className="w-full mt-2 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong resize-none"
+            className="w-full mt-1 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong resize-none"
           />
           <div className="flex items-center justify-end gap-4 mt-2">
             <button
