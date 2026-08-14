@@ -39,7 +39,7 @@ import EmptyStateMascot from "@/components/EmptyStateMascot";
 
 // "Fulfilled" isn't a visible column -- it's tracked (status still gets
 // set to "fulfilled" via the status pill, and still counts toward the
-// "Total fulfilled" stat above) but doesn't clutter the board, since a
+// "Avg. turnaround" stat above) but doesn't clutter the board, since a
 // fulfilled print's actual record lives on the Checkouts page instead.
 const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
   { status: "idea", label: "Ideas", dot: "var(--color-idea-dot)" },

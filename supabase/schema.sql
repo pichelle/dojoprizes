@@ -90,6 +90,11 @@ create table if not exists requests (
   is_print_club boolean not null default false,
   notes text,
   photo_url text,
+  -- Stamped by the app when a request enters/leaves the pending queue --
+  -- powers the average turnaround time stat. Null until the request
+  -- reaches that point in its lifecycle.
+  pending_at timestamptz,
+  fulfilled_at timestamptz,
   created_at timestamptz not null default now()
 );
 

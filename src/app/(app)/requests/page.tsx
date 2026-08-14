@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check, Clock, Plus } from "lucide-react";
+import { Clock, Plus, Timer } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
@@ -34,7 +34,7 @@ export default async function RequestsPage({
 
   const [
     { data: filaments },
-    { count: fulfilledCount },
+    { data: turnaroundRows },
     { data: allTagLinks },
     { data: franchiseTagRows },
     { data: prizes },
@@ -42,7 +42,12 @@ export default async function RequestsPage({
     { data: allComments },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
-    supabase.from("requests").select("*", { count: "exact", head: true }).eq("status", "fulfilled"),
+    supabase
+      .from("requests")
+      .select("pending_at, fulfilled_at")
+      .eq("status", "fulfilled")
+      .not("pending_at", "is", null)
+      .not("fulfilled_at", "is", null),
     supabase.from("request_franchise_tags").select("request_id, tag:franchise_tags(id, name)"),
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("prizes").select("id, name").order("name"),
@@ -129,6 +134,19 @@ export default async function RequestsPage({
     });
   }
 
+  const turnaroundDaysList = (turnaroundRows ?? [])
+    .map((r) => {
+      const start = new Date(r.pending_at as string).getTime();
+      const end = new Date(r.fulfilled_at as string).getTime();
+      if (Number.isNaN(start) || Number.isNaN(end) || end < start) return null;
+      return (end - start) / (1000 * 60 * 60 * 24);
+    })
+    .filter((n): n is number => n !== null);
+  const avgTurnaroundDays =
+    turnaroundDaysList.length > 0
+      ? turnaroundDaysList.reduce((sum, n) => sum + n, 0) / turnaroundDaysList.length
+      : null;
+
   const oldestPendingDays = requests
     .filter((r) => r.status === "pending")
     .reduce<number | null>((max, r) => {
@@ -147,10 +165,12 @@ export default async function RequestsPage({
         <div className="flex gap-3">
           <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
             <p className="flex items-center gap-1.5 text-xs text-muted">
-              <Check size={13} aria-hidden="true" />
-              Total fulfilled
+              <Timer size={13} aria-hidden="true" />
+              Avg. turnaround
             </p>
-            <p className="text-lg font-bold text-ink mt-0.5">{fulfilledCount ?? 0} prints</p>
+            <p className="text-lg font-bold text-ink mt-0.5">
+              {avgTurnaroundDays === null ? "—" : `${avgTurnaroundDays.toFixed(1)} days`}
+            </p>
           </div>
           <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
             <p className="flex items-center gap-1.5 text-xs text-muted">
