@@ -28,7 +28,7 @@ import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
-import { formatRequestedAgo, formatRequestDateDetailed, printTitle } from "@/lib/requestFormatting";
+import { formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 
 const UNDO_WINDOW_MS = 5000;
@@ -219,7 +219,7 @@ export default function RequestsTable({
                       <span className="text-taupe">—</span>
                     )}
                   </td>
-                  <td className="text-muted px-3 py-2.5 capitalize">{r.size ? r.size.replace(/_/g, " ") : "—"}</td>
+                  <td className="text-muted px-3 py-2.5">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5">
                     {colors.length > 0 ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -319,7 +319,7 @@ export default function RequestsTable({
                   )}
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
-                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {(active.colorFilaments ?? []).length > 0 && (
                     <DetailRow label="Color" icon={Palette}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}

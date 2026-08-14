@@ -3,7 +3,23 @@
 // only inside RequestsKanban so the table view can reuse the exact same
 // "X days ago" / date formatting without duplicating logic that later
 // drifts out of sync between the two views.
-import type { PrizeRequest } from "@/lib/types";
+import type { PrizeRequest, RequestSize } from "@/lib/types";
+
+// Matches the labels already used in the size dropdown/filter options --
+// keeps "X-Large" and "True to size" consistent wherever a size shows up,
+// instead of printing the raw stored value (e.g. "true_to_size").
+const SIZE_LABELS: Record<RequestSize, string> = {
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+  xlarge: "X-Large",
+  true_to_size: "True to size",
+};
+
+export function formatSize(size: RequestSize | string | null) {
+  if (!size) return null;
+  return SIZE_LABELS[size as RequestSize] ?? size;
+}
 
 export function daysAgo(iso: string) {
   const d = new Date(`${iso}T00:00:00`);

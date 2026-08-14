@@ -34,6 +34,7 @@ import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
+import { formatSize } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
 
@@ -549,7 +550,7 @@ export default function RequestsKanban({
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
                           r.status === "idea" ? null : r.student_name,
-                          r.size,
+                          formatSize(r.size),
                           (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
                         ]
                           .filter(Boolean)
@@ -705,7 +706,7 @@ export default function RequestsKanban({
                   )}
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
-                  {active.size && <DetailRow label="Size" icon={Ruler}>{active.size}</DetailRow>}
+                  {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {(active.colorFilaments ?? []).length > 0 && (
                     <DetailRow label="Color" icon={Palette}>
                       {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
