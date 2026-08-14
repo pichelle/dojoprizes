@@ -4,7 +4,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
 import RequestsFilterBar from "./RequestsFilterBar";
 import ErrorNote from "@/components/ErrorNote";
-import RequestsKanban from "./RequestsKanban";
+import RequestsView from "./RequestsView";
 
 // Force dynamic rendering (belt-and-suspenders alongside reading
 // searchParams below) so this page always reflects the latest requests
@@ -23,13 +23,17 @@ export default async function RequestsPage({
   searchParams: Promise<{
     color?: string;
     size?: string;
+    status?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
   const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
-  const filtersActive = Boolean(selectedColors.length > 0 || selectedSizes.length > 0 || params.q);
+  const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
+  const filtersActive = Boolean(
+    selectedColors.length > 0 || selectedSizes.length > 0 || selectedStatuses.length > 0 || params.q,
+  );
   const supabase = createServerClient();
 
   const [
@@ -98,6 +102,7 @@ export default async function RequestsPage({
 
   if (requestIdsForColor) query = query.in("id", requestIdsForColor);
   if (selectedSizes.length > 0) query = query.in("size", selectedSizes);
+  if (selectedStatuses.length > 0) query = query.in("status", selectedStatuses);
 
   const { data: requestsRaw, error } = await query;
 
@@ -204,7 +209,7 @@ export default async function RequestsPage({
 
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
 
-        <RequestsKanban
+        <RequestsView
           requests={requests}
           prizes={prizes ?? []}
           filaments={filaments ?? []}

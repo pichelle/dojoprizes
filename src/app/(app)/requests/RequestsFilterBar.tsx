@@ -13,6 +13,14 @@ const SIZE_OPTIONS = [
   { value: "true_to_size", label: "True to size" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "idea", label: "Idea" },
+  { value: "pending", label: "Pending" },
+  { value: "printed", label: "Printed" },
+  { value: "fulfilled", label: "Fulfilled" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export default function RequestsFilterBar({
   colorOptions,
 }: {
@@ -32,6 +40,7 @@ export default function RequestsFilterBar({
   const hasActiveFilters =
     Boolean(searchParams.get("color")) ||
     Boolean(searchParams.get("size")) ||
+    Boolean(searchParams.get("status")) ||
     Boolean(searchParams.get("q"));
 
   function clearFilters() {
@@ -47,6 +56,12 @@ export default function RequestsFilterBar({
         options={SIZE_OPTIONS}
         paramName="size"
         label="Size"
+      />
+      <ColorFilterDropdown
+        basePath="/requests"
+        options={STATUS_OPTIONS}
+        paramName="status"
+        label="Status"
       />
       <div className="relative">
         <input
