@@ -10,6 +10,7 @@ import CatalogFilterBar from "./CatalogFilterBar";
 import ActiveFilters from "./ActiveFilters";
 import PrizeForm from "./PrizeForm";
 import ActionButton from "@/components/ActionButton";
+import EmptyStateMascot from "@/components/EmptyStateMascot";
 import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import { updatePrizeInline, deletePrize } from "./actions";
@@ -22,12 +23,18 @@ export default function CatalogBoard({
   allFranchiseTags,
   latestCheckoutByPrize,
   onCheckout,
+  filtersActive,
 }: {
   prizes: Prize[];
   allFilaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   latestCheckoutByPrize: CheckoutsByPrize;
   onCheckout: (prizeId: string, boughtBy: string | null) => Promise<void>;
+  // See RequestsKanban for why this matters: a theme/color/size/status
+  // filter narrowing prizes to zero is not the same as the catalog
+  // genuinely being empty, and only the latter should get the
+  // "add your first prize" invitational mascot treatment.
+  filtersActive: boolean;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<null | { id: string }>(null);
@@ -117,10 +124,14 @@ export default function CatalogBoard({
         </div>
       )}
 
-      {prizes.length === 0 && (
-        <p className="text-sm text-muted">
-          Nothing here yet. Add your first prize to get started.
-        </p>
+      {prizes.length === 0 && !filtersActive && (
+        <EmptyStateMascot
+          pose="sparkle"
+          message="the shelf's bare for now. add your first prize to get started."
+        />
+      )}
+      {prizes.length === 0 && filtersActive && (
+        <p className="text-sm text-muted">Nothing matches those filters.</p>
       )}
 
       <SidePeek open={open} onClose={close}>

@@ -11,6 +11,7 @@ import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import AmazonLinkButton from "@/components/AmazonLinkButton";
 import { updateFilamentInline, deleteFilament } from "./actions";
+import EmptyStateMascot from "@/components/EmptyStateMascot";
 
 type FilamentWithLinks = {
   id: string;
@@ -143,9 +144,7 @@ export default function FilamentBoard({
       </div>
 
       {filaments.length === 0 && (
-        <p className="text-sm text-muted">
-          No filament colors yet. Add your first one to get started.
-        </p>
+        <EmptyStateMascot pose="sparkle" message="no colors logged yet — add the first one!" />
       )}
 
       <SidePeek open={Boolean(active)} onClose={close}>

@@ -35,6 +35,13 @@ export default async function CatalogPage({
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
   const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
   const selectedStatuses = params.status ? params.status.split(",").filter(Boolean) : [];
+  const filtersActive = Boolean(
+    selectedThemes.length > 0 ||
+      selectedColors.length > 0 ||
+      selectedSizes.length > 0 ||
+      selectedStatuses.length > 0 ||
+      params.q,
+  );
   const supabase = createServerClient();
 
   // Stats row is always computed across ALL prizes/checkouts, independent
@@ -214,6 +221,7 @@ export default async function CatalogPage({
             allFranchiseTags={franchiseTagRows ?? []}
             latestCheckoutByPrize={latestCheckoutByPrize}
             onCheckout={handleCheckout}
+            filtersActive={filtersActive}
           />
         </div>
       </div>

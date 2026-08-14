@@ -1,7 +1,4 @@
-import Link from "next/link";
-import Image from "next/image";
 import SidebarNav from "@/components/SidebarNav";
-import FeedbackButton from "@/components/FeedbackButton";
 
 export default function AppLayout({
   children,
@@ -9,69 +6,25 @@ export default function AppLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="min-h-screen flex flex-col sm:flex-row bg-page">
-      <aside className="sm:w-60 shrink-0 self-start sm:h-screen border-b sm:border-b-0 sm:border-r border-border-warm bg-nav sm:sticky sm:top-0">
-        <div className="flex flex-col items-center h-full px-5 py-8">
-          <Link href="/requests" className="block">
-            <Image
-              src="/ninja.png"
-              alt="DojoPrizes"
-              width={44}
-              height={44}
-              className="rounded-full"
-              priority
-            />
-          </Link>
-          <div className="w-full mt-4">
-            <SidebarNav />
-            <div className="h-px bg-border-warm mt-6 mb-4" />
-            <nav className="flex flex-col gap-1.5 w-full">
-              <a
-                href="https://makerworld.com/en"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
-              >
-                <Image src="/makerworld-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
-                MakerWorld
-              </a>
-              <a
-                href="https://www.tinkercad.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
-              >
-                <Image src="/tinkercad-icon.png" alt="" width={20} height={20} aria-hidden="true" className="shrink-0" />
-                Tinkercad
-              </a>
-            </nav>
-          </div>
-          <div className="mt-auto w-full flex flex-col items-center gap-5">
-            <div className="w-full">
-              <div className="h-px bg-border-warm mb-3" />
-              <div className="flex flex-col items-start gap-1.5 w-full">
-                <FeedbackButton className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink" />
-                <form action="/api/logout" method="POST" className="w-full">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink"
-                  >
-                    Log out
-                  </button>
-                </form>
-              </div>
-            </div>
-            <Image
-              src="/signature.png"
-              alt="by sensei michelle"
-              width={140}
-              height={22}
-            />
-          </div>
+    <div className="min-h-screen flex flex-col sm:block bg-page">
+      {/* Mobile: a normal in-flow top bar, unchanged from before. */}
+      {/* Desktop (sm+): floating, vertically-centered pill -- fixed and
+          taken out of flow, so `main` gets explicit left padding below
+          to keep content clear of it rather than relying on flex to
+          share the space automatically. */}
+      <aside
+        className="w-full border-b border-border-warm bg-nav
+                   sm:w-auto sm:border sm:border-border-warm sm:rounded-[26px] sm:shadow-sm
+                   sm:fixed sm:top-1/2 sm:-translate-y-1/2 sm:left-5 sm:z-40"
+      >
+        <div className="px-5 py-6 sm:px-3 sm:py-5">
+          <SidebarNav />
         </div>
       </aside>
       <main className="flex-1 min-w-0">
-        <div className="page-fade-in px-6 sm:px-16 py-10 sm:py-12 max-w-none">{children}</div>
+        <div className="page-fade-in px-6 sm:pl-40 sm:pr-16 py-10 sm:py-12 max-w-none">
+          {children}
+        </div>
       </main>
     </div>
   );

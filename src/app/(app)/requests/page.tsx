@@ -29,6 +29,7 @@ export default async function RequestsPage({
   const params = await searchParams;
   const selectedColors = params.color ? params.color.split(",").filter(Boolean) : [];
   const selectedSizes = params.size ? params.size.split(",").filter(Boolean) : [];
+  const filtersActive = Boolean(selectedColors.length > 0 || selectedSizes.length > 0 || params.q);
   const supabase = createServerClient();
 
   const [
@@ -175,6 +176,7 @@ export default async function RequestsPage({
           onStatusChange={updateRequestStatus}
           onDelete={deleteRequest}
           onClearCancelled={clearCancelledRequests}
+          filtersActive={filtersActive}
         />
       </div>
     </div>
