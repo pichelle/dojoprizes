@@ -57,6 +57,16 @@ export interface PrizeRequest {
   color_filament?: Pick<Filament, "id" | "color_name"> | null;
   franchiseTags?: FranchiseTag[];
   colorFilaments?: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
+  comments?: RequestComment[];
+  commentCount?: number;
+}
+
+export interface RequestComment {
+  id: string;
+  request_id: string;
+  author: string | null;
+  body: string;
+  created_at: string;
 }
 
 export interface Checkout {
