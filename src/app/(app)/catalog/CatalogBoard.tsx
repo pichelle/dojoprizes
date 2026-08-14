@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { Filament, FranchiseTag, Prize } from "@/lib/types";
 import PrizeCard from "./PrizeCard";
 import CatalogFilterBar from "./CatalogFilterBar";
@@ -135,17 +135,7 @@ export default function CatalogBoard({
       )}
 
       <SidePeek open={open} onClose={close}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-serif text-xl text-ink">Edit prize</h2>
-          <button
-            type="button"
-            onClick={close}
-            className="text-muted hover:text-ink"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        <h2 className="font-serif text-xl text-ink pr-8">Edit prize</h2>
 
         {active && (
           <>

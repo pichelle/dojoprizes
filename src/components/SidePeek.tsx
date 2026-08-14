@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
 // Shared slide-in-right/slide-out-right panel used by every side peek in
 // the app (requests, catalog, filament, checkouts). Keeps the panel
@@ -69,10 +70,23 @@ export default function SidePeek({
         onClick={onClose}
         aria-hidden="true"
       />
+      {/* Flush to the edge on mobile (same as before -- a floating panel
+          with margin on all sides gets cramped on a small screen), but
+          floats free on sm+: pulled off the edges with margin, rounded
+          corners, and a soft shadow, echoing the nav pill's own floating
+          treatment rather than sitting flush like a plain drawer. */}
       <div
-        className={`${closing ? "slide-out-right" : "slide-in-right"} relative w-full ${maxWidth} bg-card h-full overflow-y-auto shadow-xl border-l border-border-warm p-6 space-y-4`}
+        className={`${closing ? "slide-out-right" : "slide-in-right"} relative w-full ${maxWidth} h-full sm:h-[calc(100%-2rem)] sm:m-4 bg-card overflow-hidden flex flex-col shadow-xl border-l sm:border border-border-warm sm:rounded-[28px] sm:shadow-[0_8px_28px_rgba(58,58,56,0.16)]`}
       >
-        {frozenChildren}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3 right-3 z-10 bg-card/90 text-muted hover:text-ink rounded-full p-1.5 shadow-sm"
+        >
+          <X size={16} aria-hidden="true" />
+        </button>
+        <div className="flex-1 overflow-y-auto scroll-warm p-6 space-y-4">{frozenChildren}</div>
       </div>
     </div>
   );
