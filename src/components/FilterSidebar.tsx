@@ -159,7 +159,7 @@ export default function FilterSidebar({
                   return (
                     <div
                       key={opt.value}
-                      className="group flex items-center gap-2 text-sm text-ink rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-page min-w-0"
+                      className="group flex items-center gap-2 text-sm text-ink rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-nav-hover min-w-0"
                     >
                       <label className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer">
                         <input

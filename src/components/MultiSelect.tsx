@@ -141,7 +141,7 @@ export default function MultiSelect({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={onAnyToggle}
-              className={`w-full text-left px-3 py-1.5 text-ink hover:bg-page flex items-center gap-2 font-medium ${
+              className={`w-full text-left px-3 py-1.5 text-ink hover:bg-nav-hover flex items-center gap-2 font-medium ${
                 filtered.length > 0 ? "border-b border-border-warm" : ""
               }`}
             >
@@ -154,7 +154,7 @@ export default function MultiSelect({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addValue(o.value)}
-              className="w-full text-left px-3 py-1.5 text-ink hover:bg-page flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-ink hover:bg-nav-hover flex items-center gap-2"
             >
               {o.swatch && (
                 <span

@@ -25,7 +25,7 @@ export default async function NewPrizePage() {
         <h1 className="font-serif text-2xl text-ink">Add a prize</h1>
         <Link
           href="/catalog"
-          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-card"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav-hover"
         >
           Back to Prize Bin
         </Link>

@@ -208,7 +208,7 @@ export default function RequestComments({
         <button
           type="button"
           onClick={() => setComposerOpen(true)}
-          className="flex items-center justify-center gap-1.5 w-full text-sm text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-lg py-2 hover:bg-page"
+          className="flex items-center justify-center gap-1.5 w-full text-sm text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-lg py-2 hover:bg-nav-hover"
         >
           <Plus size={13} aria-hidden="true" />
           Add a comment
