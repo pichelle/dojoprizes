@@ -6,12 +6,12 @@ import { Search, X } from "lucide-react";
 import FiltersDropdown, { type FilterSection } from "@/components/FiltersDropdown";
 
 const SIZE_OPTIONS = [
+  { value: "any", label: "Any size" },
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
   { value: "true_to_size", label: "True to size" },
-  { value: "any", label: "Any size" },
 ];
 
 const STATUS_OPTIONS = [

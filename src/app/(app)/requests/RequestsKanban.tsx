@@ -254,6 +254,29 @@ export default function RequestsKanban({
     [requests, overrides, pendingDeleteIds],
   );
 
+  // Clears an optimistic override once the server `requests` prop already
+  // reflects it -- see the comment in handlePick for why this can't just
+  // happen right after router.refresh() is called instead. Adjusting state
+  // during render (React's documented pattern for reacting to a changed
+  // prop) rather than in a useEffect, so there's no extra frame where the
+  // override is already gone but `requests` hasn't caught up yet.
+  const [prevRequests, setPrevRequests] = useState(requests);
+  if (requests !== prevRequests) {
+    setPrevRequests(requests);
+    setOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, override] of Object.entries(prev)) {
+        const serverRow = requests.find((r) => r.id === id);
+        if (serverRow && serverRow.status === override.status && serverRow.sale_price === override.salePrice) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
+
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
 
   // Same "New request added" toast used by the inline "+ Add new" flow's
@@ -365,11 +388,13 @@ export default function RequestsKanban({
       (async () => {
         await onStatusChange(requestId, next, salePrice);
         router.refresh();
-        setOverrides((prev) => {
-          const rest = { ...prev };
-          delete rest[requestId];
-          return rest;
-        });
+        // Deliberately NOT clearing the override here -- router.refresh()
+        // schedules a re-fetch but doesn't resolve once the new `requests`
+        // prop has actually landed. Clearing right away left a gap frame
+        // where the override was gone but `requests` still had the old
+        // status, so the card would snap back then snap forward again a
+        // moment later. The effect below clears it once the server data
+        // actually agrees, so there's never a frame showing stale state.
       })();
     }, UNDO_WINDOW_MS);
 

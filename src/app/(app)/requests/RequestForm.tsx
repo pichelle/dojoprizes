@@ -35,12 +35,12 @@ function FieldError({ show }: { show?: boolean }) {
 }
 
 const SIZE_OPTIONS: { value: RequestSizeOrAny; label: string }[] = [
+  { value: "any", label: "Any size" },
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
   { value: "true_to_size", label: "True to size" },
-  { value: "any", label: "Any size" },
 ];
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
@@ -149,15 +149,19 @@ export default function RequestForm({
     }
   }
 
-  function validate(form: HTMLFormElement): boolean {
+  // Matches the fields' top-to-bottom order in the form -- used to figure
+  // out which invalid field is "first" so a failed submit can scroll to it.
+  const FIELD_ORDER: RequiredField[] = ["student_name", "requested_by", "size", "color_filament_ids"];
+
+  function validate(form: HTMLFormElement): Partial<Record<RequiredField, boolean>> {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
     // Size and color are required in every status, including Ideas -- but
-    // "Any" (size) / the Any-color checkbox both satisfy the requirement,
-    // so a deliberate "no preference" isn't blocked, only a forgotten field.
+    // "Any" (size/color) satisfies the requirement, so a deliberate "no
+    // preference" isn't blocked, only a forgotten field.
     const size = String(fd.get("size") ?? "");
     if (!size || size === NONE_VALUE) next.size = true;
     if (fd.get("color_any") !== "on" && fd.getAll("color_filament_ids").length === 0) {
@@ -165,12 +169,25 @@ export default function RequestForm({
     }
 
     setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (!validate(e.currentTarget)) {
+    const form = e.currentTarget;
+    const invalid = validate(form);
+    if (Object.keys(invalid).length > 0) {
       e.preventDefault();
+      // Fields can be well below the fold, and a click that silently does
+      // nothing (beyond a small red label somewhere off-screen) reads as a
+      // broken button -- scroll the first invalid field into view instead
+      // of leaving it to be hunted down.
+      const firstKey = FIELD_ORDER.find((key) => invalid[key]);
+      if (firstKey) {
+        const target = form.querySelector(`[data-field="${firstKey}"]`);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const focusable = target?.querySelector<HTMLElement>("input, button, [role='combobox']");
+        focusable?.focus();
+      }
     }
   }
 
@@ -225,7 +242,7 @@ export default function RequestForm({
         )}
 
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
+          <div data-field="student_name">
             <label className="block text-sm font-medium text-ink">
               {initialStatus === "idea" ? "Idea title" : "Ninja name"} <Req />
             </label>
@@ -241,7 +258,7 @@ export default function RequestForm({
             <FieldError show={errors.student_name} />
           </div>
 
-          <div>
+          <div data-field="requested_by">
             <label className="block text-sm font-medium text-ink">
               Requested by (sensei) <Req />
             </label>
@@ -319,7 +336,7 @@ export default function RequestForm({
             </>
           )}
 
-          <div>
+          <div data-field="size">
             <label className="block text-sm font-medium text-ink">
               Size <Req />
             </label>
@@ -339,41 +356,35 @@ export default function RequestForm({
             <FieldError show={errors.size} />
           </div>
 
-          <div>
+          <div data-field="color_filament_ids">
             <label className="block text-sm font-medium text-ink">
               Color requested <Req />
             </label>
-            {colorAny ? (
-              <input type="hidden" name="color_any" value="on" />
-            ) : (
-              <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
-                <MultiSelect
-                  name="color_filament_ids"
-                  initialValues={initialColorFilamentIds}
-                  placeholder="Select colors..."
-                  options={filaments.map((f) => ({
-                    value: f.id,
-                    label: f.color_name,
-                    swatch: f.swatch_hex,
-                  }))}
-                  onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
-                />
-              </div>
-            )}
-            <label className="mt-1.5 flex items-center gap-1.5 text-sm text-ink">
-              <input
-                type="checkbox"
-                checked={colorAny}
-                onChange={(e) => {
-                  setColorAny(e.target.checked);
+            {colorAny && <input type="hidden" name="color_any" value="on" />}
+            <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
+              <MultiSelect
+                name="color_filament_ids"
+                initialValues={initialColorFilamentIds}
+                placeholder="Select colors..."
+                options={filaments.map((f) => ({
+                  value: f.id,
+                  label: f.color_name,
+                  swatch: f.swatch_hex,
+                }))}
+                onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
+                anyOption={{ label: "Any color" }}
+                anySelected={colorAny}
+                onAnyToggle={() => {
+                  setColorAny((prev) => !prev);
                   setErrors((prev) => ({ ...prev, color_filament_ids: false }));
                 }}
-                className="accent-sage"
               />
-              No preference (Any color)
-            </label>
-            {!colorAny && <p className="mt-1.5 text-sm text-muted">Try to keep it at 1-2 colors.</p>}
-            {!colorAny && filaments.length === 0 && (
+            </div>
+            <p className="mt-1.5 text-sm text-muted">
+              Pick &ldquo;Any color&rdquo; if there&rsquo;s no preference -- add a specific color too if
+              there&rsquo;s one you&rsquo;d lean toward if possible.
+            </p>
+            {filaments.length === 0 && (
               <p className="mt-1.5 text-sm text-muted">
                 Add colors on the Filament page to select one here.
               </p>

@@ -24,10 +24,13 @@ export function formatSize(size: RequestSizeOrAny | string | null) {
 
 // Mirrors formatSize's "Any" handling for color -- color_any is a separate
 // boolean (color is a multi-select of filament rows, not a single enum
-// value like size, so there's no plain "any" string to store on it).
+// value like size, so there's no plain "any" string to store on it). Any
+// and specific colors can coexist ("any color is fine, but blue if
+// possible"), so both parts show together when that's the case.
 export function formatColor(r: Pick<PrizeRequest, "colorFilaments" | "color_any">) {
-  if (r.color_any) return "Any color";
   const names = (r.colorFilaments ?? []).map((c) => c.color_name).join(", ");
+  if (r.color_any && names) return `Any color (${names} preferred)`;
+  if (r.color_any) return "Any color";
   return names || null;
 }
 

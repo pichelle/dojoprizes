@@ -90,6 +90,29 @@ export default function RequestsTable({
     [requests, overrides, pendingDeleteIds],
   );
 
+  // Clears an optimistic override once the server `requests` prop already
+  // reflects it -- see the matching comment in RequestsKanban's handlePick
+  // for why this can't just happen right after router.refresh() is called.
+  // Adjusted during render (React's documented pattern for reacting to a
+  // changed prop) rather than in a useEffect, so there's no extra frame
+  // where the override is already gone but `requests` hasn't caught up.
+  const [prevRequests, setPrevRequests] = useState(requests);
+  if (requests !== prevRequests) {
+    setPrevRequests(requests);
+    setOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, override] of Object.entries(prev)) {
+        const serverRow = requests.find((r) => r.id === id);
+        if (serverRow && serverRow.status === override.status && serverRow.sale_price === override.salePrice) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
+
   const sortedRequests = useMemo(() => {
     const rows = [...effectiveRequests];
     rows.sort((a, b) =>
@@ -116,11 +139,7 @@ export default function RequestsTable({
       (async () => {
         await onStatusChange(requestId, next, salePrice);
         router.refresh();
-        setOverrides((prev) => {
-          const rest = { ...prev };
-          delete rest[requestId];
-          return rest;
-        });
+        // Not clearing the override here -- see the effect above.
       })();
     }, UNDO_WINDOW_MS);
 
@@ -223,10 +242,9 @@ export default function RequestsTable({
                   </td>
                   <td className="text-muted px-3 py-2.5">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5">
-                    {r.color_any ? (
-                      <span className="text-xs text-muted">Any color</span>
-                    ) : colors.length > 0 ? (
+                    {r.color_any || colors.length > 0 ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        {r.color_any && <span className="text-xs text-muted">Any color</span>}
                         {colors.map((c) => (
                           <span key={c.id} className="flex items-center gap-1 text-xs text-muted">
                             <span

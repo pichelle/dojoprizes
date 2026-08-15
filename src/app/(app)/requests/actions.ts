@@ -128,10 +128,9 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
         if (linkError) return { error: linkError.message };
       }
 
-      // "Any color" and specific colors are mutually exclusive -- the
-      // frontend hides the color picker once "Any" is checked, but guard
-      // server-side too so a stale submission can't link both.
-      const filamentIds = formData.get("color_any") === "on" ? [] : parseColorFilamentIds(formData);
+      // "Any color" and specific colors can coexist -- e.g. "any color is
+      // fine, but blue if possible" -- so both are stored independently.
+      const filamentIds = parseColorFilamentIds(formData);
       if (filamentIds.length > 0) {
         const { error: filamentLinkError } = await supabase
           .from("request_filaments")
@@ -168,8 +167,7 @@ async function performUpdateRequest(
       parseFranchiseTagNames(formData),
     );
     await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
-    const filamentIds = formData.get("color_any") === "on" ? [] : parseColorFilamentIds(formData);
-    await syncRequestFilamentLinks(supabase, requestId, filamentIds);
+    await syncRequestFilamentLinks(supabase, requestId, parseColorFilamentIds(formData));
 
     revalidatePath("/requests");
     revalidatePath("/");
