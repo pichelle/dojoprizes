@@ -682,7 +682,7 @@ export default function RequestsKanban({
               <button
                 type="button"
                 onClick={() => setCreatingStatus(col.status)}
-                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-nav-hover/60 sm:shrink-0"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-nav/60 sm:shrink-0"
               >
                 <Plus size={13} aria-hidden="true" />
                 Add new
@@ -717,7 +717,7 @@ export default function RequestsKanban({
                   type="button"
                   onClick={() => setPeekMode("view")}
                   aria-label="Back"
-                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav-hover"
+                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
                 >
                   <ChevronLeft size={18} aria-hidden="true" />
                 </button>
@@ -747,7 +747,7 @@ export default function RequestsKanban({
                     <button
                       type="button"
                       onClick={() => setPeekMode("edit")}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav-hover"
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
                     >
                       <Pencil size={13} aria-hidden="true" />
                       Edit

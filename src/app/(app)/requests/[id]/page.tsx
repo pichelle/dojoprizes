@@ -67,7 +67,7 @@ export default async function EditRequestPage({
         <h1 className="font-serif text-2xl text-ink">Edit request</h1>
         <Link
           href="/requests"
-          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav-hover"
+          className="text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
         >
           Back to requests
         </Link>

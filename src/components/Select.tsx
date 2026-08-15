@@ -63,7 +63,7 @@ export default function Select({
               <RadixSelect.Item
                 key={opt.value}
                 value={opt.value}
-                className="relative flex items-center gap-2 rounded-md pl-2.5 pr-6 py-1.5 text-sm text-ink outline-none cursor-pointer data-[highlighted]:bg-page"
+                className="relative flex items-center gap-2 rounded-md pl-2.5 pr-6 py-1.5 text-sm text-ink outline-none cursor-pointer data-[highlighted]:bg-nav"
               >
                 {opt.swatch && (
                   <span

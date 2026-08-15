@@ -130,7 +130,7 @@ export default function TagInput({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addTag(t.name)}
-              className="w-full text-left px-3 py-1.5 text-ink hover:bg-nav-hover"
+              className="w-full text-left px-3 py-1.5 text-ink hover:bg-nav"
             >
               {t.name}
             </button>
@@ -140,7 +140,7 @@ export default function TagInput({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addTag(trimmedQuery)}
-              className="w-full text-left px-3 py-1.5 hover:bg-nav-hover text-ink"
+              className="w-full text-left px-3 py-1.5 hover:bg-nav text-ink"
             >
               Create &quot;{trimmedQuery}&quot;
             </button>

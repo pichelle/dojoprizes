@@ -136,7 +136,7 @@ export default function PrizeForm({
               type="button"
               onClick={fetchImageFromMakerworld}
               disabled={fetching}
-              className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-nav-hover disabled:opacity-50"
+              className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-nav disabled:opacity-50"
             >
               {fetching ? "Fetching…" : "Fetch image"}
             </button>
@@ -279,7 +279,7 @@ export default function PrizeForm({
                 .map((f) => (
                   <label
                     key={f.id}
-                    className="flex items-center gap-2 text-sm text-ink rounded-md px-1.5 py-1 hover:bg-nav-hover cursor-pointer"
+                    className="flex items-center gap-2 text-sm text-ink rounded-md px-1.5 py-1 hover:bg-nav cursor-pointer"
                   >
                     <input
                       type="checkbox"

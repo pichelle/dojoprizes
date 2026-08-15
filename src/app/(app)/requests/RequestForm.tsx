@@ -422,7 +422,7 @@ export default function RequestForm({
                 type="button"
                 onClick={fetchImageFromMakerworld}
                 disabled={fetchingImage}
-                className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-nav-hover disabled:opacity-50"
+                className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-nav disabled:opacity-50"
               >
                 {fetchingImage ? "Fetching…" : "Fetch image"}
               </button>

@@ -142,7 +142,7 @@ export default function PrizeCard({
             <Link
               href={`/requests/new?prize_id=${prize.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-nav-hover shrink-0 transition-colors whitespace-nowrap"
+              className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-nav shrink-0 transition-colors whitespace-nowrap"
               title="Log a request to print another one of these"
             >
               Reprint
@@ -155,7 +155,7 @@ export default function PrizeCard({
                 e.stopPropagation();
                 setShowBuyerModal(true);
               }}
-              className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-nav-hover shrink-0 transition-colors"
+              className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-nav shrink-0 transition-colors"
               title="Log that a student took this off the shelf"
             >
               Mark sold
