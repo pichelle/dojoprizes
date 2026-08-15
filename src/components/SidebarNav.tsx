@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import FeedbackButton from "./FeedbackButton";
 import { useProfiles } from "./ProfileContext";
-import { formatSensei } from "@/lib/formatSensei";
 
 const NAV_LINKS = [
   { href: "/requests", label: "Requests", icon: "/icons/nav-requests.png" },
@@ -71,8 +70,10 @@ function ActiveProfileButton() {
       title="Switch profile"
       className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center w-full"
     >
+      {/* Square with rounded corners (not a circle) so it matches the
+          other nav icons' shape, same w-7/h-7 (sm: w-6/h-6) sizing. */}
       <span
-        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+        className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
         style={{ background: activeProfile.color_hex }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -83,7 +84,9 @@ function ActiveProfileButton() {
           className="max-w-[70%] max-h-[70%] object-contain"
         />
       </span>
-      <span className="truncate">{formatSensei(activeProfile.name)}</span>
+      {/* Just the first name, no "Sensei" prefix -- keeps this compact
+          next to the other single-word nav labels. */}
+      <span className="truncate">{activeProfile.name}</span>
     </button>
   );
 }
@@ -96,12 +99,6 @@ export default function SidebarNav() {
       <Link href="/requests" className="block shrink-0">
         <Image src="/ninja.png" alt="DojoPrizes" width={40} height={40} className="rounded-full" priority />
       </Link>
-
-      <div className={GROUP_DIVIDER} />
-
-      <div className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
-        <ActiveProfileButton />
-      </div>
 
       <div className={GROUP_DIVIDER} />
 
@@ -121,6 +118,7 @@ export default function SidebarNav() {
       <div className={GROUP_DIVIDER} />
 
       <div className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
+        <ActiveProfileButton />
         <FeedbackButton className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center" />
         <form action="/api/logout" method="POST">
           <button

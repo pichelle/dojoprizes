@@ -38,9 +38,15 @@ function ProfileForm({
       <input type="hidden" name="color_hex" value={colorHex} />
 
       {!editing && (
-        <p className="text-sm text-muted mb-4">
-          New profiles start with the default ninja icon and can pick a color below.
-        </p>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 shrink-0 rounded-xl bg-nav border border-border-warm flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/ninja.png" alt="" aria-hidden="true" className="w-8 h-8 object-contain" />
+          </div>
+          <p className="text-sm text-muted">
+            New profiles start with this ninja icon and can pick a color below.
+          </p>
+        </div>
       )}
 
       <label className="block text-xs font-medium text-ink-soft mb-1">Name</label>
@@ -61,13 +67,15 @@ function ProfileForm({
             type="button"
             onClick={() => setColorHex(hex)}
             aria-label={`Use color ${hex}`}
-            className="w-7 h-7 rounded-lg border transition-transform"
-            style={{
-              background: hex,
-              borderColor: colorHex === hex ? "var(--color-border-hover)" : "var(--color-border-warm)",
-              borderWidth: colorHex === hex ? 2 : 1,
-              transform: colorHex === hex ? "scale(1.08)" : undefined,
-            }}
+            className="profile-swatch w-7 h-7 rounded-lg border"
+            style={
+              {
+                "--swatch-color": hex,
+                borderColor: colorHex === hex ? "var(--color-border-hover)" : "var(--color-border-warm)",
+                borderWidth: colorHex === hex ? 2 : 1,
+                transform: colorHex === hex ? "scale(1.08)" : undefined,
+              } as React.CSSProperties
+            }
           />
         ))}
       </div>
@@ -154,7 +162,7 @@ export default function ProfilePicker() {
   const editingProfile = typeof mode === "object" ? mode.edit : null;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-page bg-dot-grid px-4">
+    <div className="h-screen overflow-hidden flex items-center justify-center bg-page bg-dot-grid px-4">
       <div
         className="w-full max-w-lg text-center transition-all duration-500 ease-out"
         style={{
