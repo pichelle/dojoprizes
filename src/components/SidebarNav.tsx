@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import FeedbackButton from "./FeedbackButton";
+import { useProfiles } from "./ProfileContext";
+import { formatSensei } from "@/lib/formatSensei";
 
 const NAV_LINKS = [
   { href: "/requests", label: "Requests", icon: "/icons/nav-requests.png" },
@@ -58,6 +60,34 @@ function NavItem({
   );
 }
 
+function ActiveProfileButton() {
+  const { activeProfile, switchProfile } = useProfiles();
+  if (!activeProfile) return null;
+
+  return (
+    <button
+      type="button"
+      onClick={switchProfile}
+      title="Switch profile"
+      className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center w-full"
+    >
+      <span
+        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shrink-0 overflow-hidden"
+        style={{ background: activeProfile.color_hex }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={activeProfile.avatar_url ?? "/ninja.png"}
+          alt=""
+          aria-hidden="true"
+          className="max-w-[70%] max-h-[70%] object-contain"
+        />
+      </span>
+      <span className="truncate">{formatSensei(activeProfile.name)}</span>
+    </button>
+  );
+}
+
 export default function SidebarNav() {
   const pathname = usePathname();
 
@@ -66,6 +96,12 @@ export default function SidebarNav() {
       <Link href="/requests" className="block shrink-0">
         <Image src="/ninja.png" alt="DojoPrizes" width={40} height={40} className="rounded-full" priority />
       </Link>
+
+      <div className={GROUP_DIVIDER} />
+
+      <div className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
+        <ActiveProfileButton />
+      </div>
 
       <div className={GROUP_DIVIDER} />
 

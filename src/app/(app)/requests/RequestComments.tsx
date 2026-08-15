@@ -6,6 +6,7 @@ import type { RequestComment } from "@/lib/types";
 import { addRequestComment, deleteRequestComment, updateRequestComment } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatSensei } from "@/lib/formatSensei";
+import { useProfiles } from "@/components/ProfileContext";
 
 const LAST_AUTHOR_KEY = "dojoprizes:lastCommentAuthor";
 const UNDO_WINDOW_MS = 5000;
@@ -149,10 +150,16 @@ export default function RequestComments({
   requestId: string;
   comments: RequestComment[];
 }) {
+  const { activeProfile } = useProfiles();
   const [items, setItems] = useState(comments);
   const [composerOpen, setComposerOpen] = useState(false);
+  // Whatever was last typed on this device wins (someone may have
+  // deliberately overridden it), falling back to the active profile's name
+  // so first-time use is already filled in, and finally blank.
   const [author, setAuthor] = useState(() =>
-    typeof window === "undefined" ? "" : window.localStorage.getItem(LAST_AUTHOR_KEY) ?? "",
+    typeof window === "undefined"
+      ? ""
+      : window.localStorage.getItem(LAST_AUTHOR_KEY) ?? activeProfile?.name ?? "",
   );
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);

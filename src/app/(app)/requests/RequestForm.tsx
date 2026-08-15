@@ -15,6 +15,7 @@ import MultiSelect from "@/components/MultiSelect";
 import Select, { NONE_VALUE } from "@/components/Select";
 import ErrorNote from "@/components/ErrorNote";
 import { showToast } from "@/components/ToastHost";
+import { useProfiles } from "@/components/ProfileContext";
 import type { RequestFormState } from "./actions";
 
 function Req() {
@@ -97,6 +98,7 @@ export default function RequestForm({
 }) {
   const router = useRouter();
   const isCreating = !initial;
+  const { activeProfile } = useProfiles();
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? initialPrizeId ?? NONE_VALUE);
   const [initialStatus, setInitialStatus] = useState<RequestStatus>(
     presetStatus ?? (initial?.status === "idea" ? "idea" : "pending"),
@@ -265,7 +267,10 @@ export default function RequestForm({
             <input
               name="requested_by"
               placeholder="Your name"
-              defaultValue={initial?.requested_by ?? ""}
+              // Auto-fills from the picked profile on this device, but stays
+              // a plain editable text field -- someone logging a request for
+              // a co-worker (or before profiles existed) can still overwrite it.
+              defaultValue={initial?.requested_by ?? activeProfile?.name ?? ""}
               onChange={() => setErrors((prev) => ({ ...prev, requested_by: false }))}
               className={`mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
                 errors.requested_by ? "field-error" : "border-border-warm-strong"
