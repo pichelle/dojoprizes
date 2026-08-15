@@ -11,6 +11,7 @@ import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
+import Select, { NONE_VALUE } from "@/components/Select";
 
 // Same row layout as the Requests side peek's DetailRow (icon + label +
 // value) -- duplicated locally rather than imported since RequestsKanban
@@ -253,27 +254,31 @@ export default function CheckoutsTable({
       </div>
 
       <div className="flex flex-wrap gap-2 items-center">
-        <select
-          value={sourceFilter}
-          onChange={(e) => setSourceFilter(e.target.value as "" | "bin" | "request")}
-          className="rounded-md border border-border-warm-strong bg-card px-3 py-1.5 text-sm w-36"
-        >
-          <option value="">Source</option>
-          <option value="bin">Prize bin</option>
-          <option value="request">Request</option>
-        </select>
-        <select
-          value={colorFilter}
-          onChange={(e) => setColorFilter(e.target.value)}
-          className="rounded-md border border-border-warm-strong bg-card px-3 py-1.5 text-sm w-36"
-        >
-          <option value="">Color</option>
-          {colorOptions.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.color_name}
-            </option>
-          ))}
-        </select>
+        <Select
+          value={sourceFilter || NONE_VALUE}
+          onValueChange={(v) => setSourceFilter(v === NONE_VALUE ? "" : (v as "bin" | "request"))}
+          className="w-36"
+          placeholder="Source"
+          options={[
+            { value: NONE_VALUE, label: "Source" },
+            { value: "bin", label: "Prize bin" },
+            { value: "request", label: "Request" },
+          ]}
+        />
+        <Select
+          value={colorFilter || NONE_VALUE}
+          onValueChange={(v) => setColorFilter(v === NONE_VALUE ? "" : v)}
+          className="w-36"
+          placeholder="Color"
+          options={[
+            { value: NONE_VALUE, label: "Color" },
+            ...colorOptions.map((c) => ({
+              value: c.id,
+              label: c.color_name,
+              swatch: c.swatch_hex,
+            })),
+          ]}
+        />
         <div className="relative flex-1 min-w-[200px]">
           <input
             type="text"
