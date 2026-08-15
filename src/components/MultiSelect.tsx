@@ -12,12 +12,24 @@ export default function MultiSelect({
   initialValues = [],
   placeholder = "Select...",
   onChange,
+  // Optional pinned entry shown at the top of the dropdown, above the
+  // searchable option list, kept separate from `options`/`selected`
+  // because it isn't a real value from the same set (e.g. "Any color" is
+  // a separate boolean on the request, not a filament id) -- but it's
+  // still meant to coexist with real picks, not replace them, so it
+  // renders as its own removable chip alongside whatever else is chosen.
+  anyOption,
+  anySelected = false,
+  onAnyToggle,
 }: {
   name: string;
   options: { value: string; label: string; swatch?: string | null }[];
   initialValues?: string[];
   placeholder?: string;
   onChange?: (values: string[]) => void;
+  anyOption?: { label: string };
+  anySelected?: boolean;
+  onAnyToggle?: () => void;
 }) {
   const [selected, setSelected] = useState<string[]>(initialValues);
   const [query, setQuery] = useState("");
@@ -65,6 +77,19 @@ export default function MultiSelect({
         <input key={v} type="hidden" name={name} value={v} />
       ))}
       <div className="flex flex-wrap gap-1 items-center rounded-md border border-border-warm-strong bg-card px-2 py-1.5 transition-colors hover:border-border-hover focus-within:ring-2 focus-within:ring-sage">
+        {anyOption && anySelected && (
+          <span className="chip-hover inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-page text-ink">
+            {anyOption.label}
+            <button
+              type="button"
+              onClick={onAnyToggle}
+              className="text-muted hover:text-ink"
+              aria-label={`Remove ${anyOption.label}`}
+            >
+              ×
+            </button>
+          </span>
+        )}
         {selectedOptions.map((o) => (
           <span
             key={o.value}
@@ -109,15 +134,27 @@ export default function MultiSelect({
         />
       </div>
 
-      {open && filtered.length > 0 && (
+      {open && (anyOption && !anySelected ? true : filtered.length > 0) && (
         <div className="absolute z-20 mt-1 w-full bg-card border border-border-warm rounded-md shadow-md max-h-48 overflow-y-auto text-sm">
+          {anyOption && !anySelected && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={onAnyToggle}
+              className={`w-full text-left px-3 py-1.5 text-ink hover:bg-nav flex items-center gap-2 font-medium ${
+                filtered.length > 0 ? "border-b border-border-warm" : ""
+              }`}
+            >
+              {anyOption.label}
+            </button>
+          )}
           {filtered.map((o) => (
             <button
               key={o.value}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => addValue(o.value)}
-              className="w-full text-left px-3 py-1.5 text-ink hover:bg-page flex items-center gap-2"
+              className="w-full text-left px-3 py-1.5 text-ink hover:bg-nav flex items-center gap-2"
             >
               {o.swatch && (
                 <span

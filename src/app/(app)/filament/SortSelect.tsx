@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Select from "@/components/Select";
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "hue", label: "Color" },
   { value: "name", label: "Name (A-Z)" },
   { value: "most_used", label: "Most used" },
   { value: "least_used", label: "Least used" },

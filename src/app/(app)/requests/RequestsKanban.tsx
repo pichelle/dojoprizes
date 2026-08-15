@@ -33,9 +33,14 @@ import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
 import { createRequestInline, updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
-import { formatCoinPriceBreakdown } from "@/lib/coins";
+import {
+  formatCoinPriceBreakdown,
+  coinPriceToBreakdown,
+  breakdownToCoinPrice,
+  type CoinBreakdown,
+} from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
-import { formatSize } from "@/lib/requestFormatting";
+import { formatSize, formatColor } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
 
@@ -99,12 +104,16 @@ function daysAgo(iso: string) {
 }
 
 // "Requested 5 days ago" -- more actionable at a glance than a raw date.
-function formatRequestedAgo(iso: string) {
+// Ideas aren't requests yet -- just suggestions someone jotted down -- so
+// they read as "Added" instead, which avoids implying the same
+// waiting-on-us urgency a real request has.
+function formatRequestedAgo(iso: string, status?: RequestStatus) {
+  const verb = status === "idea" ? "Added" : "Requested";
   const age = daysAgo(iso);
-  if (age === null) return `Requested ${iso}`;
-  if (age === 0) return "Requested today";
-  if (age === 1) return "Requested 1 day ago";
-  return `Requested ${age} days ago`;
+  if (age === null) return `${verb} ${iso}`;
+  if (age === 0) return `${verb} today`;
+  if (age === 1) return `${verb} 1 day ago`;
+  return `${verb} ${age} days ago`;
 }
 
 function formatCalendarDate(iso: string) {
@@ -219,6 +228,16 @@ export default function RequestsKanban({
   // server delete + refresh completes (at which point the id just stops
   // existing in `requests` anyway).
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  // A card dropped onto the Printed column needs the same price confirm
+  // the status-pill dropdown already asks for -- drag-and-drop bypassed
+  // StatusPill entirely, so it skipped that prompt. Null unless a
+  // non-print-club card was just dropped onto Printed and is waiting on
+  // this modal (print club prints are always free, so those skip straight
+  // through in handleDrop instead of opening this).
+  const [pendingPrintedDrop, setPendingPrintedDrop] = useState<{
+    requestId: string;
+    breakdown: CoinBreakdown;
+  } | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const addedToastFired = useRef(false);
@@ -238,6 +257,29 @@ export default function RequestsKanban({
         }),
     [requests, overrides, pendingDeleteIds],
   );
+
+  // Clears an optimistic override once the server `requests` prop already
+  // reflects it -- see the comment in handlePick for why this can't just
+  // happen right after router.refresh() is called instead. Adjusting state
+  // during render (React's documented pattern for reacting to a changed
+  // prop) rather than in a useEffect, so there's no extra frame where the
+  // override is already gone but `requests` hasn't caught up yet.
+  const [prevRequests, setPrevRequests] = useState(requests);
+  if (requests !== prevRequests) {
+    setPrevRequests(requests);
+    setOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, override] of Object.entries(prev)) {
+        const serverRow = requests.find((r) => r.id === id);
+        if (serverRow && serverRow.status === override.status && serverRow.sale_price === override.salePrice) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
 
@@ -318,6 +360,20 @@ export default function RequestsKanban({
     if (!requestId) return;
     const current = effectiveRequests.find((r) => r.id === requestId);
     if (!current || current.status === status) return;
+    if (status === "printed") {
+      // 3D Print Club prints are always free -- skip straight through
+      // instead of asking. Everything else gets the same price prompt
+      // the status-pill dropdown already shows for this same transition.
+      if (current.is_print_club) {
+        handlePick(requestId, status, 0);
+        return;
+      }
+      setPendingPrintedDrop({
+        requestId,
+        breakdown: coinPriceToBreakdown(current.prize?.coin_price ?? null),
+      });
+      return;
+    }
     handlePick(requestId, status);
   }
 
@@ -336,11 +392,13 @@ export default function RequestsKanban({
       (async () => {
         await onStatusChange(requestId, next, salePrice);
         router.refresh();
-        setOverrides((prev) => {
-          const rest = { ...prev };
-          delete rest[requestId];
-          return rest;
-        });
+        // Deliberately NOT clearing the override here -- router.refresh()
+        // schedules a re-fetch but doesn't resolve once the new `requests`
+        // prop has actually landed. Clearing right away left a gap frame
+        // where the override was gone but `requests` still had the old
+        // status, so the card would snap back then snap forward again a
+        // moment later. The effect below clears it once the server data
+        // actually agrees, so there's never a frame showing stale state.
       })();
     }, UNDO_WINDOW_MS);
 
@@ -484,7 +542,12 @@ export default function RequestsKanban({
               >
                 {rows.map((r, i) => {
                   const catalogPrice = r.prize?.coin_price ?? null;
-                  const priceTag = formatCoinPriceBreakdown(r.sale_price);
+                  // Actual sale price (once printed/fulfilled) renders as
+                  // icon + bold black number, matching the Prize Bin card
+                  // treatment, rather than plain colored text.
+                  const saleBreakdown = coinPriceToBreakdown(r.sale_price);
+                  const hasSalePrice =
+                    saleBreakdown.obsidian > 0 || saleBreakdown.gold > 0 || saleBreakdown.silver > 0;
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
                   const age = daysAgo(r.date_requested);
                   const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
@@ -532,7 +595,7 @@ export default function RequestsKanban({
                         <span
                           className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
                         >
-                          {formatRequestedAgo(r.date_requested)}
+                          {formatRequestedAgo(r.date_requested, r.status)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">
@@ -543,15 +606,29 @@ export default function RequestsKanban({
                         {[
                           r.status === "idea" ? null : r.student_name,
                           formatSize(r.size),
-                          (r.colorFilaments ?? []).map((c) => c.color_name).join(", ") || null,
+                          formatColor(r),
                         ]
                           .filter(Boolean)
                           .join(" · ") || "No details yet"}
                       </p>
-                      {(r.status === "printed" || r.status === "fulfilled") && priceTag ? (
-                        <p className="text-xs font-semibold mt-1" style={{ color: "var(--color-printed-text)" }}>
-                          {priceTag}
-                        </p>
+                      {(r.status === "printed" || r.status === "fulfilled") && hasSalePrice ? (
+                        <div className="flex items-center gap-2 mt-1">
+                          {saleBreakdown.obsidian > 0 && (
+                            <span className="flex items-center gap-1">
+                              <img src="/icons/coin-obsidian.png" alt="Obsidian" className="w-4 h-4 object-contain" />
+                              <span className="text-xs font-semibold text-ink">{saleBreakdown.obsidian}</span>
+                            </span>
+                          )}
+                          {saleBreakdown.gold > 0 && (
+                            <span className="flex items-center gap-1">
+                              <img src="/icons/coin-gold.png" alt="Gold" className="w-4 h-4 object-contain" />
+                              <span className="text-xs font-semibold text-ink">{saleBreakdown.gold}</span>
+                            </span>
+                          )}
+                          {saleBreakdown.silver > 0 && (
+                            <span className="text-xs font-semibold text-ink">{saleBreakdown.silver} Silver</span>
+                          )}
+                        </div>
                       ) : (
                         r.status === "pending" &&
                         estTag && (
@@ -580,6 +657,7 @@ export default function RequestsKanban({
                             <StatusPill
                               status={r.status}
                               catalogPrice={catalogPrice}
+                              isPrintClub={r.is_print_club}
                               onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                             />
                           </div>
@@ -604,7 +682,7 @@ export default function RequestsKanban({
               <button
                 type="button"
                 onClick={() => setCreatingStatus(col.status)}
-                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-card/60 sm:shrink-0"
+                className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs font-medium text-muted hover:text-ink border border-dashed border-border-warm-strong rounded-xl py-2 hover:bg-nav/60 sm:shrink-0"
               >
                 <Plus size={13} aria-hidden="true" />
                 Add new
@@ -639,7 +717,7 @@ export default function RequestsKanban({
                   type="button"
                   onClick={() => setPeekMode("view")}
                   aria-label="Back"
-                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
+                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
                 >
                   <ChevronLeft size={18} aria-hidden="true" />
                 </button>
@@ -662,13 +740,14 @@ export default function RequestsKanban({
                   <StatusPill
                     status={active.status}
                     catalogPrice={active.prize?.coin_price ?? null}
+                    isPrintClub={active.is_print_club}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
                   <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => setPeekMode("edit")}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
                     >
                       <Pencil size={13} aria-hidden="true" />
                       Edit
@@ -697,10 +776,8 @@ export default function RequestsKanban({
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
-                  {(active.colorFilaments ?? []).length > 0 && (
-                    <DetailRow label="Color" icon={Palette}>
-                      {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
-                    </DetailRow>
+                  {((active.colorFilaments ?? []).length > 0 || active.color_any) && (
+                    <DetailRow label="Color" icon={Palette}>{formatColor(active)}</DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (
                     <DetailRow label="Theme" icon={Tags}>
@@ -787,6 +864,62 @@ export default function RequestsKanban({
           </>
         )}
       </SidePeek>
+
+      {pendingPrintedDrop && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/20"
+          onClick={() => setPendingPrintedDrop(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-64 bg-card border border-border-warm-strong rounded-md shadow-md p-3 space-y-2"
+          >
+            <p className="text-xs text-muted">Price for this print?</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(["gold", "obsidian"] as const).map((tier) => (
+                <div key={tier}>
+                  <label className="block text-[10px] text-muted capitalize">{tier}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={pendingPrintedDrop.breakdown[tier] || ""}
+                    onChange={(e) =>
+                      setPendingPrintedDrop((prev) =>
+                        prev
+                          ? { ...prev, breakdown: { ...prev.breakdown, [tier]: Number(e.target.value) || 0 } }
+                          : prev,
+                      )
+                    }
+                    placeholder="0"
+                    className="w-full rounded-md border border-border-warm-strong px-1.5 py-1 text-xs"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => setPendingPrintedDrop(null)}
+                className="text-[11px] text-muted hover:text-ink px-2 py-1"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  handlePick(pendingPrintedDrop.requestId, "printed", breakdownToCoinPrice(pendingPrintedDrop.breakdown));
+                  setPendingPrintedDrop(null);
+                }}
+                className="text-[11px] font-medium rounded-md px-2.5 py-1"
+                style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

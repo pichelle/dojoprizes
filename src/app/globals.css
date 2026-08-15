@@ -9,14 +9,18 @@
   --color-ink: #3a3a38;
   --color-ink-soft: #6b6b66;
   --color-muted: #8c8c86;
-  --color-clay: #c1673e;
-  --color-tape: #d9cba8;
   --color-nav: #faf8f2;
   --color-nav-active: #efebdf;
   --color-nav-hover: #f4efe0;
 
   /* Status dots -- used across prize status and request status */
-  --color-sage: #7c8a5e;
+  /* --color-sage now holds the app's accent blue (form focus rings,
+     checkboxes, chip hovers, etc.) -- name kept as-is to avoid touching
+     every Tailwind class consumer (bg-sage, ring-sage, accent-sage, ...),
+     which pick this value up automatically via the @theme mapping below. */
+  --color-sage: #006add;
+  --color-sage-hover: #0055b1;
+  --color-sage-tint: #e0edfb;
   --color-amber: #ba7517;
   --color-rust: #b54b3a;
   --color-slate: #7a8699;
@@ -26,11 +30,13 @@
   /* Dedicated color for "open external link" text/icons (MakerWorld,
      Tinkercad, etc.) so it reads consistently as a link everywhere it
      appears, instead of borrowing whatever status color happened to be
-     nearby (sage in one place, rust in another). */
-  --color-link: #3d6fa5;
-  --color-link-hover: #2c5680;
+     nearby. Matches the accent directly -- the base already clears
+     4.5:1 text contrast on its own (5.1:1), so no separate deeper
+     shade is needed for links. */
+  --color-link: #006add;
+  --color-link-hover: #0055b1;
 
-  /* Pastel accent ramps -- pending/printed/fulfilled/cancelled + print club */
+  /* Pastel accent ramps -- pending/printed/fulfilled/cancelled */
   --color-pending-bg: #fbf4dc;
   --color-pending-text: #7a6a12;
   --color-pending-dot: #e8c34a;
@@ -46,8 +52,6 @@
   --color-idea-bg: #f3ead9;
   --color-idea-text: #8a6a2f;
   --color-idea-dot: #d9a45c;
-  --color-print-club-bg: #e3e4f5;
-  --color-print-club-text: #4a4a8a;
 }
 
 @theme inline {
@@ -58,9 +62,9 @@
   --color-ink: var(--color-ink);
   --color-ink-soft: var(--color-ink-soft);
   --color-muted: var(--color-muted);
-  --color-clay: var(--color-clay);
-  --color-tape: var(--color-tape);
   --color-sage: var(--color-sage);
+  --color-sage-hover: var(--color-sage-hover);
+  --color-sage-tint: var(--color-sage-tint);
   --color-amber: var(--color-amber);
   --color-rust: var(--color-rust);
   --color-slate: var(--color-slate);
@@ -180,12 +184,13 @@ h2.font-serif {
 /* Consistent hover feedback for native text-ish form controls sitewide. */
 input:not([type="checkbox"]):not([type="radio"]),
 textarea {
-  transition: border-color 0.12s ease-out, box-shadow 0.12s ease-out;
+  transition: border-color 0.12s ease-out, box-shadow 0.12s ease-out, background-color 0.12s ease-out;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):hover,
 textarea:hover {
   border-color: var(--color-border-hover);
+  background-color: var(--color-nav);
 }
 
 .chip-hover {
@@ -194,7 +199,7 @@ textarea:hover {
 
 .chip-hover:hover {
   background: color-mix(in srgb, var(--color-sage) 16%, transparent);
-  color: #4c5638;
+  color: #0055b1;
 }
 
 /* Thin scrollbar for scrollable panels (filter lists, etc.) instead

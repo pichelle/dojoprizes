@@ -71,7 +71,7 @@ export default function FiltersDropdown({
         className={`flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm transition-colors ${
           totalSelected > 0
             ? "border-ink bg-ink/5 text-ink"
-            : "border-border-warm-strong bg-card text-ink hover:bg-page"
+            : "border-border-warm-strong bg-card text-ink hover:bg-nav"
         }`}
       >
         <Filter size={14} className="text-muted" aria-hidden="true" />
@@ -124,7 +124,7 @@ export default function FiltersDropdown({
               {drilled.options.map((o) => (
                 <label
                   key={o.value}
-                  className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-2 py-1.5 transition-colors hover:bg-page"
+                  className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-2 py-1.5 transition-colors hover:bg-nav"
                 >
                   <input
                     type="checkbox"

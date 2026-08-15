@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
 import { NONE_VALUE } from "@/lib/constants";
-import type { RequestSize, RequestStatus } from "@/lib/types";
+import type { RequestSizeOrAny, RequestStatus } from "@/lib/types";
 
 export type RequestFormState = {
   error: string | null;
@@ -76,7 +76,8 @@ function requestFieldsFromForm(formData: FormData) {
     requested_by: String(formData.get("requested_by") ?? "").trim() || null,
     prize_id: prizeId,
     free_text_prize: prizeId ? null : freeText,
-    size: fromFormSelect(formData, "size") as RequestSize | null,
+    size: fromFormSelect(formData, "size") as RequestSizeOrAny | null,
+    color_any: formData.get("color_any") === "on",
     links: String(formData.get("makerworld_link") ?? "").trim() || null,
     is_print_club: formData.get("is_print_club") === "on",
     notes: String(formData.get("notes") ?? "").trim() || null,
@@ -127,6 +128,8 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
         if (linkError) return { error: linkError.message };
       }
 
+      // "Any color" and specific colors can coexist -- e.g. "any color is
+      // fine, but blue if possible" -- so both are stored independently.
       const filamentIds = parseColorFilamentIds(formData);
       if (filamentIds.length > 0) {
         const { error: filamentLinkError } = await supabase

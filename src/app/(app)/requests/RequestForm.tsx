@@ -7,7 +7,7 @@ import type {
   FranchiseTag,
   Prize,
   PrizeRequest,
-  RequestSize,
+  RequestSizeOrAny,
   RequestStatus,
 } from "@/lib/types";
 import TagInput from "@/components/TagInput";
@@ -34,7 +34,8 @@ function FieldError({ show }: { show?: boolean }) {
   return <p className="mt-1 text-xs text-rust">Please fill out this field.</p>;
 }
 
-const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
+const SIZE_OPTIONS: { value: RequestSizeOrAny; label: string }[] = [
+  { value: "any", label: "Any size" },
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
@@ -86,7 +87,7 @@ export default function RequestForm({
   // isCreating (which only "initial", i.e. editing an existing request,
   // should do).
   initialPhotoUrl?: string | null;
-  initialSize?: RequestSize | null;
+  initialSize?: RequestSizeOrAny | null;
   submitLabel?: string;
   // When set, creation skips the Idea/Request toggle and logs straight into
   // this status -- used by the "+ Add new" buttons on each kanban column.
@@ -101,6 +102,7 @@ export default function RequestForm({
     presetStatus ?? (initial?.status === "idea" ? "idea" : "pending"),
   );
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
+  const [colorAny, setColorAny] = useState(initial?.color_any ?? false);
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? initialPhotoUrl ?? "");
@@ -147,28 +149,45 @@ export default function RequestForm({
     }
   }
 
-  function validate(form: HTMLFormElement): boolean {
+  // Matches the fields' top-to-bottom order in the form -- used to figure
+  // out which invalid field is "first" so a failed submit can scroll to it.
+  const FIELD_ORDER: RequiredField[] = ["student_name", "requested_by", "size", "color_filament_ids"];
+
+  function validate(form: HTMLFormElement): Partial<Record<RequiredField, boolean>> {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
-    // initialStatus (not the form's own initial_status field, which only
-    // exists while creating) covers both creating and editing an idea.
-    const loggingIdea = initialStatus === "idea";
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
-    if (!loggingIdea) {
-      const size = String(fd.get("size") ?? "");
-      if (!size || size === NONE_VALUE) next.size = true;
-      if (fd.getAll("color_filament_ids").length === 0) next.color_filament_ids = true;
+    // Size and color are required in every status, including Ideas -- but
+    // "Any" (size/color) satisfies the requirement, so a deliberate "no
+    // preference" isn't blocked, only a forgotten field.
+    const size = String(fd.get("size") ?? "");
+    if (!size || size === NONE_VALUE) next.size = true;
+    if (fd.get("color_any") !== "on" && fd.getAll("color_filament_ids").length === 0) {
+      next.color_filament_ids = true;
     }
 
     setErrors(next);
-    return Object.keys(next).length === 0;
+    return next;
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    if (!validate(e.currentTarget)) {
+    const form = e.currentTarget;
+    const invalid = validate(form);
+    if (Object.keys(invalid).length > 0) {
       e.preventDefault();
+      // Fields can be well below the fold, and a click that silently does
+      // nothing (beyond a small red label somewhere off-screen) reads as a
+      // broken button -- scroll the first invalid field into view instead
+      // of leaving it to be hunted down.
+      const firstKey = FIELD_ORDER.find((key) => invalid[key]);
+      if (firstKey) {
+        const target = form.querySelector(`[data-field="${firstKey}"]`);
+        target?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const focusable = target?.querySelector<HTMLElement>("input, button, [role='combobox']");
+        focusable?.focus();
+      }
     }
   }
 
@@ -223,7 +242,7 @@ export default function RequestForm({
         )}
 
         <div className="grid sm:grid-cols-2 gap-4">
-          <div>
+          <div data-field="student_name">
             <label className="block text-sm font-medium text-ink">
               {initialStatus === "idea" ? "Idea title" : "Ninja name"} <Req />
             </label>
@@ -239,7 +258,7 @@ export default function RequestForm({
             <FieldError show={errors.student_name} />
           </div>
 
-          <div>
+          <div data-field="requested_by">
             <label className="block text-sm font-medium text-ink">
               Requested by (sensei) <Req />
             </label>
@@ -317,9 +336,9 @@ export default function RequestForm({
             </>
           )}
 
-          <div>
+          <div data-field="size">
             <label className="block text-sm font-medium text-ink">
-              Size {initialStatus === "idea" ? "(optional)" : <Req />}
+              Size <Req />
             </label>
             <div className={`mt-1 ${errors.size ? "rounded-md ring-2 ring-rust" : ""}`}>
               <Select
@@ -337,10 +356,11 @@ export default function RequestForm({
             <FieldError show={errors.size} />
           </div>
 
-          <div>
+          <div data-field="color_filament_ids">
             <label className="block text-sm font-medium text-ink">
-              Color requested {initialStatus === "idea" ? "(optional)" : <Req />}
+              Color requested <Req />
             </label>
+            {colorAny && <input type="hidden" name="color_any" value="on" />}
             <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
               <MultiSelect
                 name="color_filament_ids"
@@ -352,6 +372,12 @@ export default function RequestForm({
                   swatch: f.swatch_hex,
                 }))}
                 onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
+                anyOption={{ label: "Any color" }}
+                anySelected={colorAny}
+                onAnyToggle={() => {
+                  setColorAny((prev) => !prev);
+                  setErrors((prev) => ({ ...prev, color_filament_ids: false }));
+                }}
               />
             </div>
             <p className="mt-1.5 text-sm text-muted">
@@ -396,7 +422,7 @@ export default function RequestForm({
                 type="button"
                 onClick={fetchImageFromMakerworld}
                 disabled={fetchingImage}
-                className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-page disabled:opacity-50"
+                className="whitespace-nowrap rounded-md border border-border-warm-strong px-3 py-2 text-sm text-ink hover:bg-nav disabled:opacity-50"
               >
                 {fetchingImage ? "Fetching…" : "Fetch image"}
               </button>

@@ -75,8 +75,8 @@ export default function PrizeCard({
         staggerDelay ? "stagger-in" : ""
       }`}
     >
-      <div className="h-44 bg-card pt-2.5 px-2.5">
-        <div className="h-full w-full rounded-t-[10px] bg-page flex items-center justify-center overflow-hidden">
+      <div className="h-44 bg-card p-2.5">
+        <div className="h-full w-full rounded-[10px] bg-page flex items-center justify-center overflow-hidden">
           {prize.photo_url ? (
             <ImageWithFallback
               src={prize.photo_url}
@@ -89,7 +89,7 @@ export default function PrizeCard({
           )}
         </div>
       </div>
-      <div className="pt-2 px-3.5 pb-3.5 flex-1 flex flex-col gap-1.5">
+      <div className="px-3.5 pb-3.5 flex-1 flex flex-col gap-1.5">
         <span className="font-serif font-medium text-base text-ink truncate">{prize.name}</span>
 
         <div className="text-xs text-muted flex items-center justify-between gap-2">
@@ -142,7 +142,7 @@ export default function PrizeCard({
             <Link
               href={`/requests/new?prize_id=${prize.id}`}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-page shrink-0 transition-colors whitespace-nowrap"
+              className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-nav shrink-0 transition-colors whitespace-nowrap"
               title="Log a request to print another one of these"
             >
               Reprint
@@ -155,7 +155,7 @@ export default function PrizeCard({
                 e.stopPropagation();
                 setShowBuyerModal(true);
               }}
-              className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-page shrink-0 transition-colors"
+              className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-nav shrink-0 transition-colors"
               title="Log that a student took this off the shelf"
             >
               Mark sold

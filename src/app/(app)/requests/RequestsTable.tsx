@@ -29,7 +29,7 @@ import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
-import { formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
+import { formatColor, formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 
 const UNDO_WINDOW_MS = 5000;
@@ -90,6 +90,29 @@ export default function RequestsTable({
     [requests, overrides, pendingDeleteIds],
   );
 
+  // Clears an optimistic override once the server `requests` prop already
+  // reflects it -- see the matching comment in RequestsKanban's handlePick
+  // for why this can't just happen right after router.refresh() is called.
+  // Adjusted during render (React's documented pattern for reacting to a
+  // changed prop) rather than in a useEffect, so there's no extra frame
+  // where the override is already gone but `requests` hasn't caught up.
+  const [prevRequests, setPrevRequests] = useState(requests);
+  if (requests !== prevRequests) {
+    setPrevRequests(requests);
+    setOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, override] of Object.entries(prev)) {
+        const serverRow = requests.find((r) => r.id === id);
+        if (serverRow && serverRow.status === override.status && serverRow.sale_price === override.salePrice) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }
+
   const sortedRequests = useMemo(() => {
     const rows = [...effectiveRequests];
     rows.sort((a, b) =>
@@ -116,11 +139,7 @@ export default function RequestsTable({
       (async () => {
         await onStatusChange(requestId, next, salePrice);
         router.refresh();
-        setOverrides((prev) => {
-          const rest = { ...prev };
-          delete rest[requestId];
-          return rest;
-        });
+        // Not clearing the override here -- see the effect above.
       })();
     }, UNDO_WINDOW_MS);
 
@@ -196,12 +215,15 @@ export default function RequestsTable({
                   <td className="sticky left-0 z-10 bg-card group-hover:bg-nav-hover font-semibold text-ink px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)] transition-colors">
                     {printTitle(r)}
                   </td>
-                  <td className="text-muted px-3 py-2.5 whitespace-nowrap">{formatRequestedAgo(r.date_requested).replace("Requested ", "")}</td>
+                  <td className="text-muted px-3 py-2.5 whitespace-nowrap">
+                    {formatRequestedAgo(r.date_requested, r.status).replace(/^(Requested|Added) /, "")}
+                  </td>
                   <td className="text-muted px-3 py-2.5">{r.status === "idea" ? "—" : r.student_name}</td>
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <StatusPill
                       status={r.status}
                       catalogPrice={catalogPrice}
+                      isPrintClub={r.is_print_club}
                       onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                     />
                   </td>
@@ -222,8 +244,9 @@ export default function RequestsTable({
                   </td>
                   <td className="text-muted px-3 py-2.5">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5">
-                    {colors.length > 0 ? (
+                    {r.color_any || colors.length > 0 ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
+                        {r.color_any && <span className="text-xs text-muted">Any color</span>}
                         {colors.map((c) => (
                           <span key={c.id} className="flex items-center gap-1 text-xs text-muted">
                             <span
@@ -261,7 +284,7 @@ export default function RequestsTable({
                   type="button"
                   onClick={() => setPeekMode("view")}
                   aria-label="Back"
-                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-page"
+                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
                 >
                   <ChevronLeft size={18} aria-hidden="true" />
                 </button>
@@ -284,13 +307,14 @@ export default function RequestsTable({
                   <StatusPill
                     status={active.status}
                     catalogPrice={active.prize?.coin_price ?? null}
+                    isPrintClub={active.is_print_club}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
                   <div className="flex items-center gap-4">
                     <button
                       type="button"
                       onClick={() => setPeekMode("edit")}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-page"
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
                     >
                       <Pencil size={13} aria-hidden="true" />
                       Edit
@@ -319,9 +343,9 @@ export default function RequestsTable({
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
-                  {(active.colorFilaments ?? []).length > 0 && (
+                  {((active.colorFilaments ?? []).length > 0 || active.color_any) && (
                     <DetailRow label="Color" icon={Palette}>
-                      {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
+                      {formatColor(active)}
                     </DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (

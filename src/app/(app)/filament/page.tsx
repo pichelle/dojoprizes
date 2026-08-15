@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import FilamentBoard from "./FilamentBoard";
 import ErrorNote from "@/components/ErrorNote";
+import { compareByHue } from "@/lib/colorSort";
 
 export default async function FilamentPage({
   searchParams,
@@ -8,7 +9,10 @@ export default async function FilamentPage({
   searchParams: Promise<{ sort?: string }>;
 }) {
   const params = await searchParams;
-  const sort = params.sort ?? "name";
+  // Defaults to a color-wheel sort (dark-to-light reds, then oranges,
+  // yellows, greens, blues, purples...) rather than alphabetical, since
+  // that's how you'd actually scan a shelf of filament for a match.
+  const sort = params.sort ?? "hue";
   const supabase = createServerClient();
 
   const [{ data: prizes }, { data: filamentsRaw, error }] = await Promise.all([
@@ -26,7 +30,9 @@ export default async function FilamentPage({
     ).map((pf) => pf.prize),
   }));
 
-  if (sort === "most_used") {
+  if (sort === "hue") {
+    filaments.sort(compareByHue);
+  } else if (sort === "most_used") {
     filaments.sort((a, b) => b.linkedPrizes.length - a.linkedPrizes.length);
   } else if (sort === "least_used") {
     filaments.sort((a, b) => a.linkedPrizes.length - b.linkedPrizes.length);

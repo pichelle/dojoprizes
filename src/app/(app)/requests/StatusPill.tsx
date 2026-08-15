@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
@@ -26,10 +26,15 @@ const STATUS_ORDER: RequestStatus[] = ["idea", "pending", "printed", "fulfilled"
 export default function StatusPill({
   status,
   catalogPrice,
+  // 3D Print Club prints are always free -- skip the price prompt on the
+  // Printed transition entirely when this is set (same rule the kanban
+  // board's drag-and-drop path applies).
+  isPrintClub = false,
   onPick,
 }: {
   status: RequestStatus;
   catalogPrice: number | null;
+  isPrintClub?: boolean;
   onPick: (next: RequestStatus, salePrice?: number | null) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -66,6 +71,23 @@ export default function StatusPill({
     };
   }, []);
 
+  // The initial menuPos guess always opens downward from the trigger. For a
+  // card near the bottom of the viewport (e.g. the last card in a kanban
+  // column) that pushes the menu off the bottom of the screen -- clipped,
+  // with no way to reach options like "Cancelled". Once the menu actually
+  // renders, check its real height and flip it to open upward if it
+  // overflows the viewport bottom.
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current || !buttonRef.current) return;
+    const menuRect = menuRef.current.getBoundingClientRect();
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    const overflowBottom = menuRect.bottom - (window.innerHeight - 8);
+    if (overflowBottom > 0) {
+      const flippedTop = buttonRect.top - menuRect.height - 4;
+      setMenuPos((prev) => (prev ? { ...prev, top: Math.max(8, flippedTop) } : prev));
+    }
+  }, [open, confirmingPrice]);
+
   function toggleOpen() {
     if (!open && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
@@ -76,6 +98,11 @@ export default function StatusPill({
 
   function pick(next: RequestStatus) {
     if (next === "printed") {
+      if (isPrintClub) {
+        setOpen(false);
+        onPick(next, 0);
+        return;
+      }
       setBreakdown(coinPriceToBreakdown(catalogPrice));
       setConfirmingPrice(true);
       return;

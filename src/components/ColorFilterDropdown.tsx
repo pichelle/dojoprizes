@@ -47,7 +47,7 @@ export default function ColorFilterDropdown({
         className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm transition-colors ${
           selected.length > 0
             ? "border-sage bg-sage/10 text-ink"
-            : "border-border-warm-strong bg-card text-ink hover:bg-page"
+            : "border-border-warm-strong bg-card text-ink hover:bg-nav"
         }`}
       >
         {label}
@@ -66,7 +66,7 @@ export default function ColorFilterDropdown({
           {options.map((o) => (
             <label
               key={o.value}
-              className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-2 py-1.5 transition-colors hover:bg-page"
+              className="flex items-center gap-2 text-sm text-ink cursor-pointer rounded-md px-2 py-1.5 transition-colors hover:bg-nav"
             >
               <input
                 type="checkbox"
