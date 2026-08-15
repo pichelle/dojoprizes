@@ -7,7 +7,7 @@ import type {
   FranchiseTag,
   Prize,
   PrizeRequest,
-  RequestSize,
+  RequestSizeOrAny,
   RequestStatus,
 } from "@/lib/types";
 import TagInput from "@/components/TagInput";
@@ -34,12 +34,13 @@ function FieldError({ show }: { show?: boolean }) {
   return <p className="mt-1 text-xs text-rust">Please fill out this field.</p>;
 }
 
-const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
+const SIZE_OPTIONS: { value: RequestSizeOrAny; label: string }[] = [
   { value: "small", label: "Small" },
   { value: "medium", label: "Medium" },
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
   { value: "true_to_size", label: "True to size" },
+  { value: "any", label: "Any size" },
 ];
 
 type RequiredField = "student_name" | "requested_by" | "size" | "color_filament_ids";
@@ -86,7 +87,7 @@ export default function RequestForm({
   // isCreating (which only "initial", i.e. editing an existing request,
   // should do).
   initialPhotoUrl?: string | null;
-  initialSize?: RequestSize | null;
+  initialSize?: RequestSizeOrAny | null;
   submitLabel?: string;
   // When set, creation skips the Idea/Request toggle and logs straight into
   // this status -- used by the "+ Add new" buttons on each kanban column.
@@ -101,6 +102,7 @@ export default function RequestForm({
     presetStatus ?? (initial?.status === "idea" ? "idea" : "pending"),
   );
   const [errors, setErrors] = useState<Partial<Record<RequiredField, boolean>>>({});
+  const [colorAny, setColorAny] = useState(initial?.color_any ?? false);
   const [state, formAction, isPending] = useActionState(action, initialState);
 
   const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? initialPhotoUrl ?? "");
@@ -150,16 +152,16 @@ export default function RequestForm({
   function validate(form: HTMLFormElement): boolean {
     const fd = new FormData(form);
     const next: Partial<Record<RequiredField, boolean>> = {};
-    // initialStatus (not the form's own initial_status field, which only
-    // exists while creating) covers both creating and editing an idea.
-    const loggingIdea = initialStatus === "idea";
 
     if (!String(fd.get("student_name") ?? "").trim()) next.student_name = true;
     if (!String(fd.get("requested_by") ?? "").trim()) next.requested_by = true;
-    if (!loggingIdea) {
-      const size = String(fd.get("size") ?? "");
-      if (!size || size === NONE_VALUE) next.size = true;
-      if (fd.getAll("color_filament_ids").length === 0) next.color_filament_ids = true;
+    // Size and color are required in every status, including Ideas -- but
+    // "Any" (size) / the Any-color checkbox both satisfy the requirement,
+    // so a deliberate "no preference" isn't blocked, only a forgotten field.
+    const size = String(fd.get("size") ?? "");
+    if (!size || size === NONE_VALUE) next.size = true;
+    if (fd.get("color_any") !== "on" && fd.getAll("color_filament_ids").length === 0) {
+      next.color_filament_ids = true;
     }
 
     setErrors(next);
@@ -319,7 +321,7 @@ export default function RequestForm({
 
           <div>
             <label className="block text-sm font-medium text-ink">
-              Size {initialStatus === "idea" ? "(optional)" : <Req />}
+              Size <Req />
             </label>
             <div className={`mt-1 ${errors.size ? "rounded-md ring-2 ring-rust" : ""}`}>
               <Select
@@ -332,32 +334,46 @@ export default function RequestForm({
               />
             </div>
             <p className="mt-1.5 text-sm text-muted">
-              Remind students that larger prints take more time.
+              Remind students that larger prints take more time. No preference? Choose &ldquo;Any size&rdquo; so it&rsquo;s clear that&rsquo;s intentional.
             </p>
             <FieldError show={errors.size} />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-ink">
-              Color requested {initialStatus === "idea" ? "(optional)" : <Req />}
+              Color requested <Req />
             </label>
-            <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
-              <MultiSelect
-                name="color_filament_ids"
-                initialValues={initialColorFilamentIds}
-                placeholder="Select colors..."
-                options={filaments.map((f) => ({
-                  value: f.id,
-                  label: f.color_name,
-                  swatch: f.swatch_hex,
-                }))}
-                onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
+            {colorAny ? (
+              <input type="hidden" name="color_any" value="on" />
+            ) : (
+              <div className={`mt-1 ${errors.color_filament_ids ? "rounded-md ring-2 ring-rust" : ""}`}>
+                <MultiSelect
+                  name="color_filament_ids"
+                  initialValues={initialColorFilamentIds}
+                  placeholder="Select colors..."
+                  options={filaments.map((f) => ({
+                    value: f.id,
+                    label: f.color_name,
+                    swatch: f.swatch_hex,
+                  }))}
+                  onChange={() => setErrors((prev) => ({ ...prev, color_filament_ids: false }))}
+                />
+              </div>
+            )}
+            <label className="mt-1.5 flex items-center gap-1.5 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={colorAny}
+                onChange={(e) => {
+                  setColorAny(e.target.checked);
+                  setErrors((prev) => ({ ...prev, color_filament_ids: false }));
+                }}
+                className="accent-sage"
               />
-            </div>
-            <p className="mt-1.5 text-sm text-muted">
-              Try to keep it at 1-2 colors.
-            </p>
-            {filaments.length === 0 && (
+              No preference (Any color)
+            </label>
+            {!colorAny && <p className="mt-1.5 text-sm text-muted">Try to keep it at 1-2 colors.</p>}
+            {!colorAny && filaments.length === 0 && (
               <p className="mt-1.5 text-sm text-muted">
                 Add colors on the Filament page to select one here.
               </p>

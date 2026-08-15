@@ -81,8 +81,11 @@ create table if not exists requests (
   requested_by text,
   prize_id uuid references prizes (id) on delete set null,
   free_text_prize text,
-  size text check (size in ('small', 'medium', 'large', 'xlarge', 'true_to_size')),
+  size text check (size in ('small', 'medium', 'large', 'xlarge', 'true_to_size', 'any')),
   color_filament_id uuid references filaments (id) on delete set null,
+  -- True when the requester has no color preference -- an explicit "Any"
+  -- choice, distinct from the color simply being unset.
+  color_any boolean not null default false,
   links text,
   date_requested date not null default current_date,
   status text not null default 'pending'

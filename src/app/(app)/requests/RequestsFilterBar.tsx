@@ -11,6 +11,7 @@ const SIZE_OPTIONS = [
   { value: "large", label: "Large" },
   { value: "xlarge", label: "X-Large" },
   { value: "true_to_size", label: "True to size" },
+  { value: "any", label: "Any size" },
 ];
 
 const STATUS_OPTIONS = [

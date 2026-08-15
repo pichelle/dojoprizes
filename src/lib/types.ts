@@ -10,6 +10,11 @@ export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "canc
 
 export type RequestSize = "small" | "medium" | "large" | "xlarge" | "true_to_size";
 
+// Requests (not prizes) additionally support an explicit "no preference"
+// choice for size and color, so the field can be intentionally left open
+// instead of just blank.
+export type RequestSizeOrAny = RequestSize | "any";
+
 export interface FranchiseTag {
   id: string;
   name: string;
@@ -42,8 +47,9 @@ export interface PrizeRequest {
   requested_by: string | null;
   prize_id: string | null;
   free_text_prize: string | null;
-  size: RequestSize | null;
+  size: RequestSizeOrAny | null;
   color_filament_id: string | null;
+  color_any: boolean;
   links: string | null;
   date_requested: string;
   status: RequestStatus;

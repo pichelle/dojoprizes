@@ -29,7 +29,7 @@ import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
 import { formatSensei } from "@/lib/formatSensei";
-import { formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
+import { formatColor, formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 
 const UNDO_WINDOW_MS = 5000;
@@ -202,6 +202,7 @@ export default function RequestsTable({
                     <StatusPill
                       status={r.status}
                       catalogPrice={catalogPrice}
+                      isPrintClub={r.is_print_club}
                       onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                     />
                   </td>
@@ -222,7 +223,9 @@ export default function RequestsTable({
                   </td>
                   <td className="text-muted px-3 py-2.5">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5">
-                    {colors.length > 0 ? (
+                    {r.color_any ? (
+                      <span className="text-xs text-muted">Any color</span>
+                    ) : colors.length > 0 ? (
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {colors.map((c) => (
                           <span key={c.id} className="flex items-center gap-1 text-xs text-muted">
@@ -284,6 +287,7 @@ export default function RequestsTable({
                   <StatusPill
                     status={active.status}
                     catalogPrice={active.prize?.coin_price ?? null}
+                    isPrintClub={active.is_print_club}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
                   <div className="flex items-center gap-4">
@@ -319,9 +323,9 @@ export default function RequestsTable({
                   <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
-                  {(active.colorFilaments ?? []).length > 0 && (
+                  {((active.colorFilaments ?? []).length > 0 || active.color_any) && (
                     <DetailRow label="Color" icon={Palette}>
-                      {(active.colorFilaments ?? []).map((c) => c.color_name).join(", ")}
+                      {formatColor(active)}
                     </DetailRow>
                   )}
                   {(active.franchiseTags ?? []).length > 0 && (
