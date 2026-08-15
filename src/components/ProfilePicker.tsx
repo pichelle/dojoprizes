@@ -171,7 +171,9 @@ export default function ProfilePicker() {
         }}
       >
         <h1 className="font-serif text-2xl font-bold text-ink mb-1">Who&apos;s logging in?</h1>
-        <p className="text-sm text-muted mb-8">Pick a profile to continue</p>
+        <p className="text-sm text-muted mb-8">
+          Pick a profile to continue -- helps us track activity like new entries and edits.
+        </p>
 
         <div className="flex gap-5 justify-center items-start flex-wrap">
           {profiles.map((profile) => (
