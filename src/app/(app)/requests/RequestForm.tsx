@@ -351,7 +351,7 @@ export default function RequestForm({
               />
             </div>
             <p className="mt-1.5 text-sm text-muted">
-              Remind students that larger prints take more time. No preference? Choose &ldquo;Any size&rdquo; so it&rsquo;s clear that&rsquo;s intentional.
+              Remind students that larger prints take more time.
             </p>
             <FieldError show={errors.size} />
           </div>
@@ -381,8 +381,7 @@ export default function RequestForm({
               />
             </div>
             <p className="mt-1.5 text-sm text-muted">
-              Pick &ldquo;Any color&rdquo; if there&rsquo;s no preference -- add a specific color too if
-              there&rsquo;s one you&rsquo;d lean toward if possible.
+              Try to keep it at 1-2 colors.
             </p>
             {filaments.length === 0 && (
               <p className="mt-1.5 text-sm text-muted">

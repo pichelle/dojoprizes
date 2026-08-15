@@ -16,7 +16,13 @@
   --color-nav-hover: #f4efe0;
 
   /* Status dots -- used across prize status and request status */
-  --color-sage: #7c8a5e;
+  /* --color-sage now holds the app's blush-pink accent (form focus rings,
+     checkboxes, chip hovers, etc.) -- name kept as-is to avoid touching
+     every Tailwind class consumer (bg-sage, ring-sage, accent-sage, ...),
+     which pick this value up automatically via the @theme mapping below. */
+  --color-sage: #b8467a;
+  --color-sage-hover: #8f335c;
+  --color-sage-tint: #fae5ee;
   --color-amber: #ba7517;
   --color-rust: #b54b3a;
   --color-slate: #7a8699;
@@ -26,9 +32,9 @@
   /* Dedicated color for "open external link" text/icons (MakerWorld,
      Tinkercad, etc.) so it reads consistently as a link everywhere it
      appears, instead of borrowing whatever status color happened to be
-     nearby (sage in one place, rust in another). */
-  --color-link: #3d6fa5;
-  --color-link-hover: #2c5680;
+     nearby. Now matches the pink accent per design update. */
+  --color-link: #b8467a;
+  --color-link-hover: #8f335c;
 
   /* Pastel accent ramps -- pending/printed/fulfilled/cancelled + print club */
   --color-pending-bg: #fbf4dc;
@@ -61,6 +67,8 @@
   --color-clay: var(--color-clay);
   --color-tape: var(--color-tape);
   --color-sage: var(--color-sage);
+  --color-sage-hover: var(--color-sage-hover);
+  --color-sage-tint: var(--color-sage-tint);
   --color-amber: var(--color-amber);
   --color-rust: var(--color-rust);
   --color-slate: var(--color-slate);
@@ -194,7 +202,7 @@ textarea:hover {
 
 .chip-hover:hover {
   background: color-mix(in srgb, var(--color-sage) 16%, transparent);
-  color: #4c5638;
+  color: #7a2d4e;
 }
 
 /* Thin scrollbar for scrollable panels (filter lists, etc.) instead
