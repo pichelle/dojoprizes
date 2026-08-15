@@ -3,15 +3,18 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import type { Prize } from "@/lib/types";
-import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { coinPriceToBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
 import { burstConfetti } from "@/lib/confetti";
 import BuyerNameModal from "@/components/BuyerNameModal";
 import ImageWithFallback from "@/components/ImageWithFallback";
 
-const STATUS_DOT: Record<Prize["status"], string> = {
-  in_stock: "bg-sage",
-  print_on_request: "bg-slate",
+// In-stock uses the same lighter green as the Fulfilled status pill's dot
+// (var(--color-fulfilled-dot)) rather than the darker sage used elsewhere,
+// so it's applied inline below instead of via a Tailwind bg- class.
+const STATUS_DOT_COLOR: Record<Prize["status"], string> = {
+  in_stock: "var(--color-fulfilled-dot)",
+  print_on_request: "var(--color-slate)",
 };
 
 const SIZE_LABELS: Record<string, string> = {
@@ -20,6 +23,13 @@ const SIZE_LABELS: Record<string, string> = {
   large: "Large",
   xlarge: "X-Large",
   true_to_size: "True to size",
+};
+
+// Obsidian/Gold have dedicated coin icons; Silver has none yet, so it stays
+// as plain text in the breakdown below.
+const COIN_ICONS: Record<"obsidian" | "gold", string> = {
+  obsidian: "/icons/coin-obsidian.png",
+  gold: "/icons/coin-gold.png",
 };
 
 function formatDate(iso: string) {
@@ -45,7 +55,8 @@ export default function PrizeCard({
   // animation -- optional so PrizeCard doesn't require it everywhere.
   staggerDelay?: string;
 }) {
-  const priceTag = formatCoinPriceBreakdown(prize.coin_price);
+  const coinBreakdown = coinPriceToBreakdown(prize.coin_price);
+  const hasPrice = coinBreakdown.obsidian > 0 || coinBreakdown.gold > 0 || coinBreakdown.silver > 0;
   const [showBuyerModal, setShowBuyerModal] = useState(false);
   const soldButtonRef = useRef<HTMLButtonElement>(null);
   const isPrintOnRequest = prize.stock_count === 0;
@@ -64,24 +75,29 @@ export default function PrizeCard({
         staggerDelay ? "stagger-in" : ""
       }`}
     >
-      <div className="h-44 bg-page flex items-center justify-center">
-        {prize.photo_url ? (
-          <ImageWithFallback
-            src={prize.photo_url}
-            alt={prize.name}
-            className="h-full w-full object-cover"
-            fallback={<span className="text-4xl">🎁</span>}
-          />
-        ) : (
-          <span className="text-4xl">🎁</span>
-        )}
+      <div className="h-44 bg-card pt-2.5 px-2.5">
+        <div className="h-full w-full rounded-t-[10px] bg-page flex items-center justify-center overflow-hidden">
+          {prize.photo_url ? (
+            <ImageWithFallback
+              src={prize.photo_url}
+              alt={prize.name}
+              className="h-full w-full object-cover"
+              fallback={<span className="text-4xl">🎁</span>}
+            />
+          ) : (
+            <span className="text-4xl">🎁</span>
+          )}
+        </div>
       </div>
-      <div className="p-3.5 flex-1 flex flex-col gap-1.5">
+      <div className="pt-2 px-3.5 pb-3.5 flex-1 flex flex-col gap-1.5">
         <span className="font-serif font-medium text-base text-ink truncate">{prize.name}</span>
 
         <div className="text-xs text-muted flex items-center justify-between gap-2">
           <span className="flex items-center gap-1.5 shrink-0">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${STATUS_DOT[prize.status]}`} />
+            <span
+              className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ background: STATUS_DOT_COLOR[prize.status] }}
+            />
             {prize.status === "in_stock" ? `In stock: ${prize.stock_count}` : "Print-on-request"}
           </span>
           {dateLabel && (
@@ -101,8 +117,24 @@ export default function PrizeCard({
         </div>
 
         <div className="mt-auto pt-2.5 border-t border-border-warm flex items-center justify-between gap-2">
-          {priceTag ? (
-            <span className="text-sm font-medium text-sage">{priceTag}</span>
+          {hasPrice ? (
+            <span className="flex items-center gap-2.5">
+              {coinBreakdown.obsidian > 0 && (
+                <span className="flex items-center gap-1">
+                  <img src={COIN_ICONS.obsidian} alt="Obsidian" className="w-[26px] h-[26px] object-contain" />
+                  <span className="text-[17px] font-medium text-ink">{coinBreakdown.obsidian}</span>
+                </span>
+              )}
+              {coinBreakdown.gold > 0 && (
+                <span className="flex items-center gap-1">
+                  <img src={COIN_ICONS.gold} alt="Gold" className="w-[26px] h-[26px] object-contain" />
+                  <span className="text-[17px] font-medium text-ink">{coinBreakdown.gold}</span>
+                </span>
+              )}
+              {coinBreakdown.silver > 0 && (
+                <span className="text-[17px] font-medium text-ink">{coinBreakdown.silver} Silver</span>
+              )}
+            </span>
           ) : (
             <span className="text-xs text-muted">No price set</span>
           )}
