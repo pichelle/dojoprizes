@@ -3,7 +3,7 @@
 // only inside RequestsKanban so the table view can reuse the exact same
 // "X days ago" / date formatting without duplicating logic that later
 // drifts out of sync between the two views.
-import type { PrizeRequest, RequestSizeOrAny } from "@/lib/types";
+import type { PrizeRequest, RequestSizeOrAny, RequestStatus } from "@/lib/types";
 
 // Matches the labels already used in the size dropdown/filter options --
 // keeps "X-Large" and "True to size" consistent wherever a size shows up,
@@ -41,12 +41,16 @@ export function daysAgo(iso: string) {
 }
 
 // "Requested 5 days ago" -- more actionable at a glance than a raw date.
-export function formatRequestedAgo(iso: string) {
+// Ideas aren't requests yet -- just suggestions someone jotted down -- so
+// they read as "Added" instead, which avoids implying the same
+// waiting-on-us urgency a real request has.
+export function formatRequestedAgo(iso: string, status?: RequestStatus) {
+  const verb = status === "idea" ? "Added" : "Requested";
   const age = daysAgo(iso);
-  if (age === null) return `Requested ${iso}`;
-  if (age === 0) return "Requested today";
-  if (age === 1) return "Requested 1 day ago";
-  return `Requested ${age} days ago`;
+  if (age === null) return `${verb} ${iso}`;
+  if (age === 0) return `${verb} today`;
+  if (age === 1) return `${verb} 1 day ago`;
+  return `${verb} ${age} days ago`;
 }
 
 export function formatCalendarDate(iso: string) {

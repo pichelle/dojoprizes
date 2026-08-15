@@ -2,7 +2,7 @@
 // Spawns a handful of absolutely-positioned pieces at the given origin and
 // lets a CSS animation carry them outward before removing them from the DOM.
 
-const COLORS = ["#b8467a", "#ba7517", "#b54b3a", "#c1673e", "#aba396"];
+const COLORS = ["#c247ad", "#ba7517", "#b54b3a", "#c1673e", "#aba396"];
 
 export function burstConfetti(origin: HTMLElement) {
   if (typeof window === "undefined") return;

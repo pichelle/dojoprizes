@@ -104,12 +104,16 @@ function daysAgo(iso: string) {
 }
 
 // "Requested 5 days ago" -- more actionable at a glance than a raw date.
-function formatRequestedAgo(iso: string) {
+// Ideas aren't requests yet -- just suggestions someone jotted down -- so
+// they read as "Added" instead, which avoids implying the same
+// waiting-on-us urgency a real request has.
+function formatRequestedAgo(iso: string, status?: RequestStatus) {
+  const verb = status === "idea" ? "Added" : "Requested";
   const age = daysAgo(iso);
-  if (age === null) return `Requested ${iso}`;
-  if (age === 0) return "Requested today";
-  if (age === 1) return "Requested 1 day ago";
-  return `Requested ${age} days ago`;
+  if (age === null) return `${verb} ${iso}`;
+  if (age === 0) return `${verb} today`;
+  if (age === 1) return `${verb} 1 day ago`;
+  return `${verb} ${age} days ago`;
 }
 
 function formatCalendarDate(iso: string) {
@@ -591,7 +595,7 @@ export default function RequestsKanban({
                         <span
                           className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
                         >
-                          {formatRequestedAgo(r.date_requested)}
+                          {formatRequestedAgo(r.date_requested, r.status)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">

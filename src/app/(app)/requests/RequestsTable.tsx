@@ -215,7 +215,9 @@ export default function RequestsTable({
                   <td className="sticky left-0 z-10 bg-card group-hover:bg-nav-hover font-semibold text-ink px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)] transition-colors">
                     {printTitle(r)}
                   </td>
-                  <td className="text-muted px-3 py-2.5 whitespace-nowrap">{formatRequestedAgo(r.date_requested).replace("Requested ", "")}</td>
+                  <td className="text-muted px-3 py-2.5 whitespace-nowrap">
+                    {formatRequestedAgo(r.date_requested, r.status).replace(/^(Requested|Added) /, "")}
+                  </td>
                   <td className="text-muted px-3 py-2.5">{r.status === "idea" ? "—" : r.student_name}</td>
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <StatusPill
