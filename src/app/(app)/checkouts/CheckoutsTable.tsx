@@ -2,14 +2,31 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Coins, ExternalLink, Palette, Ruler, Tags, User, type LucideIcon } from "lucide-react";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
+import { formatSize } from "@/lib/requestFormatting";
 import ActionButton from "@/components/ActionButton";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { staggerDelay } from "@/lib/stagger";
 import SidePeek from "@/components/SidePeek";
 import Tooltip from "@/components/Tooltip";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
+
+// Same row layout as the Requests side peek's DetailRow (icon + label +
+// value) -- duplicated locally rather than imported since RequestsKanban
+// doesn't export it, matching how RequestsTable already keeps its own
+// isolated copy instead of reaching into the board component.
+function DetailRow({ label, icon: Icon, children }: { label: string; icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <div className="flex items-start gap-2 py-2.5 border-b border-border-warm/50 last:border-b-0 text-left">
+      <span className="flex items-center gap-1.5 text-muted w-32 shrink-0 pt-px">
+        <Icon size={13} className="shrink-0" aria-hidden="true" />
+        {label}
+      </span>
+      <span className="text-ink leading-relaxed">{children}</span>
+    </div>
+  );
+}
 
 export type MergedCheckoutRow = {
   id: string;
@@ -222,8 +239,8 @@ export default function CheckoutsTable({
             <p className="text-xs text-muted mb-2">Top sizes</p>
             {trending.sizes.length === 0 && <p className="text-xs text-muted">Not enough data yet.</p>}
             {trending.sizes.map(([name, count]) => (
-              <div key={name} className="flex items-center justify-between text-sm py-0.5 capitalize">
-                <span className="text-ink">{name}</span>
+              <div key={name} className="flex items-center justify-between text-sm py-0.5">
+                <span className="text-ink">{formatSize(name)}</span>
                 <span className="text-muted">{count}</span>
               </div>
             ))}
@@ -291,7 +308,7 @@ export default function CheckoutsTable({
                   <td className="px-3 py-2.5 text-muted whitespace-nowrap">{formatShortDate(r.date)}</td>
                   <td className="px-3 py-2.5 font-medium text-ink">{r.itemName}</td>
                   <td className="px-3 py-2.5 text-muted">{r.who ?? "—"}</td>
-                  <td className="px-3 py-2.5 text-muted capitalize">{r.size ?? "—"}</td>
+                  <td className="px-3 py-2.5 text-muted">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5 text-muted">
                     {r.colors.map((c) => c.color_name).join(", ") || "—"}
                   </td>
@@ -323,8 +340,6 @@ export default function CheckoutsTable({
       <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)} maxWidth="max-w-md">
         {active && (
           <>
-            <h2 className="font-serif text-xl text-ink pr-8">{active.itemName}</h2>
-
             {active.photoUrl && (
               <ImageWithFallback
                 src={active.photoUrl}
@@ -332,69 +347,57 @@ export default function CheckoutsTable({
               />
             )}
 
-            <div className="space-y-2 text-sm">
-              <span
-                className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
-                style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
-              >
-                {SOURCE_META[active.source].label}
-              </span>
-              <div className="flex justify-between border-t border-border-warm pt-2">
-                <span className="text-muted">Date</span>
-                <span className="text-ink">{formatShortDate(active.date)}</span>
-              </div>
+            <div className="flex items-center gap-2 min-w-0 pr-8">
+              <h2 className="font-serif text-xl text-ink truncate">{active.itemName}</h2>
+              {active.isPrintClub && (
+                <span className="shrink-0 flex items-center gap-1.5 ml-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/print-club.png" alt="" className="w-6 h-6 object-contain" aria-hidden="true" />
+                  <span className="text-xs font-semibold text-ink">3D Print Club</span>
+                </span>
+              )}
+            </div>
+
+            <span
+              className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
+              style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
+            >
+              {SOURCE_META[active.source].label}
+            </span>
+
+            <div className="text-sm">
+              <DetailRow label="Date" icon={Clock}>{formatShortDate(active.date)}</DetailRow>
               {active.who && (
-                <div className="flex justify-between">
-                  <span className="text-muted">{active.source === "request" ? "Requested by" : "Bought by"}</span>
-                  <span className="text-ink">{active.who}</span>
-                </div>
+                <DetailRow label={active.source === "request" ? "Requested by" : "Bought by"} icon={User}>
+                  {active.who}
+                </DetailRow>
               )}
               {active.requestedBy && (
-                <div className="flex justify-between">
-                  <span className="text-muted">Sensei</span>
-                  <span className="text-ink">{active.requestedBy}</span>
-                </div>
+                <DetailRow label="Sensei" icon={User}>{active.requestedBy}</DetailRow>
               )}
-              {(active.size || active.colors.length > 0) && (
-                <div className="flex justify-between">
-                  <span className="text-muted">Size · Color</span>
-                  <span className="text-ink capitalize">
-                    {[active.size, active.colors.map((c) => c.color_name).join(", ") || null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
-                </div>
+              {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
+              {active.colors.length > 0 && (
+                <DetailRow label="Color" icon={Palette}>
+                  {active.colors.map((c) => c.color_name).join(", ")}
+                </DetailRow>
               )}
               {active.themeTags.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-muted">Theme</span>
-                  <span className="text-ink">{active.themeTags.map((t) => t.name).join(", ")}</span>
-                </div>
+                <DetailRow label="Theme" icon={Tags}>{active.themeTags.map((t) => t.name).join(", ")}</DetailRow>
               )}
               {formatCoinPriceBreakdown(active.price) && (
-                <div className="flex justify-between">
-                  <span className="text-muted">Price</span>
-                  <span className="text-ink">{formatCoinPriceBreakdown(active.price)}</span>
-                </div>
+                <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.price)}</DetailRow>
               )}
               {active.makerworldLink && (
-                <div className="flex justify-between items-center">
-                  <span className="text-muted">MakerWorld</span>
+                <DetailRow label="Link" icon={ExternalLink}>
                   <a
                     href={active.makerworldLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-link hover:text-link-hover underline underline-offset-2"
                   >
-                    Open link ↗
+                    Open ↗
                   </a>
-                </div>
-              )}
-              {active.source === "request" && (
-                <div className="flex justify-between">
-                  <span className="text-muted">Print club</span>
-                  <span className="text-ink">{active.isPrintClub ? "Yes" : "No"}</span>
-                </div>
+                </DetailRow>
               )}
             </div>
 
