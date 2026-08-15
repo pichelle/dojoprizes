@@ -14,15 +14,17 @@
   --color-nav-hover: #f4efe0;
 
   /* Status dots -- used across prize status and request status */
-  /* --color-sage now holds the app's muted indigo accent (form focus rings,
+  /* --color-sage now holds the app's rosewood accent (form focus rings,
      checkboxes, chip hovers, etc.) -- name kept as-is to avoid touching
      every Tailwind class consumer (bg-sage, ring-sage, accent-sage, ...),
      which pick this value up automatically via the @theme mapping below.
-     Chosen over the earlier pink/orchid options to sit better alongside
-     the warm beige nav palette. */
-  --color-sage: #4a5a9a;
-  --color-sage-hover: #3b487b;
-  --color-sage-tint: #e9ebf3;
+     Deep and muted rather than pastel -- distinguishes it at a glance
+     from the light pastel status pills below, and its warm undertone
+     sits with the tan nav instead of fighting it the way cooler blues
+     and pinks did in earlier passes. */
+  --color-sage: #9c4a63;
+  --color-sage-hover: #7d3b4f;
+  --color-sage-tint: #f3e9ec;
   --color-amber: #ba7517;
   --color-rust: #b54b3a;
   --color-slate: #7a8699;
@@ -32,13 +34,13 @@
   /* Dedicated color for "open external link" text/icons (MakerWorld,
      Tinkercad, etc.) so it reads consistently as a link everywhere it
      appears, instead of borrowing whatever status color happened to be
-     nearby. Matches the accent directly this time -- unlike the pink
-     accent, the indigo base already clears 4.5:1 text contrast on its
-     own (6.5:1), so no separate deeper shade is needed for links. */
-  --color-link: #4a5a9a;
-  --color-link-hover: #3b487b;
+     nearby. Matches the accent directly -- the base already clears
+     4.5:1 text contrast on its own (5.9:1), so no separate deeper
+     shade is needed for links. */
+  --color-link: #9c4a63;
+  --color-link-hover: #7d3b4f;
 
-  /* Pastel accent ramps -- pending/printed/fulfilled/cancelled + print club */
+  /* Pastel accent ramps -- pending/printed/fulfilled/cancelled */
   --color-pending-bg: #fbf4dc;
   --color-pending-text: #7a6a12;
   --color-pending-dot: #e8c34a;
@@ -54,8 +56,6 @@
   --color-idea-bg: #f3ead9;
   --color-idea-text: #8a6a2f;
   --color-idea-dot: #d9a45c;
-  --color-print-club-bg: #e3e4f5;
-  --color-print-club-text: #4a4a8a;
 }
 
 @theme inline {
@@ -202,7 +202,7 @@ textarea:hover {
 
 .chip-hover:hover {
   background: color-mix(in srgb, var(--color-sage) 16%, transparent);
-  color: #3b487b;
+  color: #7d3b4f;
 }
 
 /* Thin scrollbar for scrollable panels (filter lists, etc.) instead

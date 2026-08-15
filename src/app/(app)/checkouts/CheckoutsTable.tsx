@@ -45,9 +45,13 @@ export type MergedCheckoutRow = {
   isPrintClub: boolean;
 };
 
+// "Request" reuses the accent tint/hover now that the standalone
+// print-club-bg/text tokens have been removed (they were only ever used
+// here) -- keeps the two source pills visually distinct without
+// introducing a color that exists nowhere else in the app.
 const SOURCE_META = {
   bin: { label: "Prize bin", bg: "var(--color-pending-bg)", text: "var(--color-pending-text)" },
-  request: { label: "Request", bg: "var(--color-print-club-bg)", text: "var(--color-print-club-text)" },
+  request: { label: "Request", bg: "var(--color-sage-tint)", text: "var(--color-sage-hover)" },
 };
 
 const SIZE_RANK: Record<string, number> = { small: 0, medium: 1, large: 2, xlarge: 3, true_to_size: 4 };
