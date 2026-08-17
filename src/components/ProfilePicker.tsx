@@ -215,6 +215,13 @@ export default function ProfilePicker() {
 
         {(mode === "add" || editingProfile) && (
           <ProfileForm
+            // Forces a fresh instance (and fresh internal state -- the
+            // name field's defaultValue, the selected color) whenever the
+            // edit target changes. Without this, clicking John's pencil
+            // then Michelle's reused the same mounted form and kept
+            // showing John's name/color, since defaultValue and useState
+            // only apply on first mount.
+            key={editingProfile?.id ?? "new"}
             editing={editingProfile}
             onDone={handleDone}
             onCancel={() => setMode("idle")}

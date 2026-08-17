@@ -640,8 +640,8 @@ export default function RequestsKanban({
                         )
                       )}
                       <div className="flex items-center justify-between gap-2 mt-3">
-                        <span className="text-[11px] font-medium text-muted min-w-0">
-                          <ProfileChip name={r.requested_by} profiles={profiles} variant="inline" />
+                        <span className="text-[11px] flex-1 min-w-0 truncate">
+                          <ProfileChip name={r.requested_by} profiles={profiles} variant="text" />
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           {(r.comments ?? []).length > 0 && (
