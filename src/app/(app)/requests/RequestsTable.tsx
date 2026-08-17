@@ -28,7 +28,8 @@ import SidePeek from "@/components/SidePeek";
 import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
-import { formatSensei } from "@/lib/formatSensei";
+import { useProfiles } from "@/components/ProfileContext";
+import ProfileChip from "@/components/ProfileChip";
 import { formatColor, formatRequestedAgo, formatRequestDateDetailed, formatSize, printTitle } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 
@@ -71,6 +72,7 @@ export default function RequestsTable({
   onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
 }) {
+  const { profiles } = useProfiles();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -340,7 +342,9 @@ export default function RequestsTable({
                   {active.status !== "idea" && (
                     <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
-                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Requested by" icon={User}>
+                    <ProfileChip name={active.requested_by} profiles={profiles} />
+                  </DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {((active.colorFilaments ?? []).length > 0 || active.color_any) && (

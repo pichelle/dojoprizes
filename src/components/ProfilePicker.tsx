@@ -22,6 +22,9 @@ function ProfileForm({
   const action = editing ? updateProfile : createProfile;
   const [state, formAction, pending] = useActionState(action, initialState);
   const [colorHex, setColorHex] = useState(editing?.color_hex ?? PROFILE_COLOR_OPTIONS[0]);
+  // Hovering a swatch previews that color on the icon above without
+  // committing it -- moving off reverts to whatever's actually selected.
+  const [previewHex, setPreviewHex] = useState<string | null>(null);
 
   useEffect(() => {
     if (state.success && state.profile) onDone(state.profile);
@@ -32,40 +35,51 @@ function ProfileForm({
   return (
     <form
       action={formAction}
-      className="mt-6 text-left bg-card border border-border-warm rounded-xl p-5"
+      className="mt-6 max-w-xs mx-auto text-left bg-card border border-border-warm rounded-xl p-5"
     >
       {editing && <input type="hidden" name="id" value={editing.id} />}
       <input type="hidden" name="color_hex" value={colorHex} />
 
-      {!editing && (
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 shrink-0 rounded-xl bg-nav border border-border-warm flex items-center justify-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/ninja.png" alt="" aria-hidden="true" className="w-8 h-8 object-contain" />
-          </div>
-          <p className="text-sm text-muted">
-            New profiles start with this ninja icon and can pick a color below.
-          </p>
+      <p className="text-center font-serif font-bold text-ink mb-4">
+        {editing ? "Edit profile" : "New profile"}
+      </p>
+
+      <div className="flex justify-center mb-4">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center transition-colors"
+          style={{ background: previewHex ?? colorHex }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={editing?.avatar_url ?? "/ninja.png"}
+            alt=""
+            aria-hidden="true"
+            className="max-w-[60%] max-h-[60%] object-contain"
+          />
         </div>
-      )}
+      </div>
 
-      <label className="block text-xs font-medium text-ink-soft mb-1">Name</label>
-      <input
-        type="text"
-        name="name"
-        placeholder="Sensei name"
-        defaultValue={editing?.name ?? ""}
-        className="w-full mb-4 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
-        autoFocus
-      />
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-sm text-ink-soft shrink-0">Sensei</span>
+        <input
+          type="text"
+          name="name"
+          placeholder="Your name"
+          defaultValue={editing?.name ?? ""}
+          className="flex-1 min-w-0 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
+          autoFocus
+        />
+      </div>
 
-      <label className="block text-xs font-medium text-ink-soft mb-2">Color</label>
+      <label className="block text-xs font-medium text-ink-soft mb-2">Choose an icon color</label>
       <div className="flex gap-2 mb-4">
         {PROFILE_COLOR_OPTIONS.map((hex) => (
           <button
             key={hex}
             type="button"
             onClick={() => setColorHex(hex)}
+            onMouseEnter={() => setPreviewHex(hex)}
+            onMouseLeave={() => setPreviewHex(null)}
             aria-label={`Use color ${hex}`}
             className="profile-swatch w-7 h-7 rounded-lg border"
             style={

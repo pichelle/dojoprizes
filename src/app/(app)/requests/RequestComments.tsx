@@ -5,8 +5,9 @@ import { MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import type { RequestComment } from "@/lib/types";
 import { addRequestComment, deleteRequestComment, updateRequestComment } from "./actions";
 import { showToast } from "@/components/ToastHost";
-import { formatSensei } from "@/lib/formatSensei";
 import { useProfiles } from "@/components/ProfileContext";
+import ProfileChip from "@/components/ProfileChip";
+import ProfileNameField from "@/components/ProfileNameField";
 
 const LAST_AUTHOR_KEY = "dojoprizes:lastCommentAuthor";
 const UNDO_WINDOW_MS = 5000;
@@ -38,6 +39,7 @@ function CommentRow({
   onSaved: (comment: RequestComment) => void;
   onDeleted: () => void;
 }) {
+  const { profiles } = useProfiles();
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(comment.body);
   const [saving, setSaving] = useState(false);
@@ -75,8 +77,10 @@ function CommentRow({
   if (editing) {
     return (
       <div>
-        <p className="text-xs">
-          <span className="font-bold text-ink">{formatSensei(comment.author)}</span>{" "}
+        <p className="text-xs flex items-center gap-1">
+          <span className="font-bold text-ink">
+            <ProfileChip name={comment.author} profiles={profiles} variant="inline" />
+          </span>
           <span className="text-muted">· {timeAgo(comment.created_at)}</span>
         </p>
         <textarea
@@ -112,8 +116,10 @@ function CommentRow({
   return (
     <div className="group flex items-start justify-between gap-2">
       <div>
-        <p className="text-xs">
-          <span className="font-bold text-ink">{formatSensei(comment.author)}</span>{" "}
+        <p className="text-xs flex items-center gap-1">
+          <span className="font-bold text-ink">
+            <ProfileChip name={comment.author} profiles={profiles} variant="inline" />
+          </span>
           <span className="text-muted">· {timeAgo(comment.created_at)}</span>
         </p>
         <p className="text-sm text-ink leading-relaxed mt-1.5">{comment.body}</p>
@@ -222,15 +228,12 @@ export default function RequestComments({
         </button>
       ) : (
         <form onSubmit={handleSubmit} className="border-t border-border-warm pt-3">
-          <label className="block text-sm font-medium text-ink" htmlFor="comment-author">
+          <label className="block text-sm font-medium text-ink mb-1" htmlFor="comment-author">
             Your name
           </label>
-          <input
-            id="comment-author"
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            className="w-36 mt-1 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong"
-          />
+          <div id="comment-author" className="w-48">
+            <ProfileNameField value={author} onChange={setAuthor} />
+          </div>
           <label className="block text-sm font-medium text-ink mt-3" htmlFor="comment-body">
             Add a comment
           </label>

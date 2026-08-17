@@ -16,6 +16,7 @@ import Select, { NONE_VALUE } from "@/components/Select";
 import ErrorNote from "@/components/ErrorNote";
 import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
+import ProfileNameField from "@/components/ProfileNameField";
 import type { RequestFormState } from "./actions";
 
 function Req() {
@@ -99,6 +100,10 @@ export default function RequestForm({
   const router = useRouter();
   const isCreating = !initial;
   const { activeProfile } = useProfiles();
+  // Auto-fills from the picked profile on this device but stays freely
+  // editable -- someone logging a request for a co-worker (or before
+  // profiles existed) can still type over it.
+  const [requestedBy, setRequestedBy] = useState(initial?.requested_by ?? activeProfile?.name ?? "");
   const [prizeId, setPrizeId] = useState(initial?.prize_id ?? initialPrizeId ?? NONE_VALUE);
   const [initialStatus, setInitialStatus] = useState<RequestStatus>(
     presetStatus ?? (initial?.status === "idea" ? "idea" : "pending"),
@@ -261,20 +266,17 @@ export default function RequestForm({
           </div>
 
           <div data-field="requested_by">
-            <label className="block text-sm font-medium text-ink">
+            <label className="block text-sm font-medium text-ink mb-1">
               Requested by (sensei) <Req />
             </label>
-            <input
-              name="requested_by"
-              placeholder="Your name"
-              // Auto-fills from the picked profile on this device, but stays
-              // a plain editable text field -- someone logging a request for
-              // a co-worker (or before profiles existed) can still overwrite it.
-              defaultValue={initial?.requested_by ?? activeProfile?.name ?? ""}
-              onChange={() => setErrors((prev) => ({ ...prev, requested_by: false }))}
-              className={`mt-1 w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
-                errors.requested_by ? "field-error" : "border-border-warm-strong"
-              }`}
+            <ProfileNameField
+              value={requestedBy}
+              onChange={(v) => {
+                setRequestedBy(v);
+                setErrors((prev) => ({ ...prev, requested_by: false }));
+              }}
+              inputName="requested_by"
+              hasError={errors.requested_by}
             />
             <FieldError show={errors.requested_by} />
           </div>
