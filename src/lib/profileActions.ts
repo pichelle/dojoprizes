@@ -12,7 +12,18 @@ export async function fetchProfiles(): Promise<Profile[]> {
     .select("*")
     .order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
-  return (data ?? []) as Profile[];
+  return sortWithOwnerFirst((data ?? []) as Profile[]);
+}
+
+// Every other profile keeps its created_at order, but Michelle's (this
+// tool's owner) always sorts first in the picker/switcher -- relying on
+// created_at alone put whichever profile happened to be inserted first,
+// which isn't necessarily her (e.g. if her row was ever recreated).
+function sortWithOwnerFirst(profiles: Profile[]): Profile[] {
+  const isOwner = (p: Profile) => p.name.trim().replace(/^sensei\s+/i, "").toLowerCase() === "michelle";
+  const owner = profiles.filter(isOwner);
+  const rest = profiles.filter((p) => !isOwner(p));
+  return [...owner, ...rest];
 }
 
 export async function createProfile(
