@@ -14,6 +14,7 @@ import TagInput from "@/components/TagInput";
 import MultiSelect from "@/components/MultiSelect";
 import Select, { NONE_VALUE } from "@/components/Select";
 import ErrorNote from "@/components/ErrorNote";
+import PhotoDropzone from "@/components/PhotoDropzone";
 import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
 import ProfileNameField from "@/components/ProfileNameField";
@@ -443,13 +444,14 @@ export default function RequestForm({
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm font-medium text-ink">
-              Photo URL
-            </label>
-            <div className="mt-1 flex items-start gap-3">
+            <label className="block text-sm font-medium text-ink">Photo</label>
+            <div className="mt-1">
+              <PhotoDropzone onUploaded={setPhotoUrl} />
+            </div>
+            <div className="mt-2 flex items-start gap-3">
               <input
                 name="photo_url"
-                placeholder="https://..."
+                placeholder="...or paste a photo URL"
                 value={photoUrl}
                 onChange={(e) => setPhotoUrl(e.target.value)}
                 className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
@@ -466,7 +468,7 @@ export default function RequestForm({
               )}
             </div>
             <p className="mt-1.5 text-sm text-muted">
-              Pulled automatically from the MakerWorld link, or paste your own photo URL.
+              Upload a photo, pull one automatically from the MakerWorld link above, or paste your own photo URL.
             </p>
           </div>
         </div>

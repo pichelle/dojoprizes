@@ -225,3 +225,18 @@ create policy "anon full access" on request_filaments for all
 drop policy if exists "anon full access" on request_comments;
 create policy "anon full access" on request_comments for all
   using (true) with check (true);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Storage -- staff-uploaded prize/request photos, so photos can be
+-- uploaded from a device instead of only linked from an external URL.
+-- Public bucket (not signed URLs), matching the rest of this app's no-auth
+-- trust model -- see supabase/migrations/021_prize_photos_storage.sql.
+-- ─────────────────────────────────────────────────────────────────────────
+insert into storage.buckets (id, name, public)
+values ('prize-photos', 'prize-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "anon full access on prize-photos" on storage.objects;
+create policy "anon full access on prize-photos" on storage.objects for all
+  using (bucket_id = 'prize-photos')
+  with check (bucket_id = 'prize-photos');

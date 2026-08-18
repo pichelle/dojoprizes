@@ -22,3 +22,10 @@ export const PROFILE_COLOR_OPTIONS = [
   "#faeaea", // cancelled (red)
   "#e0edfb", // accent tint (blue)
 ];
+
+// Supabase Storage bucket for staff-uploaded and auto-fetched prize/request
+// photos -- see supabase/migrations/021_prize_photos_storage.sql. Shared
+// between lib/uploadPhoto.ts (direct device uploads) and the
+// makerworld-preview API route (re-hosting an auto-fetched preview image),
+// so both write into the same bucket.
+export const PHOTO_BUCKET = "prize-photos";
