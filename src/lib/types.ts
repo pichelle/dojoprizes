@@ -104,6 +104,14 @@ export interface PrizeFilament {
   filament_id: string;
 }
 
+export interface Profile {
+  id: string;
+  name: string;
+  color_hex: string;
+  avatar_url: string | null;
+  created_at: string;
+}
+
 // Minimal Database type so `createClient<Database>` type-checks without
 // generating the full Supabase CLI types file.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

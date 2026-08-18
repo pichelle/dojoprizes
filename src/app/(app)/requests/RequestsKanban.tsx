@@ -39,10 +39,11 @@ import {
   breakdownToCoinPrice,
   type CoinBreakdown,
 } from "@/lib/coins";
-import { formatSensei } from "@/lib/formatSensei";
 import { formatSize, formatColor } from "@/lib/requestFormatting";
 import { staggerDelay } from "@/lib/stagger";
 import EmptyStateMascot from "@/components/EmptyStateMascot";
+import { useProfiles } from "@/components/ProfileContext";
+import ProfileChip from "@/components/ProfileChip";
 
 // "Fulfilled" isn't a visible column -- it's tracked (status still gets
 // set to "fulfilled" via the status pill, and still counts toward the
@@ -207,6 +208,7 @@ export default function RequestsKanban({
   // that over a filter side-effect would just be wrong.
   filtersActive: boolean;
 }) {
+  const { profiles } = useProfiles();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [creatingStatus, setCreatingStatus] = useState<RequestStatus | null>(null);
@@ -638,8 +640,8 @@ export default function RequestsKanban({
                         )
                       )}
                       <div className="flex items-center justify-between gap-2 mt-3">
-                        <span className="text-[11px] font-medium text-muted truncate">
-                          {formatSensei(r.requested_by)}
+                        <span className="text-[11px] flex-1 min-w-0 truncate">
+                          <ProfileChip name={r.requested_by} profiles={profiles} variant="compact" />
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           {(r.comments ?? []).length > 0 && (
@@ -773,7 +775,9 @@ export default function RequestsKanban({
                   {active.status !== "idea" && (
                     <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
-                  <DetailRow label="Requested by" icon={User}>{formatSensei(active.requested_by)}</DetailRow>
+                  <DetailRow label="Requested by" icon={User}>
+                    <ProfileChip name={active.requested_by} profiles={profiles} />
+                  </DetailRow>
                   <DetailRow label="Request date" icon={Clock}>{formatRequestDateDetailed(active.date_requested)}</DetailRow>
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {((active.colorFilaments ?? []).length > 0 || active.color_any) && (

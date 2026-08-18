@@ -202,6 +202,20 @@ textarea:hover {
   color: #0055b1;
 }
 
+/* Profile color swatches (picker's "add/edit profile" form) -- each swatch
+   sets --swatch-color inline to its own hex, so `filter` on hover darkens
+   every swatch relative to its own color instead of one shared hover tint. */
+.profile-swatch {
+  background: var(--swatch-color);
+  transition: transform 0.1s ease-out, filter 0.1s ease-out, border-color 0.1s ease-out;
+}
+
+.profile-swatch:hover {
+  filter: brightness(0.92) saturate(1.15);
+  transform: scale(1.08);
+  border-color: var(--color-border-hover);
+}
+
 /* Thin scrollbar for scrollable panels (filter lists, etc.) instead
    of the system default. */
 .scroll-warm {
