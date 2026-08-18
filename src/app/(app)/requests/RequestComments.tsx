@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Pencil, Plus, SmilePlus, Trash2 } from "lucide-react";
+import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import type { CommentReaction, RequestComment } from "@/lib/types";
 import {
   addRequestComment,
@@ -13,16 +14,36 @@ import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
 import ProfileChip from "@/components/ProfileChip";
 import ProfileNameField from "@/components/ProfileNameField";
+import Tooltip from "@/components/Tooltip";
 
 const LAST_AUTHOR_KEY = "dojoprizes:lastCommentAuthor";
 const UNDO_WINDOW_MS = 5000;
 
 // Fast path for the common cases -- clicking one of these skips the full
-// picker entirely. The picker (opened via the smiley-plus button) covers
-// everything else: it's just a text field, since there's no bundled emoji
-// picker library here -- staff can type one or paste one in (or, on Mac,
-// trigger the OS picker with Cmd+Ctrl+Space while it's focused).
+// picker entirely for the three most-used reactions. The full picker
+// (opened via the smiley-plus "More reactions" button) covers everything
+// else -- a searchable, categorized emoji grid via emoji-picker-react.
 const QUICK_REACTIONS = ["👍", "❤️", "🎉"];
+
+// Maps the app's design-system colors onto emoji-picker-react's CSS custom
+// properties so the popover matches the rest of the app instead of the
+// library's stock light theme.
+const EMOJI_PICKER_THEME_VARS = {
+  "--epr-bg-color": "var(--color-card)",
+  "--epr-category-label-bg-color": "var(--color-card)",
+  "--epr-text-color": "var(--color-ink)",
+  "--epr-category-label-text-color": "var(--color-muted)",
+  "--epr-picker-border-color": "var(--color-border-warm-strong)",
+  "--epr-search-border-color": "var(--color-border-warm-strong)",
+  "--epr-search-input-bg-color": "var(--color-nav)",
+  "--epr-search-input-bg-color-active": "var(--color-nav)",
+  "--epr-search-input-text-color": "var(--color-ink)",
+  "--epr-search-input-placeholder-color": "var(--color-muted)",
+  "--epr-hover-bg-color": "var(--color-nav-hover)",
+  "--epr-focus-bg-color": "var(--color-sage-tint)",
+  "--epr-highlight-color": "var(--color-sage)",
+  "--epr-category-icon-active-color": "var(--color-sage)",
+} as React.CSSProperties;
 
 type ReactionGroup = { emoji: string; count: number; actors: string[]; reactedByMe: boolean };
 
@@ -58,49 +79,44 @@ const PRIMARY_BUTTON =
   "rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 disabled:opacity-60";
 const PLAIN_CANCEL = "text-sm text-muted hover:text-ink";
 
-// No bundled emoji picker library -- just a text field staff can type or
-// paste an emoji into (Enter to react). On Mac, focusing it and pressing
-// Cmd+Ctrl+Space opens the OS emoji picker, which is the fastest path in
-// practice for anyone past the three quick-react options.
+// Full searchable, categorized emoji picker (emoji-picker-react) for
+// anything past the three quick-react options, styled to match the app via
+// EMOJI_PICKER_THEME_VARS above.
 function EmojiPickerPopover({ onPick, onClose }: { onPick: (emoji: string) => void; onClose: () => void }) {
-  const [value, setValue] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) onClose();
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [onClose]);
-
-  function submit() {
-    const trimmed = value.trim();
-    if (trimmed) onPick(trimmed);
-    onClose();
-  }
 
   return (
     <div
       ref={ref}
-      className="absolute z-20 top-full right-0 mt-1 w-48 bg-card border border-border-warm-strong rounded-md shadow-md p-2"
+      className="absolute z-20 top-full right-0 mt-1 rounded-md border border-border-warm-strong shadow-md overflow-hidden"
+      style={EMOJI_PICKER_THEME_VARS}
     >
-      <input
-        autoFocus
-        type="text"
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            submit();
-          }
-          if (e.key === "Escape") onClose();
+      <EmojiPicker
+        theme={Theme.LIGHT}
+        onEmojiClick={(data: EmojiClickData) => {
+          onPick(data.emoji);
+          onClose();
         }}
-        placeholder="Type or paste an emoji"
-        className="w-full rounded-md border border-border-warm-strong px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+        autoFocusSearch
+        width={300}
+        height={360}
+        previewConfig={{ showPreview: false }}
       />
-      <p className="mt-1 text-[10px] text-muted">Enter to react. On Mac, ⌃⌘Space opens your emoji picker.</p>
     </div>
   );
 }
@@ -238,68 +254,77 @@ function CommentRow({
         {groups.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {groups.map((g) => (
-              <button
-                key={g.emoji}
-                type="button"
-                onClick={() => handleReact(g.emoji)}
-                title={`${g.actors.join(", ")} reacted ${g.emoji}`}
-                className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border ${
-                  g.reactedByMe
-                    ? "bg-sage-tint border-sage text-ink"
-                    : "bg-nav border-border-warm-strong text-ink-soft hover:bg-nav-hover"
-                }`}
-              >
-                <span>{g.emoji}</span>
-                <span className="font-medium">{g.count}</span>
-              </button>
+              <Tooltip key={g.emoji} label={g.actors.join(", ")}>
+                <button
+                  type="button"
+                  onClick={() => handleReact(g.emoji)}
+                  aria-label={`${g.actors.join(", ")} reacted ${g.emoji}`}
+                  className={`flex items-center gap-1 text-xs rounded-full px-2 py-0.5 border ${
+                    g.reactedByMe
+                      ? "bg-sage-tint border-sage text-ink"
+                      : "bg-nav border-border-warm-strong text-ink-soft hover:bg-nav-hover"
+                  }`}
+                >
+                  <span>{g.emoji}</span>
+                  <span className="font-medium">{g.count}</span>
+                </button>
+              </Tooltip>
             ))}
           </div>
         )}
       </div>
       <div className="flex items-center gap-2 shrink-0 pt-px opacity-0 group-hover:opacity-100 focus-within:opacity-100">
         {QUICK_REACTIONS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={() => handleReact(emoji)}
-            aria-label={`React ${emoji}`}
-            className="text-sm hover:scale-110 transition-transform"
-          >
-            {emoji}
-          </button>
+          <Tooltip key={emoji} label={`React ${emoji}`} align="right">
+            <button
+              type="button"
+              onClick={() => handleReact(emoji)}
+              aria-label={`React ${emoji}`}
+              className="text-sm hover:scale-110 transition-transform"
+            >
+              {emoji}
+            </button>
+          </Tooltip>
         ))}
-        <div className="relative">
+        <Tooltip label="More reactions" align="right">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setPickerOpen((o) => !o)}
+              aria-label="More reactions"
+              className="text-muted hover:text-ink"
+            >
+              <SmilePlus size={13} aria-hidden="true" />
+            </button>
+            {pickerOpen && (
+              <EmojiPickerPopover
+                onPick={(emoji) => handleReact(emoji)}
+                onClose={() => setPickerOpen(false)}
+              />
+            )}
+          </div>
+        </Tooltip>
+        <div className="w-px h-4 bg-border-warm-strong" aria-hidden="true" />
+        <Tooltip label="Edit comment" align="right">
           <button
             type="button"
-            onClick={() => setPickerOpen((o) => !o)}
-            aria-label="Add a reaction"
+            onClick={() => setEditing(true)}
+            aria-label="Edit comment"
             className="text-muted hover:text-ink"
           >
-            <SmilePlus size={13} aria-hidden="true" />
+            <Pencil size={13} aria-hidden="true" />
           </button>
-          {pickerOpen && (
-            <EmojiPickerPopover
-              onPick={(emoji) => handleReact(emoji)}
-              onClose={() => setPickerOpen(false)}
-            />
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          aria-label="Edit comment"
-          className="text-muted hover:text-ink"
-        >
-          <Pencil size={13} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          aria-label="Delete comment"
-          className="text-muted hover:text-rust"
-        >
-          <Trash2 size={13} aria-hidden="true" />
-        </button>
+        </Tooltip>
+        <Tooltip label="Delete comment" align="right">
+          <button
+            type="button"
+            onClick={handleDelete}
+            aria-label="Delete comment"
+            className="text-muted hover:text-rust"
+          >
+            <Trash2 size={13} aria-hidden="true" />
+          </button>
+        </Tooltip>
       </div>
     </div>
   );
