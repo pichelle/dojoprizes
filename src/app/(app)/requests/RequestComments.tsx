@@ -242,15 +242,15 @@ function CommentRow({
   const groups = groupReactions(reactions, myName);
 
   return (
-    <div className="group relative flex items-start justify-between gap-2">
-      <div className="min-w-0">
+    <div className="group relative">
+      <div>
         <p className="text-xs flex items-center gap-1">
           <span className="font-bold text-ink">
             <ProfileChip name={comment.author} profiles={profiles} variant="pill" />
           </span>
           <span className="text-muted">· {timeAgo(comment.created_at)}</span>
         </p>
-        <p className="text-sm text-ink leading-relaxed mt-1.5">{comment.body}</p>
+        <p className="text-sm text-ink leading-relaxed mt-1.5 pr-2">{comment.body}</p>
         {groups.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             {groups.map((g) => (
@@ -273,7 +273,13 @@ function CommentRow({
           </div>
         )}
       </div>
-      <div className="flex items-center gap-2 shrink-0 pt-px opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+      {/* Floats above the comment instead of sitting inline -- an inline
+          toolbar (even hidden via opacity-0) still reserves its own width
+          in the flex row, which was quietly narrowing the space left for
+          the comment body and making it wrap earlier than it needed to. */}
+      <div
+        className="absolute -top-3 right-0 z-10 flex items-center gap-2 bg-card border border-border-warm-strong rounded-md shadow-sm px-1.5 py-1 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity"
+      >
         {QUICK_REACTIONS.map((emoji) => (
           <Tooltip key={emoji} label={`React ${emoji}`} align="right">
             <button
