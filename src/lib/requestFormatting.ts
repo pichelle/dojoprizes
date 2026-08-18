@@ -27,6 +27,7 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
   pending: "Queue",
   printed: "Pickup",
   fulfilled: "Fulfilled",
+  in_prize_bin: "Prize Bin",
   cancelled: "Cancelled",
 };
 
