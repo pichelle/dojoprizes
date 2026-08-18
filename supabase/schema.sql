@@ -142,6 +142,20 @@ create table if not exists request_comments (
 
 create index if not exists request_comments_request_id_idx on request_comments (request_id);
 
+-- Emoji reactions on comments -- see
+-- supabase/migrations/022_comment_reactions.sql for the full rationale.
+-- The unique constraint is what makes a click "toggle".
+create table if not exists comment_reactions (
+  id uuid primary key default gen_random_uuid(),
+  comment_id uuid not null references request_comments (id) on delete cascade,
+  emoji text not null,
+  actor text,
+  created_at timestamptz not null default now(),
+  unique (comment_id, emoji, actor)
+);
+
+create index if not exists comment_reactions_comment_id_idx on comment_reactions (comment_id);
+
 -- A timestamped, attributed record of what happened to a request/idea --
 -- creation, status moves, and edits to the fields that matter (prize,
 -- size, color, price, etc). System-generated, distinct from
@@ -211,6 +225,7 @@ alter table request_franchise_tags enable row level security;
 alter table request_filaments enable row level security;
 alter table request_comments enable row level security;
 alter table request_activity enable row level security;
+alter table comment_reactions enable row level security;
 
 drop policy if exists "anon full access" on prizes;
 create policy "anon full access" on prizes for all
@@ -254,6 +269,10 @@ create policy "anon full access" on request_comments for all
 
 drop policy if exists "anon full access" on request_activity;
 create policy "anon full access" on request_activity for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on comment_reactions;
+create policy "anon full access" on comment_reactions for all
   using (true) with check (true);
 
 -- ─────────────────────────────────────────────────────────────────────────

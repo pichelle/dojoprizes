@@ -506,3 +506,42 @@ export async function deleteRequestComment(commentId: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/requests");
 }
+
+// Reactions: a click toggles -- if this exact actor already reacted with
+// this exact emoji on this comment, the row is removed instead of another
+// one being inserted. Returns the reaction row on react, null on unreact,
+// so the caller can update its optimistic state without a full refetch.
+export async function toggleCommentReaction(
+  commentId: string,
+  emoji: string,
+  actor: string | null,
+) {
+  const supabase = createServerClient();
+  const normalizedActor = actor?.trim() || null;
+
+  let existingQuery = supabase
+    .from("comment_reactions")
+    .select("id")
+    .eq("comment_id", commentId)
+    .eq("emoji", emoji);
+  existingQuery = normalizedActor
+    ? existingQuery.eq("actor", normalizedActor)
+    : existingQuery.is("actor", null);
+  const { data: existing } = await existingQuery.maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("comment_reactions").delete().eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    revalidatePath("/requests");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("comment_reactions")
+    .insert({ comment_id: commentId, emoji, actor: normalizedActor })
+    .select("id, comment_id, emoji, actor, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/requests");
+  return data;
+}
