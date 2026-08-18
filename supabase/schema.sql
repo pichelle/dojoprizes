@@ -88,8 +88,12 @@ create table if not exists requests (
   color_any boolean not null default false,
   links text,
   date_requested date not null default current_date,
+  -- "in_prize_bin" is where an idea's queue item ends up once it's
+  -- printed -- there's no student waiting on an idea, so it skips
+  -- Printed/Fulfilled entirely and becomes catalog stock instead. Kept
+  -- distinct from "fulfilled" so it doesn't skew the Avg. turnaround stat.
   status text not null default 'pending'
-    check (status in ('idea', 'pending', 'printed', 'fulfilled', 'cancelled')),
+    check (status in ('idea', 'pending', 'printed', 'fulfilled', 'cancelled', 'in_prize_bin')),
   is_print_club boolean not null default false,
   notes text,
   photo_url text,
@@ -98,6 +102,11 @@ create table if not exists requests (
   -- reaches that point in its lifecycle.
   pending_at timestamptz,
   fulfilled_at timestamptz,
+  -- Set once at creation, never changed afterward -- lets the app tell an
+  -- idea-origin row apart from a real request once both look the same
+  -- (e.g. both sitting in "pending"), so it knows whether the next step
+  -- is Printed/Fulfilled or straight to the Prize Bin.
+  originated_as_idea boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -246,3 +255,18 @@ create policy "anon full access" on request_comments for all
 drop policy if exists "anon full access" on request_activity;
 create policy "anon full access" on request_activity for all
   using (true) with check (true);
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- Storage -- staff-uploaded prize/request photos, so photos can be
+-- uploaded from a device instead of only linked from an external URL.
+-- Public bucket (not signed URLs), matching the rest of this app's no-auth
+-- trust model -- see supabase/migrations/021_prize_photos_storage.sql.
+-- ─────────────────────────────────────────────────────────────────────────
+insert into storage.buckets (id, name, public)
+values ('prize-photos', 'prize-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "anon full access on prize-photos" on storage.objects;
+create policy "anon full access on prize-photos" on storage.objects for all
+  using (bucket_id = 'prize-photos')
+  with check (bucket_id = 'prize-photos');

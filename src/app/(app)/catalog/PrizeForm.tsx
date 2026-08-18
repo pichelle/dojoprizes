@@ -6,6 +6,7 @@ import { coinPriceToBreakdown } from "@/lib/coins";
 import TagInput from "@/components/TagInput";
 import Select, { NONE_VALUE } from "@/components/Select";
 import ErrorNote from "@/components/ErrorNote";
+import PhotoDropzone from "@/components/PhotoDropzone";
 import { showToast } from "@/components/ToastHost";
 import type { PrizeFormState } from "./actions";
 
@@ -152,13 +153,14 @@ export default function PrizeForm({
         </div>
 
         <div className="sm:col-span-2 lg:col-span-3">
-          <label className="block text-sm font-medium text-ink">
-            Photo URL
-          </label>
-          <div className="mt-1 flex items-start gap-3">
+          <label className="block text-sm font-medium text-ink">Photo</label>
+          <div className="mt-1">
+            <PhotoDropzone onUploaded={setPhotoUrl} />
+          </div>
+          <div className="mt-2 flex items-start gap-3">
             <input
               name="photo_url"
-              placeholder="https://..."
+              placeholder="...or paste a photo URL"
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
               className="flex-1 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"

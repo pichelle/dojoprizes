@@ -27,6 +27,7 @@ export const STATUS_LABELS: Record<RequestStatus, string> = {
   pending: "Queue",
   printed: "Pickup",
   fulfilled: "Fulfilled",
+  in_prize_bin: "Prize Bin",
   cancelled: "Cancelled",
 };
 
@@ -82,9 +83,11 @@ export function formatRequestDateDetailed(iso: string) {
 }
 
 // Ideas don't have a prize/free-text title -- the "idea title" field
-// captured at creation is stored in student_name instead, so use that
-// as the display title for idea-status cards/rows.
+// captured at creation is stored in student_name instead, so use that as
+// the display title. Checked via originated_as_idea (not status === "idea")
+// since an idea keeps using its title through Queue and Prize Bin too --
+// it never gets a prize_id/free_text_prize filled in along the way.
 export function printTitle(r: PrizeRequest) {
-  if (r.status === "idea") return r.student_name || "Untitled idea";
+  if (r.originated_as_idea) return r.student_name || "Untitled idea";
   return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }

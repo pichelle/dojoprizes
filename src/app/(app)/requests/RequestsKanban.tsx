@@ -67,6 +67,9 @@ const EMPTY_COLUMN_COPY: Record<RequestStatus, { pose: "happy" | "sparkle" | "hu
   pending: { pose: "happy", message: "all caught up, go take a break sensei." },
   printed: { pose: "happy", message: "shelf's clear, everyone's got their prize." },
   fulfilled: { pose: "happy", message: "all caught up." },
+  // Not a visible column (same as fulfilled) -- entry only exists to
+  // satisfy Record<RequestStatus, ...>.
+  in_prize_bin: { pose: "happy", message: "all caught up." },
   cancelled: { pose: "sparkle", message: "nothing cancelled. not one request lost." },
 };
 
@@ -135,10 +138,12 @@ function formatRequestDateDetailed(iso: string) {
 }
 
 // Ideas don't have a prize/free-text title -- the "idea title" field
-// captured at creation is stored in student_name instead, so use that
-// as the display title for idea-status cards.
+// captured at creation is stored in student_name instead, so use that as
+// the display title. Checked via originated_as_idea (not status === "idea")
+// since an idea keeps using its title through Queue and Prize Bin too --
+// it never gets a prize_id/free_text_prize filled in along the way.
 function printTitle(r: PrizeRequest) {
-  if (r.status === "idea") return r.student_name || "Untitled idea";
+  if (r.originated_as_idea) return r.student_name || "Untitled idea";
   return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }
 
@@ -370,6 +375,14 @@ export default function RequestsKanban({
     if (!requestId) return;
     const current = effectiveRequests.find((r) => r.id === requestId);
     if (!current || current.status === status) return;
+    // An idea has no Printed step of its own -- Prize Bin isn't a board
+    // column to drag onto, so an idea-origin card sitting in Queue can't
+    // be dropped on Printed. It still has to go through the status pill,
+    // where the Prize Bin option (and its price prompt) actually lives.
+    if (status === "printed" && current.originated_as_idea) {
+      showToast("Ideas skip Printed -- use the status pill's “Prize Bin” option instead.");
+      return;
+    }
     if (status === "printed") {
       // 3D Print Club prints are always free -- skip straight through
       // instead of asking. Everything else gets the same price prompt
@@ -615,7 +628,7 @@ export default function RequestsKanban({
                       </div>
                       <p className="text-xs font-medium text-muted mt-2">
                         {[
-                          r.status === "idea" ? null : r.student_name,
+                          r.originated_as_idea ? null : r.student_name,
                           formatSize(r.size),
                           formatColor(r),
                         ]
@@ -669,6 +682,7 @@ export default function RequestsKanban({
                               status={r.status}
                               catalogPrice={catalogPrice}
                               isPrintClub={r.is_print_club}
+                              originatedAsIdea={r.originated_as_idea}
                               onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                             />
                           </div>
@@ -752,6 +766,7 @@ export default function RequestsKanban({
                     status={active.status}
                     catalogPrice={active.prize?.coin_price ?? null}
                     isPrintClub={active.is_print_club}
+                    originatedAsIdea={active.originated_as_idea}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
                   <div className="flex items-center gap-4">
@@ -781,7 +796,7 @@ export default function RequestsKanban({
                 </div>
 
                 <div className="text-sm">
-                  {active.status !== "idea" && (
+                  {!active.originated_as_idea && (
                     <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
                   <DetailRow label="Requested by" icon={User}>
