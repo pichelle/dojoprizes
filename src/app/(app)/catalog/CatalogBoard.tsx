@@ -223,25 +223,24 @@ export default function CatalogBoard({
                 className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
-            <div className="flex items-center gap-2 min-w-0 pr-8">
-              {peekMode === "edit" && (
-                <button
-                  type="button"
-                  onClick={() => setPeekMode("view")}
-                  aria-label="Back"
-                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
-                >
-                  <ChevronLeft size={18} aria-hidden="true" />
-                </button>
-              )}
-              <h2 className="font-serif text-xl text-ink truncate">
-                {peekMode === "edit" ? "Edit prize" : active.name}
-              </h2>
-            </div>
-
-            {peekMode === "view" ? (
-              <>
-                <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center justify-between gap-2 pr-8">
+              <div className="flex items-center gap-2 min-w-0">
+                {peekMode === "edit" && (
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("view")}
+                    aria-label="Back"
+                    className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
+                  >
+                    <ChevronLeft size={18} aria-hidden="true" />
+                  </button>
+                )}
+                <h2 className="font-serif text-xl text-ink truncate">
+                  {peekMode === "edit" ? "Edit prize" : active.name}
+                </h2>
+              </div>
+              {peekMode === "view" && (
+                <div className="flex items-center gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={() => setPeekMode("edit")}
@@ -265,7 +264,11 @@ export default function CatalogBoard({
                     Delete
                   </ActionButton>
                 </div>
+              )}
+            </div>
 
+            {peekMode === "view" ? (
+              <>
                 <div className="text-sm">
                   <DetailRow label="Price" icon={Coins}>
                     <PriceBreakdown coinPrice={active.coin_price} />
