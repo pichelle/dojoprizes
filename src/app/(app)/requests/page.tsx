@@ -43,6 +43,7 @@ export default async function RequestsPage({
     { data: allFilamentLinks },
     { data: allComments },
     { data: allActivity },
+    { data: allReactions },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase
@@ -62,6 +63,10 @@ export default async function RequestsPage({
     supabase
       .from("request_activity")
       .select("id, request_id, actor, event_type, changes, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("comment_reactions")
+      .select("id, comment_id, emoji, actor, created_at")
       .order("created_at", { ascending: true }),
   ]);
 
@@ -109,13 +114,30 @@ export default async function RequestsPage({
 
   const { data: requestsRaw, error } = await query;
 
+  const reactionsByCommentId = new Map<
+    string,
+    { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[]
+  >();
+  for (const reaction of allReactions ?? []) {
+    const list = reactionsByCommentId.get(reaction.comment_id) ?? [];
+    list.push(reaction);
+    reactionsByCommentId.set(reaction.comment_id, list);
+  }
+
   const commentsByRequestId = new Map<
     string,
-    { id: string; request_id: string; author: string | null; body: string; created_at: string }[]
+    {
+      id: string;
+      request_id: string;
+      author: string | null;
+      body: string;
+      created_at: string;
+      reactions: { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[];
+    }[]
   >();
   for (const comment of allComments ?? []) {
     const list = commentsByRequestId.get(comment.request_id) ?? [];
-    list.push(comment);
+    list.push({ ...comment, reactions: reactionsByCommentId.get(comment.id) ?? [] });
     commentsByRequestId.set(comment.request_id, list);
   }
 

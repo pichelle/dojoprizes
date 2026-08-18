@@ -787,7 +787,7 @@ export default function RequestsKanban({
                         hideForDelete(active.id);
                       }}
                       onUndo={() => restoreFromDelete(active.id)}
-                      className="flex items-center gap-1.5 text-sm text-rust"
+                      className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
                     >
                       <Trash2 size={13} aria-hidden="true" />
                       Delete

@@ -84,6 +84,15 @@ export interface RequestComment {
   author: string | null;
   body: string;
   created_at: string;
+  reactions?: CommentReaction[];
+}
+
+export interface CommentReaction {
+  id: string;
+  comment_id: string;
+  emoji: string;
+  actor: string | null;
+  created_at: string;
 }
 
 export type RequestActivityEventType = "created" | "status_changed" | "edited";
