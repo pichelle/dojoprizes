@@ -59,13 +59,14 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
 ];
 
 // Only shown when a column is genuinely empty (not just filtered-empty --
-// see the filtersActive check at the render site). Ideas being empty is
-// the rare/odd one (kids never stop having ideas), so that gets the
+// see the filtersActive check at the render site). Ideas and Pickup being
+// empty are the rare/odd ones (kids never stop having ideas, and an empty
+// Pickup just means nothing's been printed yet), so those get the
 // question-mark pose instead of a celebratory one.
 const EMPTY_COLUMN_COPY: Record<RequestStatus, { pose: "happy" | "sparkle" | "huh"; message: string }> = {
   idea: { pose: "huh", message: "no ideas pending? add some." },
   pending: { pose: "happy", message: "all caught up, go take a break sensei." },
-  printed: { pose: "happy", message: "shelf's clear, everyone's got their prize." },
+  printed: { pose: "huh", message: "nothing ready? get to printing" },
   fulfilled: { pose: "happy", message: "all caught up." },
   // Not a visible column (same as fulfilled) -- entry only exists to
   // satisfy Record<RequestStatus, ...>.
