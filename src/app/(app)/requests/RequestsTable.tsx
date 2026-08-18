@@ -22,6 +22,8 @@ import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from 
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import RequestComments from "./RequestComments";
+import RequestActivity from "./RequestActivity";
+import PeekTabs from "@/components/PeekTabs";
 import ActionButton from "@/components/ActionButton";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
@@ -69,12 +71,18 @@ export default function RequestsTable({
   prizes: Pick<Prize, "id" | "name">[];
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
-  onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
+  onStatusChange: (
+    requestId: string,
+    status: RequestStatus,
+    salePrice?: number | null,
+    actor?: string | null,
+  ) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
 }) {
-  const { profiles } = useProfiles();
+  const { profiles, activeProfile } = useProfiles();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
+  const [peekTab, setPeekTab] = useState<"comments" | "activity">("comments");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
@@ -139,7 +147,7 @@ export default function RequestsTable({
     const timeoutId = setTimeout(() => {
       if (cancelled) return;
       (async () => {
-        await onStatusChange(requestId, next, salePrice);
+        await onStatusChange(requestId, next, salePrice, activeProfile?.name ?? null);
         router.refresh();
         // Not clearing the override here -- see the effect above.
       })();
@@ -210,6 +218,7 @@ export default function RequestsTable({
                   onClick={() => {
                     setActiveId(r.id);
                     setPeekMode("view");
+                    setPeekTab("comments");
                   }}
                   style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
                   className="group stagger-fade-in border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-nav-hover cursor-pointer transition-colors"
@@ -379,7 +388,23 @@ export default function RequestsTable({
                   )}
                 </div>
 
-                <RequestComments requestId={active.id} comments={active.comments ?? []} />
+                <div className="pt-1">
+                  <PeekTabs
+                    tabs={[
+                      { value: "comments" as const, label: "Comments", count: (active.comments ?? []).length },
+                      { value: "activity" as const, label: "Activity", count: (active.activity ?? []).length },
+                    ]}
+                    active={peekTab}
+                    onChange={setPeekTab}
+                  />
+                  <div className="pt-4">
+                    {peekTab === "comments" ? (
+                      <RequestComments requestId={active.id} comments={active.comments ?? []} />
+                    ) : (
+                      <RequestActivity activity={active.activity ?? []} />
+                    )}
+                  </div>
+                </div>
               </>
             ) : (
               <>

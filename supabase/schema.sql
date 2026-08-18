@@ -142,6 +142,22 @@ create table if not exists request_comments (
 
 create index if not exists request_comments_request_id_idx on request_comments (request_id);
 
+-- A timestamped, attributed record of what happened to a request/idea --
+-- creation, status moves, and edits to the fields that matter (prize,
+-- size, color, price, etc). System-generated, distinct from
+-- request_comments. `changes` is a curated diff, not every column --
+-- see supabase/migrations/019_request_activity.sql for the full rationale.
+create table if not exists request_activity (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references requests (id) on delete cascade,
+  actor text,
+  event_type text not null check (event_type in ('created', 'status_changed', 'edited')),
+  changes jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists request_activity_request_id_idx on request_activity (request_id);
+
 -- ─────────────────────────────────────────────────────────────────────────
 -- Checkouts
 -- ─────────────────────────────────────────────────────────────────────────
@@ -194,6 +210,7 @@ alter table prize_franchise_tags enable row level security;
 alter table request_franchise_tags enable row level security;
 alter table request_filaments enable row level security;
 alter table request_comments enable row level security;
+alter table request_activity enable row level security;
 
 drop policy if exists "anon full access" on prizes;
 create policy "anon full access" on prizes for all
@@ -233,6 +250,10 @@ create policy "anon full access" on request_filaments for all
 
 drop policy if exists "anon full access" on request_comments;
 create policy "anon full access" on request_comments for all
+  using (true) with check (true);
+
+drop policy if exists "anon full access" on request_activity;
+create policy "anon full access" on request_activity for all
   using (true) with check (true);
 
 -- ─────────────────────────────────────────────────────────────────────────

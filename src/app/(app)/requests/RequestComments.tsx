@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MessageCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import type { RequestComment } from "@/lib/types";
 import { addRequestComment, deleteRequestComment, updateRequestComment } from "./actions";
 import { showToast } from "@/components/ToastHost";
@@ -203,12 +203,6 @@ export default function RequestComments({
 
   return (
     <div>
-      <p className="flex items-center gap-1.5 leading-none text-sm font-bold text-ink mb-3">
-        <MessageCircle size={15} className="shrink-0 text-muted" aria-hidden="true" />
-        <span>Comments</span>
-        {items.length > 0 && <span className="text-muted font-medium">{items.length}</span>}
-      </p>
-
       {items.length > 0 && (
         <div className="flex flex-col gap-4 mb-3">
           {items.map((c) => (

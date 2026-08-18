@@ -75,6 +75,7 @@ export interface PrizeRequest {
   colorFilaments?: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   comments?: RequestComment[];
   commentCount?: number;
+  activity?: RequestActivity[];
 }
 
 export interface RequestComment {
@@ -82,6 +83,27 @@ export interface RequestComment {
   request_id: string;
   author: string | null;
   body: string;
+  created_at: string;
+}
+
+export type RequestActivityEventType = "created" | "status_changed" | "edited";
+
+// One curated field diff within an activity entry, e.g.
+// { field: "size", label: "Size", from: "Medium", to: "Large" }.
+// `from` is null for a value that was previously unset.
+export interface RequestActivityChange {
+  field: string;
+  label: string;
+  from: string | null;
+  to: string | null;
+}
+
+export interface RequestActivity {
+  id: string;
+  request_id: string;
+  actor: string | null;
+  event_type: RequestActivityEventType;
+  changes: RequestActivityChange[];
   created_at: string;
 }
 

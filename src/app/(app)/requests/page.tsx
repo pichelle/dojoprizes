@@ -42,6 +42,7 @@ export default async function RequestsPage({
     { data: prizes },
     { data: allFilamentLinks },
     { data: allComments },
+    { data: allActivity },
   ] = await Promise.all([
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase
@@ -57,6 +58,10 @@ export default async function RequestsPage({
     supabase
       .from("request_comments")
       .select("id, request_id, author, body, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("request_activity")
+      .select("id, request_id, actor, event_type, changes, created_at")
       .order("created_at", { ascending: true }),
   ]);
 
@@ -114,11 +119,29 @@ export default async function RequestsPage({
     commentsByRequestId.set(comment.request_id, list);
   }
 
+  const activityByRequestId = new Map<
+    string,
+    {
+      id: string;
+      request_id: string;
+      actor: string | null;
+      event_type: "created" | "status_changed" | "edited";
+      changes: { field: string; label: string; from: string | null; to: string | null }[];
+      created_at: string;
+    }[]
+  >();
+  for (const entry of allActivity ?? []) {
+    const list = activityByRequestId.get(entry.request_id) ?? [];
+    list.push(entry as (typeof list)[number]);
+    activityByRequestId.set(entry.request_id, list);
+  }
+
   let requests = (requestsRaw ?? []).map((r) => ({
     ...r,
     franchiseTags: tagsByRequestId.get(r.id) ?? [],
     colorFilaments: filamentsByRequestId.get(r.id) ?? [],
     comments: commentsByRequestId.get(r.id) ?? [],
+    activity: activityByRequestId.get(r.id) ?? [],
   }));
 
   if (params.q) {
