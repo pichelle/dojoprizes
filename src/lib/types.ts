@@ -42,6 +42,8 @@ export interface Prize {
   updated_at: string;
   filaments?: Pick<Filament, "id" | "color_name">[];
   franchiseTags?: FranchiseTag[];
+  comments?: PrizeComment[];
+  activity?: PrizeActivity[];
 }
 
 export interface PrizeRequest {
@@ -112,6 +114,31 @@ export interface RequestActivity {
   request_id: string;
   actor: string | null;
   event_type: RequestActivityEventType;
+  changes: RequestActivityChange[];
+  created_at: string;
+}
+
+export interface PrizeComment {
+  id: string;
+  prize_id: string;
+  author: string | null;
+  body: string;
+  created_at: string;
+  reactions?: CommentReaction[];
+}
+
+// "reprinted" is a manual "Log a reprint" action (see
+// supabase/migrations/024_prize_comments_activity.sql) -- not inferred
+// from stock edits, so the running reprint count shown in the UI is just
+// a count of entries with this event_type.
+export type PrizeActivityEventType = "created" | "edited" | "reprinted";
+
+export interface PrizeActivity {
+  id: string;
+  prize_id: string;
+  actor: string | null;
+  event_type: PrizeActivityEventType;
+  // Reuses the same curated-diff shape as RequestActivityChange.
   changes: RequestActivityChange[];
   created_at: string;
 }
