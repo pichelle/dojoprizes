@@ -52,6 +52,12 @@
   --color-idea-bg: #f3ead9;
   --color-idea-text: #8a6a2f;
   --color-idea-dot: #d9a45c;
+  /* An idea's terminal status once printed -- becomes catalog stock
+     instead of going through Printed/Fulfilled. Distinct lavender so it
+     doesn't get confused with the green "Fulfilled" it replaces. */
+  --color-prizebin-bg: #f2e7f5;
+  --color-prizebin-text: #7a3f8a;
+  --color-prizebin-dot: #b784c9;
 }
 
 @theme inline {

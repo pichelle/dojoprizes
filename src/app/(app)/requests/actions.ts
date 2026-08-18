@@ -110,6 +110,10 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
         // definition, entered the queue right now -- powers the average
         // turnaround stat. "idea" hasn't entered the queue yet.
         pending_at: initialStatus === "idea" ? null : new Date().toISOString(),
+        // Set once here and never changed again -- determines whether this
+        // row's next steps are Printed/Fulfilled or straight to the Prize
+        // Bin, even after its status moves past "idea" itself.
+        originated_as_idea: initialStatus === "idea",
       })
       .select("id")
       .single();
@@ -221,6 +225,55 @@ export async function createRequestInline(
   return performCreateRequest(formData);
 }
 
+// An idea has no student waiting on it -- once it's printed, it becomes
+// catalog stock instead of going through Printed/Fulfilled. This creates
+// the new Prize Bin row (carrying over the idea's name/photo/size/link
+// and its linked filament colors + theme tags) and links it up, so the
+// idea's print work doesn't have to be re-entered by hand in the catalog.
+async function addRequestToPrizeBin(
+  supabase: ReturnType<typeof createServerClient>,
+  requestId: string,
+  request: { student_name: string; photo_url: string | null; size: RequestSizeOrAny | null; links: string | null },
+  coinPrice: number | null,
+) {
+  const [{ data: filamentLinks }, { data: tagLinks }] = await Promise.all([
+    supabase.from("request_filaments").select("filament_id").eq("request_id", requestId),
+    supabase.from("request_franchise_tags").select("tag_id").eq("request_id", requestId),
+  ]);
+
+  const { data: prize, error: prizeError } = await supabase
+    .from("prizes")
+    .insert({
+      name: request.student_name || "Untitled idea",
+      photo_url: request.photo_url,
+      coin_price: coinPrice ?? null,
+      makerworld_link: request.links,
+      stock_count: 1,
+      status: "in_stock",
+      // Prizes don't support "any" as a size -- only requests do.
+      size: request.size && request.size !== "any" ? request.size : null,
+    })
+    .select("id")
+    .single();
+  if (prizeError) throw new Error(prizeError.message);
+  if (!prize) return;
+
+  const filamentIds = ((filamentLinks ?? []) as { filament_id: string }[]).map((l) => l.filament_id);
+  const tagIds = ((tagLinks ?? []) as { tag_id: string }[]).map((l) => l.tag_id);
+  if (filamentIds.length > 0) {
+    const { error } = await supabase
+      .from("prize_filament")
+      .insert(filamentIds.map((filament_id) => ({ prize_id: prize.id, filament_id })));
+    if (error) throw new Error(error.message);
+  }
+  if (tagIds.length > 0) {
+    const { error } = await supabase
+      .from("prize_franchise_tags")
+      .insert(tagIds.map((tag_id) => ({ prize_id: prize.id, tag_id })));
+    if (error) throw new Error(error.message);
+  }
+}
+
 export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus,
@@ -235,7 +288,9 @@ export async function updateRequestStatus(
   } = { status };
   // Price is locked in when a request moves to Printed (that's when actual
   // size/color availability is known), and carries forward through
-  // Fulfilled -- so it's only ever set here, not re-asked for later.
+  // Fulfilled -- so it's only ever set here, not re-asked for later. Same
+  // deal for an idea moving to the Prize Bin -- the price becomes the new
+  // prize's listed price (see addRequestToPrizeBin below).
   if (salePrice !== undefined) {
     update.sale_price = salePrice;
   }
@@ -247,21 +302,29 @@ export async function updateRequestStatus(
   if (status === "fulfilled") {
     update.fulfilled_at = new Date().toISOString();
   }
-  if (status === "pending") {
-    const { data: existing } = await supabase
-      .from("requests")
-      .select("pending_at")
-      .eq("id", requestId)
-      .single();
-    if (!existing?.pending_at) {
-      update.pending_at = new Date().toISOString();
-    }
+
+  const { data: existing } = await supabase
+    .from("requests")
+    .select("status, pending_at, student_name, photo_url, size, links")
+    .eq("id", requestId)
+    .single();
+
+  if (status === "pending" && !existing?.pending_at) {
+    update.pending_at = new Date().toISOString();
   }
+
   const { error } = await supabase
     .from("requests")
     .update(update)
     .eq("id", requestId);
   if (error) throw new Error(error.message);
+
+  if (status === "in_prize_bin" && existing && existing.status !== "in_prize_bin") {
+    await addRequestToPrizeBin(supabase, requestId, existing, salePrice ?? null);
+    revalidatePath("/catalog");
+    revalidatePath("/filament");
+  }
+
   revalidatePath("/requests");
   revalidatePath("/");
 }

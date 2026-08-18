@@ -19,6 +19,7 @@ const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "printed", label: "Printed" },
   { value: "fulfilled", label: "Fulfilled" },
+  { value: "in_prize_bin", label: "Prize Bin" },
   { value: "cancelled", label: "Cancelled" },
 ];
 

@@ -6,7 +6,10 @@ export type CoinTier = "silver" | "gold" | "obsidian";
 
 export type PrizeStatus = "in_stock" | "print_on_request";
 
-export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled";
+// "in_prize_bin" is the terminal status for an idea-origin request once
+// it's printed -- it skips Printed/Fulfilled (there's no student waiting
+// on an idea) and becomes catalog stock instead.
+export type RequestStatus = "idea" | "pending" | "printed" | "fulfilled" | "cancelled" | "in_prize_bin";
 
 export type RequestSize = "small" | "medium" | "large" | "xlarge" | "true_to_size";
 
@@ -59,6 +62,11 @@ export interface PrizeRequest {
   sale_price: number | null;
   pending_at: string | null;
   fulfilled_at: string | null;
+  // Set once at creation, never changed afterward -- true if this row
+  // started life as an idea (even after its status has moved past
+  // "idea"). Determines whether its next status step is Printed/Fulfilled
+  // or straight to the Prize Bin.
+  originated_as_idea: boolean;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;

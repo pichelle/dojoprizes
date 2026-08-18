@@ -220,12 +220,13 @@ export default function RequestsTable({
                   <td className="text-muted px-3 py-2.5 whitespace-nowrap">
                     {formatRequestedAgo(r.date_requested, r.status).replace(/^(Requested|Added) /, "")}
                   </td>
-                  <td className="text-muted px-3 py-2.5">{r.status === "idea" ? "—" : r.student_name}</td>
+                  <td className="text-muted px-3 py-2.5">{r.originated_as_idea ? "—" : r.student_name}</td>
                   <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                     <StatusPill
                       status={r.status}
                       catalogPrice={catalogPrice}
                       isPrintClub={r.is_print_club}
+                      originatedAsIdea={r.originated_as_idea}
                       onPick={(next, salePrice) => handlePick(r.id, next, salePrice)}
                     />
                   </td>
@@ -310,6 +311,7 @@ export default function RequestsTable({
                     status={active.status}
                     catalogPrice={active.prize?.coin_price ?? null}
                     isPrintClub={active.is_print_club}
+                    originatedAsIdea={active.originated_as_idea}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
                   <div className="flex items-center gap-4">
@@ -339,7 +341,7 @@ export default function RequestsTable({
                 </div>
 
                 <div className="text-sm">
-                  {active.status !== "idea" && (
+                  {!active.originated_as_idea && (
                     <DetailRow label="Ninja" icon={User}>{active.student_name}</DetailRow>
                   )}
                   <DetailRow label="Requested by" icon={User}>

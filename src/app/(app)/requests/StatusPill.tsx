@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, CircleDashed, Clock, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
+import { Check, ChevronDown, CircleDashed, Clock, Gift, Lightbulb, X as XIcon, type LucideIcon } from "lucide-react";
 import type { RequestStatus } from "@/lib/types";
 import { coinPriceToBreakdown, breakdownToCoinPrice, type CoinBreakdown } from "@/lib/coins";
 import { burstConfetti } from "@/lib/confetti";
@@ -16,9 +16,20 @@ const STATUS_META: Record<
   printed: { label: "Pickup", bg: "var(--color-printed-bg)", text: "var(--color-printed-text)", icon: CircleDashed },
   fulfilled: { label: "Fulfilled", bg: "var(--color-fulfilled-bg)", text: "var(--color-fulfilled-text)", icon: Check },
   cancelled: { label: "Cancelled", bg: "var(--color-cancelled-bg)", text: "var(--color-cancelled-text)", icon: XIcon },
+  in_prize_bin: {
+    label: "Prize Bin",
+    bg: "var(--color-prizebin-bg)",
+    text: "var(--color-prizebin-text)",
+    icon: Gift,
+  },
 };
 
+// An idea has no student waiting on it -- once it's printed, it just
+// becomes catalog stock, so its menu skips Printed/Fulfilled entirely in
+// favor of a single "Prize Bin" step. A real request never shows Prize
+// Bin, so the two menus stay unambiguous about what each option means.
 const STATUS_ORDER: RequestStatus[] = ["idea", "pending", "printed", "fulfilled", "cancelled"];
+const IDEA_STATUS_ORDER: RequestStatus[] = ["idea", "pending", "in_prize_bin", "cancelled"];
 
 // Pure display + picker -- all the optimistic-move / undo / persist logic
 // lives in RequestsKanban now, since the card's column placement has to
@@ -30,15 +41,22 @@ export default function StatusPill({
   // Printed transition entirely when this is set (same rule the kanban
   // board's drag-and-drop path applies).
   isPrintClub = false,
+  // True for a request that started life as an idea -- swaps in the
+  // Prize Bin path instead of Printed/Fulfilled (see IDEA_STATUS_ORDER).
+  originatedAsIdea = false,
   onPick,
 }: {
   status: RequestStatus;
   catalogPrice: number | null;
   isPrintClub?: boolean;
+  originatedAsIdea?: boolean;
   onPick: (next: RequestStatus, salePrice?: number | null) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [confirmingPrice, setConfirmingPrice] = useState(false);
+  // Which status the price prompt is currently confirming for -- both the
+  // Printed transition (a real request) and the Prize Bin transition (an
+  // idea) ask for a price, but land on different statuses when confirmed.
+  const [pendingPriceStatus, setPendingPriceStatus] = useState<RequestStatus | null>(null);
   const [breakdown, setBreakdown] = useState<CoinBreakdown>({ obsidian: 0, gold: 0, silver: 0 });
   // Menu position in viewport coordinates, computed from the trigger
   // button's own bounding box -- the dropdown renders through a portal
@@ -55,11 +73,11 @@ export default function StatusPill({
       if (buttonRef.current?.contains(target)) return;
       if (menuRef.current?.contains(target)) return;
       setOpen(false);
-      setConfirmingPrice(false);
+      setPendingPriceStatus(null);
     }
     function handleScrollOrResize() {
       setOpen(false);
-      setConfirmingPrice(false);
+      setPendingPriceStatus(null);
     }
     document.addEventListener("mousedown", handleClick);
     window.addEventListener("scroll", handleScrollOrResize, true);
@@ -86,7 +104,7 @@ export default function StatusPill({
       const flippedTop = buttonRect.top - menuRect.height - 4;
       setMenuPos((prev) => (prev ? { ...prev, top: Math.max(8, flippedTop) } : prev));
     }
-  }, [open, confirmingPrice]);
+  }, [open, pendingPriceStatus]);
 
   function toggleOpen() {
     if (!open && buttonRef.current) {
@@ -104,7 +122,14 @@ export default function StatusPill({
         return;
       }
       setBreakdown(coinPriceToBreakdown(catalogPrice));
-      setConfirmingPrice(true);
+      setPendingPriceStatus(next);
+      return;
+    }
+    // An idea has no student and no print-club perk to skip -- always ask
+    // for the price this prize will carry once it's in the catalog.
+    if (next === "in_prize_bin") {
+      setBreakdown(coinPriceToBreakdown(catalogPrice));
+      setPendingPriceStatus(next);
       return;
     }
     setOpen(false);
@@ -117,13 +142,19 @@ export default function StatusPill({
   }
 
   function confirmPrice() {
+    if (!pendingPriceStatus) return;
     setOpen(false);
-    setConfirmingPrice(false);
-    onPick("printed", breakdownToCoinPrice(breakdown));
+    const next = pendingPriceStatus;
+    setPendingPriceStatus(null);
+    if (next === "in_prize_bin" && buttonRef.current) {
+      burstConfetti(buttonRef.current);
+    }
+    onPick(next, breakdownToCoinPrice(breakdown));
   }
 
   const meta = STATUS_META[status];
   const Icon = meta.icon;
+  const menuOrder = originatedAsIdea ? IDEA_STATUS_ORDER : STATUS_ORDER;
 
   return (
     <div className="relative">
@@ -148,7 +179,7 @@ export default function StatusPill({
           over. Rendering it outside the card tree entirely sidesteps
           that regardless of sibling hover state. */}
       {open &&
-        !confirmingPrice &&
+        !pendingPriceStatus &&
         menuPos &&
         createPortal(
           <div
@@ -156,7 +187,7 @@ export default function StatusPill({
             style={{ top: menuPos.top, right: menuPos.right }}
             className="fixed z-50 w-36 bg-card border border-border-warm-strong rounded-md shadow-md p-1.5 flex flex-col gap-1"
           >
-            {STATUS_ORDER.map((s) => {
+            {menuOrder.map((s) => {
               const m = STATUS_META[s];
               const OptIcon = m.icon;
               return (
@@ -178,7 +209,7 @@ export default function StatusPill({
         )}
 
       {open &&
-        confirmingPrice &&
+        pendingPriceStatus &&
         menuPos &&
         createPortal(
           <div
@@ -186,7 +217,9 @@ export default function StatusPill({
             style={{ top: menuPos.top, right: menuPos.right }}
             className="fixed z-50 w-56 bg-card border border-border-warm-strong rounded-md shadow-md p-2.5 space-y-2"
           >
-            <p className="text-[11px] text-muted">Price for this print?</p>
+            <p className="text-[11px] text-muted">
+              {pendingPriceStatus === "in_prize_bin" ? "Price for this prize?" : "Price for this print?"}
+            </p>
             <div className="grid grid-cols-2 gap-1.5">
               {(["gold", "obsidian"] as const).map((tier) => (
                 <div key={tier}>
@@ -208,7 +241,7 @@ export default function StatusPill({
             <div className="flex justify-end gap-1.5">
               <button
                 type="button"
-                onClick={() => setConfirmingPrice(false)}
+                onClick={() => setPendingPriceStatus(null)}
                 className="text-[11px] text-muted hover:text-ink px-2 py-1"
               >
                 Cancel
@@ -217,7 +250,11 @@ export default function StatusPill({
                 type="button"
                 onClick={confirmPrice}
                 className="text-[11px] font-medium rounded-md px-2.5 py-1"
-                style={{ background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }}
+                style={
+                  pendingPriceStatus === "in_prize_bin"
+                    ? { background: "var(--color-prizebin-bg)", color: "var(--color-prizebin-text)" }
+                    : { background: "var(--color-printed-bg)", color: "var(--color-printed-text)" }
+                }
               >
                 Confirm
               </button>
