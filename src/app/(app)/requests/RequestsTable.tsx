@@ -16,7 +16,6 @@ import {
   Tags,
   Trash2,
   User,
-  type LucideIcon,
 } from "lucide-react";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
@@ -27,6 +26,7 @@ import PeekTabs from "@/components/PeekTabs";
 import ActionButton from "@/components/ActionButton";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import SidePeek from "@/components/SidePeek";
+import DetailRow from "@/components/DetailRow";
 import { updateRequestInline } from "./actions";
 import { showToast } from "@/components/ToastHost";
 import { formatCoinPriceBreakdown } from "@/lib/coins";
@@ -38,26 +38,6 @@ import { staggerDelay } from "@/lib/stagger";
 const UNDO_WINDOW_MS = 5000;
 
 type Override = { status: RequestStatus; salePrice: number | null };
-
-function DetailRow({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-border-warm/50 last:border-b-0 text-left">
-      <span className="flex items-center gap-1.5 text-muted w-32 shrink-0 pt-px">
-        <Icon size={13} className="shrink-0" aria-hidden="true" />
-        {label}
-      </span>
-      <span className="text-ink leading-relaxed">{children}</span>
-    </div>
-  );
-}
 
 export default function RequestsTable({
   requests,
