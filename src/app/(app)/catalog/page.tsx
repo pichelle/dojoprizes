@@ -57,6 +57,9 @@ export default async function CatalogPage({
     { data: filamentOptions },
     { data: allFilamentLinks },
     { data: recentCheckouts },
+    { data: allComments },
+    { data: allActivity },
+    { data: allReactions },
   ] = await Promise.all([
     supabase.from("prizes").select("*", { count: "exact", head: true }),
     supabase.from("prize_franchise_tags").select("prize_id, tag:franchise_tags(id, name)"),
@@ -68,6 +71,18 @@ export default async function CatalogPage({
       .select("prize_id, date_checked_out")
       .order("date_checked_out", { ascending: false })
       .order("created_at", { ascending: false }),
+    supabase
+      .from("prize_comments")
+      .select("id, prize_id, author, body, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("prize_activity")
+      .select("id, prize_id, actor, event_type, changes, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("prize_comment_reactions")
+      .select("id, comment_id, emoji, actor, created_at")
+      .order("created_at", { ascending: true }),
   ]);
 
   const tagsByPrizeId = new Map<string, { id: string; name: string }[]>();
@@ -144,10 +159,57 @@ export default async function CatalogPage({
   }
 
   const { data: prizesRaw, error } = await query;
+
+  const reactionsByCommentId = new Map<
+    string,
+    { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[]
+  >();
+  for (const reaction of allReactions ?? []) {
+    const list = reactionsByCommentId.get(reaction.comment_id) ?? [];
+    list.push(reaction);
+    reactionsByCommentId.set(reaction.comment_id, list);
+  }
+
+  const commentsByPrizeId = new Map<
+    string,
+    {
+      id: string;
+      prize_id: string;
+      author: string | null;
+      body: string;
+      created_at: string;
+      reactions: { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[];
+    }[]
+  >();
+  for (const comment of allComments ?? []) {
+    const list = commentsByPrizeId.get(comment.prize_id) ?? [];
+    list.push({ ...comment, reactions: reactionsByCommentId.get(comment.id) ?? [] });
+    commentsByPrizeId.set(comment.prize_id, list);
+  }
+
+  const activityByPrizeId = new Map<
+    string,
+    {
+      id: string;
+      prize_id: string;
+      actor: string | null;
+      event_type: "created" | "edited" | "reprinted";
+      changes: { field: string; label: string; from: string | null; to: string | null }[];
+      created_at: string;
+    }[]
+  >();
+  for (const entry of allActivity ?? []) {
+    const list = activityByPrizeId.get(entry.prize_id) ?? [];
+    list.push(entry as (typeof list)[number]);
+    activityByPrizeId.set(entry.prize_id, list);
+  }
+
   const prizes = (prizesRaw ?? []).map((p) => ({
     ...p,
     franchiseTags: tagsByPrizeId.get(p.id) ?? [],
     filaments: filamentsByPrizeId.get(p.id) ?? [],
+    comments: commentsByPrizeId.get(p.id) ?? [],
+    activity: activityByPrizeId.get(p.id) ?? [],
   }));
 
   async function handleCheckout(prizeId: string, boughtBy: string | null) {
