@@ -17,6 +17,19 @@ const SIZE_LABELS: Record<RequestSizeOrAny, string> = {
   any: "Any size",
 };
 
+// Mirrors StatusPill's STATUS_META labels ("Queue" for pending, "Pickup"
+// for printed) so the activity log reads the same as the status pill
+// itself, not the raw DB value. Kept here (not in StatusPill) so
+// server-only code like activityLog.ts can use it without pulling in a
+// "use client" component.
+export const STATUS_LABELS: Record<RequestStatus, string> = {
+  idea: "Idea",
+  pending: "Queue",
+  printed: "Pickup",
+  fulfilled: "Fulfilled",
+  cancelled: "Cancelled",
+};
+
 export function formatSize(size: RequestSizeOrAny | string | null) {
   if (!size) return null;
   return SIZE_LABELS[size as RequestSizeOrAny] ?? size;
