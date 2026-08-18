@@ -206,6 +206,8 @@ export default function RequestForm({
         </div>
       )}
 
+      <input type="hidden" name="actor" value={activeProfile?.name ?? ""} />
+
       <div className="pb-6">
         <SectionLabel>Basics</SectionLabel>
 

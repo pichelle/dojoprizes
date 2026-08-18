@@ -29,7 +29,12 @@ export default function RequestsView({
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   colorOptions: { value: string; label: string; swatch?: string | null }[];
-  onStatusChange: (requestId: string, status: RequestStatus, salePrice?: number | null) => Promise<void>;
+  onStatusChange: (
+    requestId: string,
+    status: RequestStatus,
+    salePrice?: number | null,
+    actor?: string | null,
+  ) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
   onClearCancelled: () => Promise<void>;
   filtersActive: boolean;

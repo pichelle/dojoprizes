@@ -6,6 +6,12 @@ import { createServerClient } from "@/lib/supabase/server";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
 import { NONE_VALUE } from "@/lib/constants";
 import type { RequestSizeOrAny, RequestStatus } from "@/lib/types";
+import {
+  computeRequestEditChanges,
+  logRequestActivity,
+  statusChange,
+  type RequestSnapshot,
+} from "@/lib/activityLog";
 
 export type RequestFormState = {
   error: string | null;
@@ -27,6 +33,14 @@ function parseColorFilamentIds(formData: FormData): string[] {
 function fromFormSelect(formData: FormData, key: string): string | null {
   const raw = String(formData.get(key) ?? "").trim();
   return raw && raw !== NONE_VALUE ? raw : null;
+}
+
+// Who's making this change -- a hidden field on the form set from the
+// active profile (see ProfileContext), same free-typed-name pattern as
+// request_comments.author. Not asked for explicitly to avoid friction on
+// routine edits.
+function actorFromForm(formData: FormData): string | null {
+  return String(formData.get("actor") ?? "").trim() || null;
 }
 
 async function syncRequestFranchiseTagLinks(
@@ -137,6 +151,14 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
           .insert(filamentIds.map((filament_id) => ({ request_id: request.id, filament_id })));
         if (filamentLinkError) return { error: filamentLinkError.message };
       }
+
+      await logRequestActivity(
+        supabase,
+        request.id,
+        actorFromForm(formData),
+        "created",
+        statusChange(null, initialStatus),
+      );
     }
 
     revalidatePath("/requests");
@@ -149,25 +171,117 @@ async function performCreateRequest(formData: FormData): Promise<RequestFormStat
   }
 }
 
+// Resolves a request's current linked names (prize, filaments, theme tags)
+// into the shape computeRequestEditChanges compares -- used both to
+// snapshot the "before" state and, after saving, the "after" state.
+async function snapshotRequest(
+  supabase: ReturnType<typeof createServerClient>,
+  requestId: string,
+  row: {
+    student_name: string;
+    status: RequestStatus;
+    prize_id: string | null;
+    free_text_prize: string | null;
+    size: RequestSizeOrAny | null;
+    color_any: boolean;
+    notes: string | null;
+    photo_url: string | null;
+    links: string | null;
+    is_print_club: boolean;
+  },
+): Promise<RequestSnapshot> {
+  const [{ data: prize }, { data: filamentLinks }, { data: tagLinks }] = await Promise.all([
+    row.prize_id
+      ? supabase.from("prizes").select("name").eq("id", row.prize_id).single()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("request_filaments")
+      .select("filament:filaments(color_name)")
+      .eq("request_id", requestId),
+    supabase
+      .from("request_franchise_tags")
+      .select("tag:franchise_tags(name)")
+      .eq("request_id", requestId),
+  ]);
+
+  return {
+    student_name: row.student_name,
+    status: row.status,
+    prizeName: prize?.name ?? null,
+    free_text_prize: row.free_text_prize,
+    size: row.size,
+    color_any: row.color_any,
+    colorNames: (
+      (filamentLinks as { filament: { color_name: string } | null }[] | null) ?? []
+    )
+      .map((l) => l.filament?.color_name)
+      .filter((n): n is string => !!n),
+    themeNames: (
+      (tagLinks as { tag: { name: string } | null }[] | null) ?? []
+    )
+      .map((l) => l.tag?.name)
+      .filter((n): n is string => !!n),
+    notes: row.notes,
+    photo_url: row.photo_url,
+    links: row.links,
+    is_print_club: row.is_print_club,
+  };
+}
+
 async function performUpdateRequest(
   requestId: string,
   formData: FormData,
 ): Promise<RequestFormState> {
   const supabase = createServerClient();
   try {
-    const { error } = await supabase
+    const { data: existing } = await supabase
       .from("requests")
-      .update(requestFieldsFromForm(formData))
-      .eq("id", requestId);
+      .select(
+        "student_name, status, prize_id, free_text_prize, size, color_any, notes, photo_url, links, is_print_club",
+      )
+      .eq("id", requestId)
+      .single();
+
+    const before = existing ? await snapshotRequest(supabase, requestId, existing) : null;
+
+    const fields = requestFieldsFromForm(formData);
+    const { error } = await supabase.from("requests").update(fields).eq("id", requestId);
 
     if (error) return { error: error.message };
 
-    const tagIds = await resolveFranchiseTagIds(
-      supabase,
-      parseFranchiseTagNames(formData),
-    );
+    const tagNames = parseFranchiseTagNames(formData);
+    const tagIds = await resolveFranchiseTagIds(supabase, tagNames);
     await syncRequestFranchiseTagLinks(supabase, requestId, tagIds);
-    await syncRequestFilamentLinks(supabase, requestId, parseColorFilamentIds(formData));
+
+    const filamentIds = parseColorFilamentIds(formData);
+    await syncRequestFilamentLinks(supabase, requestId, filamentIds);
+
+    if (before) {
+      const { data: newFilaments } = filamentIds.length
+        ? await supabase.from("filaments").select("color_name").in("id", filamentIds)
+        : { data: [] };
+      const { data: newPrize } = fields.prize_id
+        ? await supabase.from("prizes").select("name").eq("id", fields.prize_id).single()
+        : { data: null };
+
+      const after: RequestSnapshot = {
+        student_name: fields.student_name,
+        status: before.status,
+        prizeName: newPrize?.name ?? null,
+        free_text_prize: fields.free_text_prize,
+        size: fields.size,
+        color_any: fields.color_any,
+        colorNames: (newFilaments ?? []).map((f) => f.color_name),
+        themeNames: tagNames,
+        notes: fields.notes,
+        photo_url: fields.photo_url,
+        links: fields.links,
+        is_print_club: fields.is_print_club,
+      };
+
+      const changes = computeRequestEditChanges(before, after);
+      await logRequestActivity(supabase, requestId, actorFromForm(formData), "edited", changes);
+    }
 
     revalidatePath("/requests");
     revalidatePath("/");
@@ -225,6 +339,7 @@ export async function updateRequestStatus(
   requestId: string,
   status: RequestStatus,
   salePrice?: number | null,
+  actor?: string | null,
 ) {
   const supabase = createServerClient();
   const update: {
@@ -247,21 +362,30 @@ export async function updateRequestStatus(
   if (status === "fulfilled") {
     update.fulfilled_at = new Date().toISOString();
   }
-  if (status === "pending") {
-    const { data: existing } = await supabase
-      .from("requests")
-      .select("pending_at")
-      .eq("id", requestId)
-      .single();
-    if (!existing?.pending_at) {
-      update.pending_at = new Date().toISOString();
-    }
+  const { data: existing } = await supabase
+    .from("requests")
+    .select("status, pending_at")
+    .eq("id", requestId)
+    .single();
+  if (status === "pending" && !existing?.pending_at) {
+    update.pending_at = new Date().toISOString();
   }
   const { error } = await supabase
     .from("requests")
     .update(update)
     .eq("id", requestId);
   if (error) throw new Error(error.message);
+
+  if (existing && existing.status !== status) {
+    await logRequestActivity(
+      supabase,
+      requestId,
+      actor ?? null,
+      "status_changed",
+      statusChange(existing.status as RequestStatus, status),
+    );
+  }
+
   revalidatePath("/requests");
   revalidatePath("/");
 }
