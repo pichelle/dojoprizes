@@ -79,7 +79,7 @@ function CommentRow({
       <div>
         <p className="text-xs flex items-center gap-1">
           <span className="font-bold text-ink">
-            <ProfileChip name={comment.author} profiles={profiles} variant="inline" />
+            <ProfileChip name={comment.author} profiles={profiles} variant="pill" />
           </span>
           <span className="text-muted">· {timeAgo(comment.created_at)}</span>
         </p>
@@ -118,7 +118,7 @@ function CommentRow({
       <div>
         <p className="text-xs flex items-center gap-1">
           <span className="font-bold text-ink">
-            <ProfileChip name={comment.author} profiles={profiles} variant="inline" />
+            <ProfileChip name={comment.author} profiles={profiles} variant="pill" />
           </span>
           <span className="text-muted">· {timeAgo(comment.created_at)}</span>
         </p>

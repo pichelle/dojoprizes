@@ -11,6 +11,13 @@ export default function ProfileIcon({
   profile: Profile | null;
   size?: number;
 }) {
+  // Explicit pixel width/height (not a max-width percentage) -- these
+  // source PNGs are much larger than the icon slot, and without a hard
+  // pixel size on the <img> itself some browsers render it at intrinsic
+  // size and clip almost all of it via the parent's overflow-hidden,
+  // which looked like the icon wasn't showing at all.
+  const iconSize = Math.round(size * 0.7);
+
   return (
     <span
       className="inline-flex items-center justify-center rounded-md shrink-0 overflow-hidden"
@@ -21,7 +28,9 @@ export default function ProfileIcon({
         src={profile?.avatar_url ?? "/ninja.png"}
         alt=""
         aria-hidden="true"
-        style={{ maxWidth: "70%", maxHeight: "70%", objectFit: "contain" }}
+        width={iconSize}
+        height={iconSize}
+        style={{ width: iconSize, height: iconSize, objectFit: "contain" }}
       />
     </span>
   );

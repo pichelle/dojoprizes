@@ -641,7 +641,7 @@ export default function RequestsKanban({
                       )}
                       <div className="flex items-center justify-between gap-2 mt-3">
                         <span className="text-[11px] flex-1 min-w-0 truncate">
-                          <ProfileChip name={r.requested_by} profiles={profiles} variant="text" />
+                          <ProfileChip name={r.requested_by} profiles={profiles} variant="compact" />
                         </span>
                         <div className="flex items-center gap-2 shrink-0">
                           {(r.comments ?? []).length > 0 && (

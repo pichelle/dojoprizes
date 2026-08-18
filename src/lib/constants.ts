@@ -22,15 +22,3 @@ export const PROFILE_COLOR_OPTIONS = [
   "#faeaea", // cancelled (red)
   "#e0edfb", // accent tint (blue)
 ];
-
-// Readable-as-text counterpart for each swatch above, reusing the same
-// darker tokens the status pills already pair with their tint background
-// (see globals.css) -- used by ProfileChip's compact "text" variant, which
-// tints the name itself instead of sitting it on a colored background.
-export const PROFILE_COLOR_TEXT_VARS: Record<string, string> = {
-  "#fbf4dc": "var(--color-pending-text)",
-  "#e2f1f6": "var(--color-printed-text)",
-  "#e9f4de": "var(--color-fulfilled-text)",
-  "#faeaea": "var(--color-cancelled-text)",
-  "#e0edfb": "var(--color-sage-hover)",
-};
