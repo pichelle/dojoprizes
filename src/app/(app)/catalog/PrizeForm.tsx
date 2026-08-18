@@ -8,6 +8,7 @@ import Select, { NONE_VALUE } from "@/components/Select";
 import ErrorNote from "@/components/ErrorNote";
 import PhotoDropzone from "@/components/PhotoDropzone";
 import { showToast } from "@/components/ToastHost";
+import { useProfiles } from "@/components/ProfileContext";
 import type { PrizeFormState } from "./actions";
 
 const SIZE_OPTIONS: { value: RequestSize; label: string }[] = [
@@ -41,6 +42,7 @@ export default function PrizeForm({
   onCancel?: () => void;
   onSuccess?: () => void;
 }) {
+  const { activeProfile } = useProfiles();
   const [state, formAction, isPending] = useActionState(action, initialState);
   const [photoUrl, setPhotoUrl] = useState(initial?.photo_url ?? "");
   const [makerworldLink, setMakerworldLink] = useState(
@@ -102,6 +104,7 @@ export default function PrizeForm({
 
   return (
     <form action={formAction} className="space-y-5">
+      <input type="hidden" name="actor" value={activeProfile?.name ?? ""} />
       {state?.error && (
         <div>
           <ErrorNote>{state.error}</ErrorNote>

@@ -21,9 +21,9 @@ import {
   Tags,
   Trash2,
   User,
-  type LucideIcon,
 } from "lucide-react";
 import Tooltip from "@/components/Tooltip";
+import DetailRow from "@/components/DetailRow";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
@@ -59,13 +59,14 @@ const COLUMNS: { status: RequestStatus; label: string; dot: string }[] = [
 ];
 
 // Only shown when a column is genuinely empty (not just filtered-empty --
-// see the filtersActive check at the render site). Ideas being empty is
-// the rare/odd one (kids never stop having ideas), so that gets the
+// see the filtersActive check at the render site). Ideas and Pickup being
+// empty are the rare/odd ones (kids never stop having ideas, and an empty
+// Pickup just means nothing's been printed yet), so those get the
 // question-mark pose instead of a celebratory one.
 const EMPTY_COLUMN_COPY: Record<RequestStatus, { pose: "happy" | "sparkle" | "huh"; message: string }> = {
   idea: { pose: "huh", message: "no ideas pending? add some." },
   pending: { pose: "happy", message: "all caught up, go take a break sensei." },
-  printed: { pose: "happy", message: "shelf's clear, everyone's got their prize." },
+  printed: { pose: "huh", message: "nothing ready? get to printing" },
   fulfilled: { pose: "happy", message: "all caught up." },
   // Not a visible column (same as fulfilled) -- entry only exists to
   // satisfy Record<RequestStatus, ...>.
@@ -167,26 +168,6 @@ function CardAvatar({ photoUrl }: { photoUrl: string | null }) {
     );
   }
   return smileFallback;
-}
-
-function DetailRow({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-2 py-2.5 border-b border-border-warm/50 last:border-b-0 text-left">
-      <span className="flex items-center gap-1.5 text-muted w-32 shrink-0 pt-px">
-        <Icon size={13} className="shrink-0" aria-hidden="true" />
-        {label}
-      </span>
-      <span className="text-ink leading-relaxed">{children}</span>
-    </div>
-  );
 }
 
 type Override = { status: RequestStatus; salePrice: number | null };

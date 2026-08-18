@@ -7,6 +7,11 @@ import { breakdownToCoinPrice } from "@/lib/coins";
 import { resolveFranchiseTagIds } from "@/lib/franchiseTags";
 import { NONE_VALUE } from "@/lib/constants";
 import type { PrizeStatus, RequestSize } from "@/lib/types";
+import {
+  computePrizeEditChanges,
+  logPrizeActivity,
+  type PrizeSnapshot,
+} from "@/lib/prizeActivityLog";
 
 export type PrizeFormState = { error: string | null; success?: boolean; id?: string };
 
@@ -16,6 +21,53 @@ function parseFilamentIds(formData: FormData): string[] {
 
 function parseFranchiseTagNames(formData: FormData): string[] {
   return formData.getAll("franchise_tag_names").map(String).filter(Boolean);
+}
+
+// Who's making this change -- a hidden field on the form set from the
+// active profile (see ProfileContext), same pattern as RequestForm.
+function actorFromForm(formData: FormData): string | null {
+  return String(formData.get("actor") ?? "").trim() || null;
+}
+
+async function namesForFilamentIds(
+  supabase: ReturnType<typeof createServerClient>,
+  filamentIds: string[],
+): Promise<string[]> {
+  if (filamentIds.length === 0) return [];
+  const { data } = await supabase.from("filaments").select("color_name").in("id", filamentIds);
+  return (data ?? []).map((f) => f.color_name);
+}
+
+// Snapshot of a prize's current state (row + resolved link names) for the
+// edit-activity diff -- fetched before the update is applied.
+async function snapshotPrize(
+  supabase: ReturnType<typeof createServerClient>,
+  prizeId: string,
+): Promise<PrizeSnapshot | null> {
+  const [{ data: prize }, { data: filamentLinks }, { data: tagLinks }] = await Promise.all([
+    supabase
+      .from("prizes")
+      .select("name, photo_url, coin_price, makerworld_link, stock_count, size")
+      .eq("id", prizeId)
+      .single(),
+    supabase.from("prize_filament").select("filament:filaments(color_name)").eq("prize_id", prizeId),
+    supabase.from("prize_franchise_tags").select("tag:franchise_tags(name)").eq("prize_id", prizeId),
+  ]);
+  if (!prize) return null;
+  return {
+    name: prize.name,
+    photo_url: prize.photo_url,
+    coin_price: prize.coin_price,
+    makerworld_link: prize.makerworld_link,
+    stock_count: prize.stock_count,
+    size: prize.size,
+    colorNames: ((filamentLinks ?? []) as unknown as { filament: { color_name: string } | null }[])
+      .map((l) => l.filament?.color_name)
+      .filter((v): v is string => Boolean(v)),
+    themeNames: ((tagLinks ?? []) as unknown as { tag: { name: string } | null }[])
+      .map((l) => l.tag?.name)
+      .filter((v): v is string => Boolean(v)),
+  };
 }
 
 function coinPriceFromForm(formData: FormData): number | null {
@@ -108,6 +160,7 @@ async function performCreatePrize(formData: FormData): Promise<PrizeFormState> {
         parseFranchiseTagNames(formData),
       );
       await syncFranchiseTagLinks(supabase, prize.id, tagIds);
+      await logPrizeActivity(supabase, prize.id, actorFromForm(formData), "created");
     }
 
     revalidatePath("/catalog");
@@ -127,7 +180,10 @@ async function performUpdatePrize(
 ): Promise<PrizeFormState> {
   const supabase = createServerClient();
   try {
+    const before = await snapshotPrize(supabase, prizeId);
     const stockCount = Number(formData.get("stock_count") ?? 0);
+    const filamentIds = parseFilamentIds(formData);
+    const themeNames = parseFranchiseTagNames(formData);
 
     const { error } = await supabase
       .from("prizes")
@@ -145,12 +201,24 @@ async function performUpdatePrize(
 
     if (error) return { error: error.message };
 
-    await syncFilamentLinks(supabase, prizeId, parseFilamentIds(formData));
-    const tagIds = await resolveFranchiseTagIds(
-      supabase,
-      parseFranchiseTagNames(formData),
-    );
+    await syncFilamentLinks(supabase, prizeId, filamentIds);
+    const tagIds = await resolveFranchiseTagIds(supabase, themeNames);
     await syncFranchiseTagLinks(supabase, prizeId, tagIds);
+
+    if (before) {
+      const after: PrizeSnapshot = {
+        name: String(formData.get("name") ?? "").trim(),
+        photo_url: String(formData.get("photo_url") ?? "").trim() || null,
+        coin_price: coinPriceFromForm(formData),
+        makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
+        stock_count: stockCount,
+        size: sizeFromForm(formData),
+        colorNames: await namesForFilamentIds(supabase, filamentIds),
+        themeNames,
+      };
+      const changes = computePrizeEditChanges(before, after);
+      await logPrizeActivity(supabase, prizeId, actorFromForm(formData), "edited", changes);
+    }
 
     revalidatePath("/catalog");
     revalidatePath("/filament");
@@ -238,4 +306,86 @@ export async function quickCheckout(prizeId: string, boughtBy: string | null) {
 
   revalidatePath("/catalog");
   revalidatePath("/checkouts");
+}
+
+// Manual "Log a reprint" action from the prize peek -- see
+// prizeActivityLog.ts for why this is a deliberate click rather than
+// inferred from stock edits. The running "reprinted N times" count shown
+// in the UI is just a count of these activity entries.
+export async function logPrizeReprint(prizeId: string, actor: string | null) {
+  const supabase = createServerClient();
+  await logPrizeActivity(supabase, prizeId, actor, "reprinted");
+  revalidatePath("/catalog");
+}
+
+// Comments: same free-text-author pattern as request_comments (see
+// requests/actions.ts).
+export async function addPrizeComment(prizeId: string, author: string | null, body: string) {
+  const trimmedBody = body.trim();
+  if (!trimmedBody) throw new Error("Comment can't be empty.");
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("prize_comments")
+    .insert({ prize_id: prizeId, author: author?.trim() || null, body: trimmedBody })
+    .select("id, prize_id, author, body, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/catalog");
+  return data;
+}
+
+export async function updatePrizeComment(commentId: string, body: string) {
+  const trimmedBody = body.trim();
+  if (!trimmedBody) throw new Error("Comment can't be empty.");
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("prize_comments")
+    .update({ body: trimmedBody })
+    .eq("id", commentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/catalog");
+}
+
+export async function deletePrizeComment(commentId: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("prize_comments").delete().eq("id", commentId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/catalog");
+}
+
+// Reactions: same toggle-via-unique-constraint pattern as
+// toggleCommentReaction in requests/actions.ts.
+export async function togglePrizeCommentReaction(
+  commentId: string,
+  emoji: string,
+  actor: string | null,
+) {
+  const supabase = createServerClient();
+  const normalizedActor = actor?.trim() || null;
+
+  let existingQuery = supabase
+    .from("prize_comment_reactions")
+    .select("id")
+    .eq("comment_id", commentId)
+    .eq("emoji", emoji);
+  existingQuery = normalizedActor
+    ? existingQuery.eq("actor", normalizedActor)
+    : existingQuery.is("actor", null);
+  const { data: existing } = await existingQuery.maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase.from("prize_comment_reactions").delete().eq("id", existing.id);
+    if (error) throw new Error(error.message);
+    revalidatePath("/catalog");
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("prize_comment_reactions")
+    .insert({ comment_id: commentId, emoji, actor: normalizedActor })
+    .select("id, comment_id, emoji, actor, created_at")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/catalog");
+  return data;
 }
