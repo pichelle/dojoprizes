@@ -10,6 +10,14 @@ import { useProfiles } from "@/components/ProfileContext";
 
 const initialState: ProfileFormState = { error: null };
 
+// Michelle and John's icons are set on purpose (not the default ninja), so
+// the "want a custom icon?" nudge would just be noise for them -- everyone
+// else still sees it, whether they're a brand-new profile or being edited.
+const PROTECTED_ICON_NAMES = ["michelle", "john"];
+function hasProtectedIcon(name: string) {
+  return PROTECTED_ICON_NAMES.includes(name.trim().replace(/^sensei\s+/i, "").toLowerCase());
+}
+
 function ProfileForm({
   editing,
   onDone,
@@ -36,7 +44,7 @@ function ProfileForm({
   return (
     <form
       action={formAction}
-      className="mt-6 max-w-xs mx-auto text-left bg-card border border-border-warm rounded-xl p-5"
+      className="mt-6 max-w-sm mx-auto text-left bg-card border border-border-warm rounded-xl p-5"
     >
       {editing && <input type="hidden" name="id" value={editing.id} />}
       <input type="hidden" name="color_hex" value={colorHex} />
@@ -60,7 +68,7 @@ function ProfileForm({
         </div>
       </div>
 
-      {!editing && (
+      {!(editing && hasProtectedIcon(editing.name)) && (
         <p className="text-center text-xs text-muted mb-4">
           Want a custom profile icon? Let Michelle know :)
         </p>
@@ -84,9 +92,9 @@ function ProfileForm({
             up with profiles literally named "Sensei Aidan". */}
         <p className="mt-1.5 text-xs text-muted">
           {name.trim() ? (
-            <>Will show as &quot;{formatSensei(name)}&quot; -- just your first name above.</>
+            <>Will show as &quot;{formatSensei(name)}&quot; — just your first name above.</>
           ) : (
-            "Just your first name -- \"Sensei\" gets added automatically."
+            "Just your first name — \"Sensei\" gets added automatically."
           )}
         </p>
       </div>
