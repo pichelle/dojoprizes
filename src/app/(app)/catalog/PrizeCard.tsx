@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { MessageCircle } from "lucide-react";
 import type { Prize } from "@/lib/types";
 import { coinPriceToBreakdown } from "@/lib/coins";
 import { showToast } from "@/components/ToastHost";
@@ -138,29 +139,37 @@ export default function PrizeCard({
           ) : (
             <span className="text-xs text-muted">No price set</span>
           )}
-          {isPrintOnRequest ? (
-            <Link
-              href={`/requests/new?prize_id=${prize.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-nav shrink-0 transition-colors whitespace-nowrap"
-              title="Log a request to print another one of these"
-            >
-              Reprint
-            </Link>
-          ) : (
-            <button
-              ref={soldButtonRef}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowBuyerModal(true);
-              }}
-              className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-nav shrink-0 transition-colors"
-              title="Log that a student took this off the shelf"
-            >
-              Mark sold
-            </button>
-          )}
+          <span className="flex items-center gap-2.5 shrink-0">
+            {(prize.comments ?? []).length > 0 && (
+              <span className="flex items-center gap-1.5 leading-none text-[11px] font-semibold text-muted">
+                <MessageCircle size={13} className="shrink-0" aria-hidden="true" />
+                <span>{(prize.comments ?? []).length}</span>
+              </span>
+            )}
+            {isPrintOnRequest ? (
+              <Link
+                href={`/requests/new?prize_id=${prize.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-sm rounded-md border border-border-warm-strong px-3 py-2 text-ink hover:bg-nav shrink-0 transition-colors whitespace-nowrap"
+                title="Log a request to print another one of these"
+              >
+                Reprint
+              </Link>
+            ) : (
+              <button
+                ref={soldButtonRef}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowBuyerModal(true);
+                }}
+                className="text-sm rounded-md border border-border-warm-strong px-4 py-2 text-ink hover:bg-nav shrink-0 transition-colors"
+                title="Log that a student took this off the shelf"
+              >
+                Mark sold
+              </button>
+            )}
+          </span>
         </div>
       </div>
 
