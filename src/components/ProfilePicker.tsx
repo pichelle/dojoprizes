@@ -21,6 +21,7 @@ function ProfileForm({
 }) {
   const action = editing ? updateProfile : createProfile;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [name, setName] = useState(editing?.name ?? "");
   const [colorHex, setColorHex] = useState(editing?.color_hex ?? PROFILE_COLOR_OPTIONS[0]);
   // Hovering a swatch previews that color on the icon above without
   // committing it -- moving off reverts to whatever's actually selected.
@@ -59,16 +60,29 @@ function ProfileForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-sm text-ink-soft shrink-0">Sensei</span>
-        <input
-          type="text"
-          name="name"
-          placeholder="Your name"
-          defaultValue={editing?.name ?? ""}
-          className="flex-1 min-w-0 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
-          autoFocus
-        />
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-ink-soft shrink-0">Sensei</span>
+          <input
+            type="text"
+            name="name"
+            placeholder="Your first name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1 min-w-0 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
+            autoFocus
+          />
+        </div>
+        {/* Confirms "Sensei" gets added automatically, so no one re-types
+            it after seeing the static label above -- that's how we ended
+            up with profiles literally named "Sensei Aidan". */}
+        <p className="mt-1.5 text-xs text-muted">
+          {name.trim() ? (
+            <>Will show as &quot;{formatSensei(name)}&quot; -- just your first name above.</>
+          ) : (
+            "Just your first name -- \"Sensei\" gets added automatically."
+          )}
+        </p>
       </div>
 
       <label className="block text-xs font-medium text-ink-soft mb-2">Choose an icon color</label>
