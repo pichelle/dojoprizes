@@ -10,6 +10,14 @@ import { useProfiles } from "@/components/ProfileContext";
 
 const initialState: ProfileFormState = { error: null };
 
+// Michelle and John's icons are set on purpose (not the default ninja), so
+// the "want a custom icon?" nudge would just be noise for them -- everyone
+// else still sees it, whether they're a brand-new profile or being edited.
+const PROTECTED_ICON_NAMES = ["michelle", "john"];
+function hasProtectedIcon(name: string) {
+  return PROTECTED_ICON_NAMES.includes(name.trim().replace(/^sensei\s+/i, "").toLowerCase());
+}
+
 function ProfileForm({
   editing,
   onDone,
@@ -21,6 +29,7 @@ function ProfileForm({
 }) {
   const action = editing ? updateProfile : createProfile;
   const [state, formAction, pending] = useActionState(action, initialState);
+  const [name, setName] = useState(editing?.name ?? "");
   const [colorHex, setColorHex] = useState(editing?.color_hex ?? PROFILE_COLOR_OPTIONS[0]);
   // Hovering a swatch previews that color on the icon above without
   // committing it -- moving off reverts to whatever's actually selected.
@@ -35,7 +44,7 @@ function ProfileForm({
   return (
     <form
       action={formAction}
-      className="mt-6 max-w-xs mx-auto text-left bg-card border border-border-warm rounded-xl p-5"
+      className="mt-6 max-w-sm mx-auto text-left bg-card border border-border-warm rounded-xl p-5"
     >
       {editing && <input type="hidden" name="id" value={editing.id} />}
       <input type="hidden" name="color_hex" value={colorHex} />
@@ -59,16 +68,35 @@ function ProfileForm({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-sm text-ink-soft shrink-0">Sensei</span>
-        <input
-          type="text"
-          name="name"
-          placeholder="Your name"
-          defaultValue={editing?.name ?? ""}
-          className="flex-1 min-w-0 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
-          autoFocus
-        />
+      {!(editing && hasProtectedIcon(editing.name)) && (
+        <p className="text-center text-xs text-muted mb-4">
+          Want a custom profile icon? Let Michelle know :)
+        </p>
+      )}
+
+      <div className="mb-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-ink-soft shrink-0">Sensei</span>
+          <input
+            type="text"
+            name="name"
+            placeholder="Your first name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="flex-1 min-w-0 rounded-md border border-border-warm-strong px-3 py-2 text-sm"
+            autoFocus
+          />
+        </div>
+        {/* Confirms "Sensei" gets added automatically, so no one re-types
+            it after seeing the static label above -- that's how we ended
+            up with profiles literally named "Sensei Aidan". */}
+        <p className="mt-1.5 text-xs text-muted">
+          {name.trim() ? (
+            <>Will show as &quot;{formatSensei(name)}&quot; — just your first name above.</>
+          ) : (
+            "Just your first name — \"Sensei\" gets added automatically."
+          )}
+        </p>
       </div>
 
       <label className="block text-xs font-medium text-ink-soft mb-2">Choose an icon color</label>
@@ -186,7 +214,7 @@ export default function ProfilePicker() {
       >
         <h1 className="font-serif text-2xl font-bold text-ink mb-1">Who&apos;s logging in?</h1>
         <p className="text-sm text-muted mb-8">
-          Pick a profile to continue -- helps us track activity like new entries and edits.
+          Pick a profile to continue — helps us track activity like new entries and edits.
         </p>
 
         <div className="flex gap-5 justify-center items-start flex-wrap">
