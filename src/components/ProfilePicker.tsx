@@ -60,6 +60,12 @@ function ProfileForm({
         </div>
       </div>
 
+      {!editing && (
+        <p className="text-center text-xs text-muted mb-4">
+          Want a custom profile icon? Let Michelle know :)
+        </p>
+      )}
+
       <div className="mb-4">
         <div className="flex items-center gap-2">
           <span className="text-sm text-ink-soft shrink-0">Sensei</span>
