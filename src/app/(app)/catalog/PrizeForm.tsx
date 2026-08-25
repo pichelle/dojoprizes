@@ -318,10 +318,9 @@ export default function PrizeForm({
           name="notes"
           rows={2}
           defaultValue={initial?.notes ?? ""}
-          placeholder="Internal notes -- print settings, where it's stored, anything staff should know..."
+          placeholder="Internal notes — print settings, where it's stored, anything staff should know..."
           className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
         />
-        <p className="mt-1 text-xs text-muted">Staff-only -- never shown to ninjas.</p>
       </div>
 
       <div className="flex items-center gap-3">

@@ -68,35 +68,49 @@ export default function RequestsView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex gap-1 bg-nav border border-border-warm rounded-lg p-1">
-          <button
-            type="button"
-            onClick={() => pick("board")}
-            aria-pressed={view === "board"}
-            className={`flex items-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 ${
-              view === "board" ? "bg-card text-ink shadow-sm" : "text-muted hover:text-ink"
-            }`}
+      {/* Mobile (below sm): two rows -- view toggle + "Add a request"
+          together on the first, filters alone on the second. Desktop
+          (sm+): unchanged, everything back in one flex-wrap row
+          (`sm:contents` makes the two mobile grouping divs disappear from
+          layout so their children rejoin the single row). */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex items-center gap-2 sm:contents">
+          <div className="flex gap-1 bg-nav border border-border-warm rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => pick("board")}
+              aria-pressed={view === "board"}
+              className={`flex items-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 ${
+                view === "board" ? "bg-card text-ink shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              <LayoutGrid size={13} aria-hidden="true" />
+              Board
+            </button>
+            <button
+              type="button"
+              onClick={() => pick("table")}
+              aria-pressed={view === "table"}
+              className={`flex items-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 ${
+                view === "table" ? "bg-card text-ink shadow-sm" : "text-muted hover:text-ink"
+              }`}
+            >
+              <Table2 size={13} aria-hidden="true" />
+              Table
+            </button>
+          </div>
+          <Link
+            href="/requests/new"
+            className="sm:hidden flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0 ml-auto"
           >
-            <LayoutGrid size={13} aria-hidden="true" />
-            Board
-          </button>
-          <button
-            type="button"
-            onClick={() => pick("table")}
-            aria-pressed={view === "table"}
-            className={`flex items-center gap-1.5 text-xs font-medium rounded-md px-3 py-2 ${
-              view === "table" ? "bg-card text-ink shadow-sm" : "text-muted hover:text-ink"
-            }`}
-          >
-            <Table2 size={13} aria-hidden="true" />
-            Table
-          </button>
+            <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
+            Add a request
+          </Link>
         </div>
         <RequestsFilterBar colorOptions={colorOptions} showStatus={view === "table"} />
         <Link
           href="/requests/new"
-          className="flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0 ml-auto"
+          className="hidden sm:flex items-center gap-1.5 rounded-md bg-ink text-page px-4 py-2 text-sm font-medium hover:opacity-90 shrink-0 ml-auto"
         >
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a request

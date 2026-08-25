@@ -172,17 +172,11 @@ const SOURCE_META = {
 
 const SIZE_RANK: Record<string, number> = { small: 0, medium: 1, large: 2, xlarge: 3, true_to_size: 4 };
 
-// Mobile-only stand-in for the desktop table's per-column sort arrows --
-// once rows collapse into cards below sm there's no header row for those
-// arrows to live in, so this covers the same options as one dropdown.
-const MOBILE_SORT_OPTIONS: { value: string; label: string; key: "date" | "item" | "size" | "price"; dir: "asc" | "desc" }[] = [
-  { value: "date-desc", label: "Newest first", key: "date", dir: "desc" },
-  { value: "date-asc", label: "Oldest first", key: "date", dir: "asc" },
-  { value: "price-desc", label: "Price: high to low", key: "price", dir: "desc" },
-  { value: "price-asc", label: "Price: low to high", key: "price", dir: "asc" },
-  { value: "item-asc", label: "Name: A–Z", key: "item", dir: "asc" },
-  { value: "item-desc", label: "Name: Z–A", key: "item", dir: "desc" },
-];
+// Rows revealed at a time under "Load more" -- search/filter/sort all run
+// against the full fetched `rows` prop regardless of how many are
+// currently revealed, so a search always finds a match anywhere in the
+// data, not just what's on screen yet.
+const PAGE_SIZE = 50;
 
 type Period = "month" | "year" | "all";
 const PERIOD_LABEL: Record<Period, string> = { month: "Past month", year: "Past year", all: "All time" };
@@ -217,6 +211,7 @@ function SortHeader({
   sortKey,
   sortDir,
   onSort,
+  sticky = false,
 }: {
   label: string;
   sortKeyName: SortKey;
@@ -225,10 +220,18 @@ function SortHeader({
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey, dir: SortDir) => void;
+  // The "Item" column -- pinned to the left edge while the rest of the
+  // table scrolls horizontally, same single-sticky-column pattern
+  // RequestsTable uses for its "Prize" column.
+  sticky?: boolean;
 }) {
   const isActive = sortKey === sortKeyName && sortDir !== null;
   return (
-    <th className="px-3 py-2.5 font-medium text-muted text-xs">
+    <th
+      className={`px-3 py-2.5 font-medium text-muted text-xs ${
+        sticky ? "sticky left-0 z-10 bg-nav shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)]" : ""
+      }`}
+    >
       <span className="flex items-center gap-1">
         {label}
         <span className="inline-flex flex-col leading-none">
@@ -296,6 +299,7 @@ export default function CheckoutsTable({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [peekMode, setPeekMode] = useState<"view" | "edit">("view");
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const active = rows.find((r) => r.id === activeId) ?? null;
 
@@ -326,15 +330,6 @@ export default function CheckoutsTable({
     setSortDir((prev) => (sortKey === key && prev === dir ? null : dir));
   }
 
-  const mobileSortValue =
-    MOBILE_SORT_OPTIONS.find((o) => o.key === sortKey && o.dir === sortDir)?.value ?? "date-desc";
-  function applyMobileSort(value: string) {
-    const opt = MOBILE_SORT_OPTIONS.find((o) => o.value === value);
-    if (!opt) return;
-    setSortKey(opt.key);
-    setSortDir(opt.dir);
-  }
-
   const filtered = useMemo(() => {
     let list = rows.filter((r) => !pendingDeleteIds.has(r.id));
     if (sourceFilter) list = list.filter((r) => r.source === sourceFilter);
@@ -361,6 +356,18 @@ export default function CheckoutsTable({
     });
     return list;
   }, [filtered, sortKey, sortDir]);
+
+  // Reset the "Load more" reveal whenever the filtered/sorted set itself
+  // changes, so switching filters doesn't leave you stuck on page 3 of a
+  // now-much-shorter list. Adjusted during render (not an effect) --
+  // same pattern used elsewhere in this app for deriving state from a
+  // prop/dependency transition without an extra render pass.
+  const [prevSorted, setPrevSorted] = useState(sorted);
+  if (sorted !== prevSorted) {
+    setPrevSorted(sorted);
+    setVisibleCount(PAGE_SIZE);
+  }
+  const visible = sorted.slice(0, visibleCount);
 
   return (
     <div className="space-y-4">
@@ -450,32 +457,36 @@ export default function CheckoutsTable({
             className="w-full rounded-md border border-border-warm-strong bg-card pl-3 pr-8 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
-        {/* Column-header sort arrows don't have anywhere to live once the
-            table becomes a card list below sm -- this dropdown covers the
-            same sort options in one control, mobile-only. */}
-        <Select
-          value={mobileSortValue}
-          onValueChange={applyMobileSort}
-          className="w-full sm:hidden"
-          options={MOBILE_SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
-        />
       </div>
 
-      <div className="hidden sm:block bg-card border border-border-warm rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-nav text-left">
-            <tr>
+      {/* Prize (sticky) stays visible while the rest scrolls horizontally
+          -- same single-sticky-column pattern as Requests' table. Who and
+          Date sold sit right after it (next most useful at a glance),
+          matching how they were ranked in the design discussion. */}
+      <div className="scroll-warm border border-border-warm rounded-2xl bg-nav overflow-x-auto">
+        <table className="w-full text-sm border-collapse min-w-[720px]">
+          <thead>
+            <tr className="border-b border-border-warm">
+              <SortHeader
+                sticky
+                label="Item"
+                sortKeyName="item"
+                ascLabel="A–Z"
+                descLabel="Z–A"
+                sortKey={sortKey}
+                sortDir={sortDir}
+                onSort={setSort}
+              />
+              <th className="text-left px-3 py-2.5 font-medium text-muted text-xs">Who</th>
               <SortHeader label="Date sold" sortKeyName="date" ascLabel="Oldest" descLabel="Most recent" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
-              <SortHeader label="Item" sortKeyName="item" ascLabel="A–Z" descLabel="Z–A" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
-              <th className="px-3 py-2.5 font-medium text-muted text-xs">Who</th>
               <SortHeader label="Size" sortKeyName="size" ascLabel="Small to large" descLabel="Large to small" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
-              <th className="px-3 py-2.5 font-medium text-muted text-xs">Color</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted text-xs">Color</th>
               <SortHeader label="Price" sortKeyName="price" ascLabel="Low to high" descLabel="High to low" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
-              <th className="px-3 py-2.5 font-medium text-muted text-xs">Source</th>
+              <th className="text-left px-3 py-2.5 font-medium text-muted text-xs">Source</th>
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r, i) => {
+            {visible.map((r, i) => {
               const meta = SOURCE_META[r.source];
               const priceTag = formatCoinPriceBreakdown(r.price);
               return (
@@ -483,11 +494,13 @@ export default function CheckoutsTable({
                   key={r.id}
                   onClick={() => openPeek(r.id)}
                   style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
-                  className="stagger-fade-in border-t border-border-warm cursor-pointer hover:bg-nav/40"
+                  className="group stagger-fade-in border-b border-border-warm/50 last:border-b-0 bg-card hover:bg-nav-hover cursor-pointer transition-colors"
                 >
-                  <td className="px-3 py-2.5 text-muted whitespace-nowrap">{formatShortDate(r.date)}</td>
-                  <td className="px-3 py-2.5 font-medium text-ink">{r.itemName}</td>
+                  <td className="sticky left-0 z-10 bg-card group-hover:bg-nav-hover font-medium text-ink px-3 py-2.5 shadow-[3px_0_6px_-3px_rgba(0,0,0,0.15)] transition-colors">
+                    {r.itemName}
+                  </td>
                   <td className="px-3 py-2.5 text-muted">{r.who ?? "—"}</td>
+                  <td className="px-3 py-2.5 text-muted whitespace-nowrap">{formatShortDate(r.date)}</td>
                   <td className="px-3 py-2.5 text-muted">{formatSize(r.size) ?? "—"}</td>
                   <td className="px-3 py-2.5 text-muted">
                     {r.colors.map((c) => c.color_name).join(", ") || "—"}
@@ -508,41 +521,6 @@ export default function CheckoutsTable({
         </table>
       </div>
 
-      {/* Mobile (below sm): the 7-column table has nowhere to go on a
-          phone-width screen, so each row collapses into a card instead --
-          tapping it opens the same peek a table row would. */}
-      <div className="sm:hidden space-y-2.5">
-        {sorted.map((r, i) => {
-          const meta = SOURCE_META[r.source];
-          const priceTag = formatCoinPriceBreakdown(r.price);
-          return (
-            <button
-              type="button"
-              key={r.id}
-              onClick={() => openPeek(r.id)}
-              style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
-              className="stagger-fade-in w-full text-left bg-card border border-border-warm rounded-xl p-3.5 space-y-1.5"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-medium text-ink text-sm">{r.itemName}</span>
-                <span
-                  className="shrink-0 text-[10px] font-medium rounded-full px-2.5 py-1"
-                  style={{ background: meta.bg, color: meta.text }}
-                >
-                  {meta.label}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
-                <span>{formatShortDate(r.date)}</span>
-                {r.who && <span>{r.who}</span>}
-                {r.size && <span>{formatSize(r.size)}</span>}
-                {priceTag && <span>{priceTag}</span>}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
       {sorted.length === 0 && rows.length === 0 && (
         <EmptyStateMascot
           pose="sparkle"
@@ -551,6 +529,15 @@ export default function CheckoutsTable({
       )}
       {sorted.length === 0 && rows.length > 0 && (
         <p className="text-sm text-muted py-4 text-center">Nothing matches yet.</p>
+      )}
+      {visibleCount < sorted.length && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
+          className="mx-auto block text-sm font-medium text-link hover:text-link-hover"
+        >
+          Load more ({sorted.length - visibleCount} more)
+        </button>
       )}
 
       <SidePeek

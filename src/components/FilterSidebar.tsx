@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, SlidersHorizontal } from "lucide-react";
 import { showToast } from "@/components/ToastHost";
+import BottomSheet from "@/components/BottomSheet";
 
 export type FilterGroup = {
   key: string;
@@ -29,6 +30,11 @@ export default function FilterSidebar({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // Mobile only -- see the `hidden sm:flex` / `sm:hidden` split below.
+  // Desktop's sidebar is always visible so this state is simply never
+  // read there.
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const [renaming, setRenaming] = useState<{ group: string; value: string } | null>(null);
   const [renameText, setRenameText] = useState("");
@@ -101,6 +107,7 @@ export default function FilterSidebar({
       if (vals.length > 0) params.set(g.key, vals.join(","));
     }
     router.push(`${basePath}?${params.toString()}`);
+    setMobileOpen(false);
   }
 
   function clearAll() {
@@ -115,15 +122,19 @@ export default function FilterSidebar({
       if (val) params.set(key, val);
     }
     router.push(params.toString() ? `${basePath}?${params.toString()}` : basePath);
+    setMobileOpen(false);
   }
 
   const hasAny = Object.values(selected).some((v) => v.length > 0);
+  // Reflects what's actually *applied* (the URL), not the pending
+  // in-progress selection -- so the mobile button's badge only changes
+  // once Apply is hit, same as everywhere else "active filters" is shown.
+  const appliedCount = groups.reduce((sum, g) => {
+    const raw = searchParams.get(g.key);
+    return sum + (raw ? raw.split(",").filter(Boolean).length : 0);
+  }, 0);
 
-  return (
-    <div className="bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)] flex flex-col">
-      {/* The group list scrolls on its own so the Apply/Clear footer below
-          always stays on screen -- it never gets pushed past the fold by a
-          long list of filter options. */}
+  const groupList = (
       <div className="flex flex-col gap-4 min-h-0 flex-1">
         {groups.map((g) => (
           <div key={g.key} className="min-w-0 flex flex-col flex-1 min-h-0">
@@ -199,24 +210,63 @@ export default function FilterSidebar({
           </div>
         ))}
       </div>
-      <div className="flex flex-col gap-2 pt-3 mt-4 border-t border-border-warm shrink-0">
+  );
+
+  const footer = (
+    <div className="flex flex-col gap-2 pt-3 mt-4 border-t border-border-warm shrink-0">
+      <button
+        type="button"
+        onClick={apply}
+        className="rounded-md bg-ink text-page text-sm font-medium px-3 py-2 hover:opacity-90"
+      >
+        Apply filters
+      </button>
+      {hasAny && (
         <button
           type="button"
-          onClick={apply}
-          className="rounded-md bg-ink text-page text-sm font-medium px-3 py-2 hover:opacity-90"
+          onClick={clearAll}
+          className="text-xs text-muted hover:text-ink underline"
         >
-          Apply filters
+          Clear all
         </button>
-        {hasAny && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="text-xs text-muted hover:text-ink underline"
-          >
-            Clear all
-          </button>
-        )}
+      )}
+    </div>
+  );
+
+  // A single wrapping element -- this is what the page's
+  // `grid sm:grid-cols-[200px_1fr]` actually sizes as the sidebar column,
+  // so it has to stay one element (a Fragment here would hand the grid
+  // 3 separate implicit items instead and scramble the column mapping).
+  return (
+    <div className="min-w-0">
+      {/* Desktop (sm+): unchanged sticky sidebar. */}
+      <div className="hidden sm:flex bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)] flex-col">
+        {groupList}
+        {footer}
       </div>
+
+      {/* Mobile: a "Filters" button (with a badge for how many are
+          currently applied) instead of the full sidebar dumping above the
+          grid -- opens the same groups/Apply/Clear in a bottom sheet. */}
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="sm:hidden flex items-center gap-1.5 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink font-medium"
+      >
+        <SlidersHorizontal size={14} aria-hidden="true" />
+        Filters
+        {appliedCount > 0 && (
+          <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] rounded-full bg-ink text-page text-[10px] font-bold px-1">
+            {appliedCount}
+          </span>
+        )}
+      </button>
+      <BottomSheet open={mobileOpen} onClose={() => setMobileOpen(false)} title="Filters">
+        <div className="flex flex-col min-h-0">
+          {groupList}
+          {footer}
+        </div>
+      </BottomSheet>
     </div>
   );
 }

@@ -205,27 +205,32 @@ export default async function RequestsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Stacks on mobile (title/subtext, then the two stat tiles full
+          width below) instead of squeezing everything into one row --
+          the old unwrapped row let the flex-shrink default compress the
+          tiles unevenly, wrapping "Oldest waiting"'s value but not
+          "Avg. turnaround"'s, purely from DOM order, not the data. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Request log</h1>
           <p className="text-sm text-muted mt-1">Track pending prints and see what to make next.</p>
         </div>
         <div className="flex gap-3">
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
-            <p className="flex items-center gap-1.5 text-xs text-muted">
+          <div className="flex-1 sm:flex-initial bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="flex items-center gap-1.5 text-xs text-muted whitespace-nowrap">
               <Timer size={13} aria-hidden="true" />
               Avg. turnaround
             </p>
-            <p className="text-lg font-bold text-ink mt-0.5">
+            <p className="text-lg font-bold text-ink mt-0.5 whitespace-nowrap">
               {avgTurnaroundDays === null ? "—" : `${avgTurnaroundDays.toFixed(1)} days`}
             </p>
           </div>
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
-            <p className="flex items-center gap-1.5 text-xs text-muted">
+          <div className="flex-1 sm:flex-initial bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="flex items-center gap-1.5 text-xs text-muted whitespace-nowrap">
               <Clock size={13} aria-hidden="true" />
               Oldest waiting
             </p>
-            <p className="text-lg font-bold text-ink mt-0.5">
+            <p className="text-lg font-bold text-ink mt-0.5 whitespace-nowrap">
               {oldestPendingDays === null ? "—" : `${oldestPendingDays} days`}
             </p>
           </div>

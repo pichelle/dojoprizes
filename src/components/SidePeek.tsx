@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { useSwipeDismiss } from "@/lib/useSwipeDismiss";
 
 // Shared slide-in-right/slide-out-right panel used by every side peek in
 // the app (requests, catalog, filament, checkouts). Keeps the panel
@@ -61,6 +62,15 @@ export default function SidePeek({
     return () => clearTimeout(timeoutId);
   }, [closing]);
 
+  // Swipe right (touch only -- a mouse never fires touch events, so this
+  // is inert on desktop) closes the peek the same as the X button does.
+  // Disabled while already closing so a lingering touch can't retrigger it.
+  const { panelRef, style: swipeStyle } = useSwipeDismiss<HTMLDivElement>({
+    direction: "right",
+    onDismiss: onClose,
+    disabled: closing,
+  });
+
   if (!mounted) return null;
 
   return (
@@ -76,6 +86,8 @@ export default function SidePeek({
           corners, and a soft shadow, echoing the nav pill's own floating
           treatment rather than sitting flush like a plain drawer. */}
       <div
+        ref={panelRef}
+        style={swipeStyle}
         className={`${closing ? "slide-out-right" : "slide-in-right"} relative w-full ${maxWidth} h-full sm:h-[calc(100%-2rem)] sm:m-4 bg-card overflow-hidden flex flex-col shadow-xl border-l sm:border border-border-warm sm:rounded-[28px] sm:shadow-[0_8px_28px_rgba(58,58,56,0.16)]`}
       >
         <button

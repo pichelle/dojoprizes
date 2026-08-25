@@ -45,6 +45,9 @@ const COIN_ICONS: Record<"obsidian" | "gold", string> = {
   gold: "/icons/coin-gold.png",
 };
 
+// First page size for the Print-on-request section's "Show all" expander.
+const PRINT_ON_REQUEST_PAGE_SIZE = 12;
+
 function PriceBreakdown({ coinPrice }: { coinPrice: number | null }) {
   const b = coinPriceToBreakdown(coinPrice);
   const hasPrice = b.obsidian > 0 || b.gold > 0 || b.silver > 0;
@@ -109,6 +112,11 @@ export default function CatalogBoard({
   // elapses and prizes stops including it anyway.
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
   const visiblePrizes = prizes.filter((p) => !pendingDeleteIds.has(p.id));
+  // Print-on-request is effectively an archive that only grows over time
+  // -- capped to a first page with a "Show all" expander so it can't turn
+  // the page into an endless scroll, while In stock (the smaller, most-
+  // browsed set) stays fully shown as-is.
+  const [showAllPrintOnRequest, setShowAllPrintOnRequest] = useState(false);
 
   // Derived from the current `prizes` prop by id (not stored directly) so
   // that after a delete + router.refresh(), the prize disappearing from
@@ -237,9 +245,23 @@ export default function CatalogBoard({
       )}
 
       {printOnRequestPrizes.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {printOnRequestPrizes.map((prize, i) => renderCard(prize, i))}
-        </div>
+        <>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(showAllPrintOnRequest
+              ? printOnRequestPrizes
+              : printOnRequestPrizes.slice(0, PRINT_ON_REQUEST_PAGE_SIZE)
+            ).map((prize, i) => renderCard(prize, i))}
+          </div>
+          {!showAllPrintOnRequest && printOnRequestPrizes.length > PRINT_ON_REQUEST_PAGE_SIZE && (
+            <button
+              type="button"
+              onClick={() => setShowAllPrintOnRequest(true)}
+              className="mx-auto block text-sm font-medium text-link hover:text-link-hover"
+            >
+              Show all {printOnRequestPrizes.length} print-on-request prizes
+            </button>
+          )}
+        </>
       )}
 
       {prizes.length === 0 && !filtersActive && (
