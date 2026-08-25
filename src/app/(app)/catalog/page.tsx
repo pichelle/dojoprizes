@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Prize } from "@/lib/types";
 import { quickCheckout, renameFranchiseTag } from "./actions";
@@ -49,9 +51,13 @@ export default async function CatalogPage({
   // depend on each other, so fetch them together.
   //
   // "Prizes" counts distinct catalog entries (rows), not physical units on
-  // the shelf -- a prize with stock_count 5 still counts as 1 here.
+  // the shelf -- a prize with stock_count 5 still counts as 1 here. The
+  // separate "in stock" tile below is the unit-aware count (stock_count
+  // summed across every in-stock prize), so a prize with 5 on the shelf
+  // actually reads as 5 there.
   const [
     { count: totalPrizes },
+    { data: inStockCounts },
     { data: allTagLinks },
     { data: franchiseTagRows },
     { data: filamentOptions },
@@ -62,6 +68,7 @@ export default async function CatalogPage({
     { data: allReactions },
   ] = await Promise.all([
     supabase.from("prizes").select("*", { count: "exact", head: true }),
+    supabase.from("prizes").select("stock_count").eq("status", "in_stock"),
     supabase.from("prize_franchise_tags").select("prize_id, tag:franchise_tags(id, name)"),
     supabase.from("franchise_tags").select("id, name").order("name"),
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
@@ -117,6 +124,11 @@ export default async function CatalogPage({
   }
 
   const franchiseOptions = (franchiseTagRows ?? []).map((t) => t.name);
+
+  const totalInStockUnits = (inStockCounts ?? []).reduce(
+    (sum, p) => sum + (p.stock_count ?? 0),
+    0,
+  );
 
   // Main filtered/sorted query
   let prizeIdsForColor: string[] | null = null;
@@ -219,7 +231,11 @@ export default async function CatalogPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Stacks on mobile (title/subtext, then both stat tiles full width
+          below) same as the Requests page header -- an unwrapped row let
+          the title and tiles crowd each other with barely any breathing
+          room on a narrow screen. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Prize Bin</h1>
           <p className="text-sm text-muted mt-1">
@@ -228,9 +244,13 @@ export default async function CatalogPage({
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
-            <p className="text-xs text-muted">Unique prizes</p>
-            <p className="text-lg font-bold text-ink mt-0.5">{totalPrizes ?? 0}</p>
+          <div className="flex-1 sm:flex-initial bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="text-xs text-muted whitespace-nowrap">Unique prizes</p>
+            <p className="text-lg font-bold text-ink mt-0.5 whitespace-nowrap">{totalPrizes ?? 0}</p>
+          </div>
+          <div className="flex-1 sm:flex-initial bg-nav border border-border-warm rounded-xl px-4 py-2.5 text-left">
+            <p className="text-xs text-muted whitespace-nowrap">In stock</p>
+            <p className="text-lg font-bold text-ink mt-0.5 whitespace-nowrap">{totalInStockUnits}</p>
           </div>
         </div>
       </div>
@@ -239,6 +259,15 @@ export default async function CatalogPage({
         <FilterSidebar
           basePath="/catalog"
           extraParams={["q", "sort"]}
+          mobileAction={
+            <Link
+              href="/catalog/new"
+              className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
+            >
+              <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
+              Add a prize
+            </Link>
+          }
           groups={[
             {
               key: "theme",

@@ -17,11 +17,18 @@ export default function BottomSheet({
   onClose,
   title,
   children,
+  swipeToClose = true,
 }: {
   open: boolean;
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  // Off by default for sheets whose own content needs vertical touch
+  // scrolling (e.g. a long filter list) -- with swipe-down-to-close also
+  // live on the same surface, a scroll attempt kept getting misread as a
+  // dismiss. Leaving this on elsewhere (the nav's "More" menu) is fine
+  // since that content doesn't scroll.
+  swipeToClose?: boolean;
 }) {
   const [mounted, setMounted] = useState(open);
   const [closing, setClosing] = useState(false);
@@ -54,7 +61,7 @@ export default function BottomSheet({
   const { panelRef, style: swipeStyle } = useSwipeDismiss<HTMLDivElement>({
     direction: "down",
     onDismiss: onClose,
-    disabled: closing,
+    disabled: closing || !swipeToClose,
   });
 
   if (!mounted) return null;

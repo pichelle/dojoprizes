@@ -21,12 +21,17 @@ export default function FilterSidebar({
   groups,
   basePath,
   extraParams = [],
+  mobileAction,
 }: {
   groups: FilterGroup[];
   basePath: string;
   // param keys managed outside this component (e.g. a search box) that
   // should be preserved across Apply/Clear instead of being wiped.
   extraParams?: string[];
+  // Rendered next to the mobile "Filters" button (e.g. "Add a prize") so
+  // a page's primary action can share that row instead of taking a whole
+  // line of its own. Desktop is unaffected -- it has no such row.
+  mobileAction?: React.ReactNode;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -144,7 +149,7 @@ export default function FilterSidebar({
             {g.options.length === 0 ? (
               <p className="text-xs text-muted">Nothing to filter by yet.</p>
             ) : (
-              <div className="scroll-warm space-y-1.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
+              <div className="scroll-warm grid grid-cols-2 gap-x-3 gap-y-1.5 sm:flex sm:flex-col sm:gap-0 sm:space-y-1.5 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
                 {g.options.map((opt) => {
                   const checked = (selected[g.key] ?? []).includes(opt.value);
                   const isRenaming =
@@ -247,21 +252,28 @@ export default function FilterSidebar({
 
       {/* Mobile: a "Filters" button (with a badge for how many are
           currently applied) instead of the full sidebar dumping above the
-          grid -- opens the same groups/Apply/Clear in a bottom sheet. */}
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="sm:hidden flex items-center gap-1.5 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink font-medium"
-      >
-        <SlidersHorizontal size={14} aria-hidden="true" />
-        Filters
-        {appliedCount > 0 && (
-          <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] rounded-full bg-ink text-page text-[10px] font-bold px-1">
-            {appliedCount}
-          </span>
-        )}
-      </button>
-      <BottomSheet open={mobileOpen} onClose={() => setMobileOpen(false)} title="Filters">
+          grid -- opens the same groups/Apply/Clear in a bottom sheet.
+          `mobileAction`, when given, shares this same row. */}
+      <div className="sm:hidden flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="flex items-center gap-1.5 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink font-medium"
+        >
+          <SlidersHorizontal size={14} aria-hidden="true" />
+          Filters
+          {appliedCount > 0 && (
+            <span className="inline-flex items-center justify-center min-w-[1.1rem] h-[1.1rem] rounded-full bg-ink text-page text-[10px] font-bold px-1">
+              {appliedCount}
+            </span>
+          )}
+        </button>
+        {mobileAction}
+      </div>
+      {/* Swipe-to-close is off here -- the filter list itself needs
+          vertical touch scrolling, and with both gestures live on the same
+          surface a scroll attempt kept getting misread as a dismiss. */}
+      <BottomSheet open={mobileOpen} onClose={() => setMobileOpen(false)} title="Filters" swipeToClose={false}>
         <div className="flex flex-col min-h-0">
           {groupList}
           {footer}

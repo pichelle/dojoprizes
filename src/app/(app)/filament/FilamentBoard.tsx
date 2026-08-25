@@ -59,15 +59,19 @@ export default function FilamentBoard({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-serif text-2xl text-ink">Filament inventory</h1>
-          <p className="text-sm text-muted max-w-2xl mt-1">
-            Linked to the prize catalog, so you can see which prizes a color
-            affects before you run out, and which colors are actually worth
-            restocking.
-          </p>
-        </div>
+      <div>
+        <h1 className="font-serif text-2xl text-ink">Filament inventory</h1>
+        <p className="text-sm text-muted max-w-2xl mt-1">
+          Linked to the prize catalog, so you can see which prizes a color
+          affects before you run out, and which colors are actually worth
+          restocking.
+        </p>
+      </div>
+
+      {/* Sort stays left, Add a color moves to the right of the same row
+          (both web and mobile) instead of sitting up in the header. */}
+      <div className="flex items-center justify-between gap-2">
+        <SortSelect sort={sort} />
         <Link
           href="/filament/new"
           className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
@@ -76,8 +80,6 @@ export default function FilamentBoard({
           Add a color
         </Link>
       </div>
-
-      <SortSelect sort={sort} />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {visibleFilaments.map((f, i) => {

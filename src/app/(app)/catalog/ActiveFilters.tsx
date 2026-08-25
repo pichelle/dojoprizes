@@ -72,10 +72,10 @@ export default function ActiveFilters({
           key={`${c.key}-${c.value}`}
           type="button"
           onClick={() => removeChip(c.key, c.value)}
-          className="flex items-center gap-1 text-xs font-medium bg-nav border border-border-warm-strong rounded-full pl-2.5 pr-1.5 py-1 text-ink hover:bg-nav-hover"
+          className="flex items-center gap-1 text-xs font-medium bg-nav border border-border-warm-strong rounded-full pl-2.5 pr-1.5 py-1 text-ink hover:bg-nav-hover shrink-0 max-w-full"
         >
-          {c.label}
-          <X size={11} aria-hidden="true" />
+          <span className="truncate">{c.label}</span>
+          <X size={11} className="shrink-0" aria-hidden="true" />
         </button>
       ))}
       <button

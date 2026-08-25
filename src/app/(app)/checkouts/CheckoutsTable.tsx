@@ -388,36 +388,37 @@ export default function CheckoutsTable({
 
       <div>
         <p className="text-xs text-muted mb-2">Trending — {PERIOD_LABEL[period]}</p>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <div className="bg-nav border border-border-warm rounded-xl p-3.5">
-            <p className="text-xs text-muted mb-2">Top themes</p>
-            {trending.themes.length === 0 && <p className="text-xs text-muted">Not enough data yet.</p>}
-            {trending.themes.map(([name, count]) => (
-              <div key={name} className="flex items-center justify-between text-sm py-0.5">
-                <span className="text-ink">{name}</span>
-                <span className="text-muted">{count}</span>
-              </div>
-            ))}
+        {/* Always 3 columns (even on mobile) with each category condensed
+            to a single truncating line instead of stacking every item on
+            its own row -- the old layout ran 3 full-height cards on top of
+            each other on a phone, pushing the table itself below the fold. */}
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="bg-nav border border-border-warm rounded-xl px-2.5 py-2 sm:p-3.5 min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted mb-0.5 sm:mb-1">Top themes</p>
+            <p className="text-xs sm:text-sm text-ink truncate" title={trending.themes.map(([name, count]) => `${name} (${count})`).join(", ")}>
+              {trending.themes.length === 0
+                ? "—"
+                : trending.themes.map(([name, count]) => `${name} (${count})`).join(", ")}
+            </p>
           </div>
-          <div className="bg-nav border border-border-warm rounded-xl p-3.5">
-            <p className="text-xs text-muted mb-2">Top colors</p>
-            {trending.colors.length === 0 && <p className="text-xs text-muted">Not enough data yet.</p>}
-            {trending.colors.map(([name, count]) => (
-              <div key={name} className="flex items-center justify-between text-sm py-0.5">
-                <span className="text-ink">{name}</span>
-                <span className="text-muted">{count}</span>
-              </div>
-            ))}
+          <div className="bg-nav border border-border-warm rounded-xl px-2.5 py-2 sm:p-3.5 min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted mb-0.5 sm:mb-1">Top colors</p>
+            <p className="text-xs sm:text-sm text-ink truncate" title={trending.colors.map(([name, count]) => `${name} (${count})`).join(", ")}>
+              {trending.colors.length === 0
+                ? "—"
+                : trending.colors.map(([name, count]) => `${name} (${count})`).join(", ")}
+            </p>
           </div>
-          <div className="bg-nav border border-border-warm rounded-xl p-3.5">
-            <p className="text-xs text-muted mb-2">Top sizes</p>
-            {trending.sizes.length === 0 && <p className="text-xs text-muted">Not enough data yet.</p>}
-            {trending.sizes.map(([name, count]) => (
-              <div key={name} className="flex items-center justify-between text-sm py-0.5">
-                <span className="text-ink">{formatSize(name)}</span>
-                <span className="text-muted">{count}</span>
-              </div>
-            ))}
+          <div className="bg-nav border border-border-warm rounded-xl px-2.5 py-2 sm:p-3.5 min-w-0">
+            <p className="text-[10px] sm:text-xs text-muted mb-0.5 sm:mb-1">Top sizes</p>
+            <p
+              className="text-xs sm:text-sm text-ink truncate"
+              title={trending.sizes.map(([name, count]) => `${formatSize(name)} (${count})`).join(", ")}
+            >
+              {trending.sizes.length === 0
+                ? "—"
+                : trending.sizes.map(([name, count]) => `${formatSize(name)} (${count})`).join(", ")}
+            </p>
           </div>
         </div>
       </div>
