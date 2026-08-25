@@ -89,10 +89,15 @@ function ProfileForm({
         </div>
         {/* Confirms "Sensei" gets added automatically, so no one re-types
             it after seeing the static label above -- that's how we ended
-            up with profiles literally named "Sensei Aidan". */}
+            up with profiles literally named "Sensei Aidan". Deliberately
+            does NOT use formatSensei() here, which would strip a redundant
+            "sensei" back off and quietly show the clean result -- that
+            defeats the point, since the whole idea is to make a duplicate
+            "Sensei Sensei Aidan" look obviously wrong while they're still
+            typing it, not to paper over it. */}
         <p className="mt-1.5 text-xs text-muted">
           {name.trim() ? (
-            <>Will show as &quot;{formatSensei(name)}&quot; — just your first name above.</>
+            <>Will show as &quot;Sensei {name.trim()}&quot; — just your first name above.</>
           ) : (
             "Just your first name — \"Sensei\" gets added automatically."
           )}
