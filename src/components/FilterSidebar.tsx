@@ -242,10 +242,19 @@ export default function FilterSidebar({
   // `grid sm:grid-cols-[200px_1fr]` actually sizes as the sidebar column,
   // so it has to stay one element (a Fragment here would hand the grid
   // 3 separate implicit items instead and scramble the column mapping).
+  //
+  // `sticky`/`top`/`h-[...]` live on THIS outer element, not the inner
+  // card div, on purpose: a sticky element that's also a direct CSS Grid
+  // item gets a special containing block (the whole grid area, as tall as
+  // the content column next to it), which is what lets it slide within
+  // that full height as the page scrolls. Nest it one div deeper -- like
+  // the mobile-drawer refactor briefly did -- and it only gets its own
+  // immediate parent as a containing block, which is exactly as tall as
+  // the sticky element itself, so there's no room left to actually stick.
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)]">
       {/* Desktop (sm+): unchanged sticky sidebar. */}
-      <div className="hidden sm:flex bg-card border border-border-warm rounded-xl p-4 h-fit min-w-0 sm:sticky sm:top-6 sm:h-[calc(100vh-10rem)] flex-col">
+      <div className="hidden sm:flex bg-card border border-border-warm rounded-xl p-4 min-w-0 sm:h-full flex-col">
         {groupList}
         {footer}
       </div>
