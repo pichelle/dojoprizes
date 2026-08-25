@@ -250,6 +250,66 @@ export async function updatePrizeInline(
   return performUpdatePrize(prizeId, formData);
 }
 
+// Duplicates a prize's design-identity fields (name, photo, price, size,
+// colors, themes) into a brand-new row -- for reprints of an improved
+// design, so the whole form doesn't have to be re-typed from scratch. The
+// copy deliberately starts unstocked (it hasn't actually been printed yet)
+// and leaves behind comments/activity/checkout history, since those
+// describe what happened to the *original* physical item, not the design.
+export async function duplicatePrize(prizeId: string, actor: string | null): Promise<string> {
+  const supabase = createServerClient();
+
+  const { data: original, error: fetchError } = await supabase
+    .from("prizes")
+    .select("name, photo_url, coin_price, makerworld_link, size")
+    .eq("id", prizeId)
+    .single();
+  if (fetchError || !original) throw new Error(fetchError?.message ?? "Prize not found.");
+
+  const [{ data: filamentLinks }, { data: tagLinks }] = await Promise.all([
+    supabase.from("prize_filament").select("filament_id").eq("prize_id", prizeId),
+    supabase.from("prize_franchise_tags").select("tag_id").eq("prize_id", prizeId),
+  ]);
+
+  const { data: copy, error } = await supabase
+    .from("prizes")
+    .insert({
+      name: `${original.name} (copy)`,
+      photo_url: original.photo_url,
+      coin_price: original.coin_price,
+      makerworld_link: original.makerworld_link,
+      size: original.size,
+      stock_count: 0,
+      status: statusFromStock(0),
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  if (!copy) throw new Error("Something went wrong duplicating that prize.");
+
+  const filamentIds = ((filamentLinks ?? []) as { filament_id: string }[]).map((l) => l.filament_id);
+  const tagIds = ((tagLinks ?? []) as { tag_id: string }[]).map((l) => l.tag_id);
+  if (filamentIds.length > 0) {
+    const { error: filamentError } = await supabase
+      .from("prize_filament")
+      .insert(filamentIds.map((filament_id) => ({ prize_id: copy.id, filament_id })));
+    if (filamentError) throw new Error(filamentError.message);
+  }
+  if (tagIds.length > 0) {
+    const { error: tagError } = await supabase
+      .from("prize_franchise_tags")
+      .insert(tagIds.map((tag_id) => ({ prize_id: copy.id, tag_id })));
+    if (tagError) throw new Error(tagError.message);
+  }
+
+  await logPrizeActivity(supabase, copy.id, actor, "created");
+
+  revalidatePath("/catalog");
+  revalidatePath("/filament");
+  revalidatePath("/requests");
+  return copy.id;
+}
+
 export async function deletePrize(prizeId: string) {
   const supabase = createServerClient();
   const { error } = await supabase.from("prizes").delete().eq("id", prizeId);

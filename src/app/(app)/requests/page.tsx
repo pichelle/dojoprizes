@@ -1,6 +1,6 @@
 import { Clock, Timer } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
-import { updateRequestStatus, deleteRequest, clearCancelledRequests } from "./actions";
+import { updateRequestStatus, deleteRequest, duplicateRequest, clearCancelledRequests } from "./actions";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsView from "./RequestsView";
 
@@ -247,6 +247,7 @@ export default async function RequestsPage({
           }))}
           onStatusChange={updateRequestStatus}
           onDelete={deleteRequest}
+          onDuplicate={duplicateRequest}
           onClearCancelled={clearCancelledRequests}
           filtersActive={filtersActive}
         />

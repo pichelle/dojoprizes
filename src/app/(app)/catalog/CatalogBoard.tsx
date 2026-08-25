@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ChevronLeft,
   Coins,
+  Copy,
   ExternalLink,
   Package,
   Palette,
@@ -34,7 +35,7 @@ import { coinPriceToBreakdown } from "@/lib/coins";
 import { formatSize } from "@/lib/requestFormatting";
 import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
-import { updatePrizeInline, deletePrize, logPrizeReprint } from "./actions";
+import { updatePrizeInline, deletePrize, duplicatePrize, logPrizeReprint } from "./actions";
 
 // Obsidian/Gold have dedicated coin icons; Silver stays plain text -- same
 // treatment as PrizeCard's price display.
@@ -96,6 +97,12 @@ export default function CatalogBoard({
   const [peekMode, setPeekMode] = useState<PeekMode>("view");
   const [peekTab, setPeekTab] = useState<"comments" | "activity">("comments");
   const [loggingReprint, setLoggingReprint] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  // Set right after a duplicate is created, since the new prize doesn't
+  // exist in the `prizes` prop yet -- the effect below opens its edit view
+  // as soon as router.refresh() brings it in, instead of trying to guess
+  // when that's happened.
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
   // Same optimistic-hide pattern as Requests: instant removal on delete,
   // restored if Undo is clicked, actually gone once the undo window
   // elapses and prizes stops including it anyway.
@@ -128,6 +135,36 @@ export default function CatalogBoard({
       next.delete(id);
       return next;
     });
+  }
+
+  // Opens a just-duplicated prize's edit view as soon as it shows up in the
+  // `prizes` prop after router.refresh() -- adjusted during render (React's
+  // documented pattern for reacting to a changed prop) rather than in a
+  // useEffect, so there's no extra frame where pendingOpenId is already set
+  // but `prizes` hasn't caught up yet.
+  const [prevPrizesForOpen, setPrevPrizesForOpen] = useState(prizes);
+  if (prizes !== prevPrizesForOpen) {
+    setPrevPrizesForOpen(prizes);
+    if (pendingOpenId && prizes.some((p) => p.id === pendingOpenId)) {
+      setActiveId(pendingOpenId);
+      setPeekMode("edit");
+      setPendingOpenId(null);
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!active || duplicating) return;
+    setDuplicating(true);
+    try {
+      const newId = await duplicatePrize(active.id, activeProfile?.name ?? null);
+      showToast("Prize duplicated");
+      setPendingOpenId(newId);
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't duplicate that prize");
+    } finally {
+      setDuplicating(false);
+    }
   }
 
   async function handleLogReprint() {
@@ -248,6 +285,16 @@ export default function CatalogBoard({
                   >
                     <Pencil size={13} aria-hidden="true" />
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDuplicate}
+                    disabled={duplicating}
+                    title="Duplicate this prize -- opens the copy for editing"
+                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav disabled:opacity-60"
+                  >
+                    <Copy size={13} aria-hidden="true" />
+                    Duplicate
                   </button>
                   <ActionButton
                     action={deletePrize.bind(null, active.id)}

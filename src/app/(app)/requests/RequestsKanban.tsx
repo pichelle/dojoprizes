@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronUp,
   Clock,
+  Copy,
   ExternalLink,
   Eye,
   EyeOff,
@@ -179,6 +180,7 @@ export default function RequestsKanban({
   allFranchiseTags,
   onStatusChange,
   onDelete,
+  onDuplicate,
   onClearCancelled,
   filtersActive,
 }: {
@@ -193,6 +195,7 @@ export default function RequestsKanban({
     actor?: string | null,
   ) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
+  onDuplicate: (requestId: string, actor: string | null) => Promise<string>;
   onClearCancelled: () => Promise<void>;
   // True if a color/size/search filter is currently narrowing `requests`.
   // A column reading empty because of an active filter is not the same
@@ -224,6 +227,11 @@ export default function RequestsKanban({
   // server delete + refresh completes (at which point the id just stops
   // existing in `requests` anyway).
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const [duplicating, setDuplicating] = useState(false);
+  // Set right after a duplicate is created, since the new request doesn't
+  // exist in the `requests` prop yet -- the effect below opens its edit
+  // view as soon as router.refresh() brings it in.
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
   // A card dropped onto the Printed column needs the same price confirm
   // the status-pill dropdown already asks for -- drag-and-drop bypassed
   // StatusPill entirely, so it skipped that prompt. Null unless a
@@ -275,6 +283,13 @@ export default function RequestsKanban({
       }
       return changed ? next : prev;
     });
+    // Opens a just-duplicated request's edit view as soon as it shows up
+    // here -- same render-time adjustment as the override-clearing above.
+    if (pendingOpenId && requests.some((r) => r.id === pendingOpenId)) {
+      setActiveId(pendingOpenId);
+      setPeekMode("edit");
+      setPendingOpenId(null);
+    }
   }
 
   const active = effectiveRequests.find((r) => r.id === activeId) ?? null;
@@ -425,6 +440,21 @@ export default function RequestsKanban({
       next.delete(requestId);
       return next;
     });
+  }
+
+  async function handleDuplicate() {
+    if (!active || duplicating) return;
+    setDuplicating(true);
+    try {
+      const newId = await onDuplicate(active.id, activeProfile?.name ?? null);
+      showToast("Request duplicated");
+      setPendingOpenId(newId);
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't duplicate that request");
+    } finally {
+      setDuplicating(false);
+    }
   }
 
   if (effectiveRequests.length === 0) {
@@ -758,6 +788,16 @@ export default function RequestsKanban({
                     >
                       <Pencil size={13} aria-hidden="true" />
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDuplicate}
+                      disabled={duplicating}
+                      title="Duplicate this request -- opens the copy for editing"
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav disabled:opacity-60"
+                    >
+                      <Copy size={13} aria-hidden="true" />
+                      Duplicate
                     </button>
                     <ActionButton
                       action={onDelete.bind(null, active.id)}
