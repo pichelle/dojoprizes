@@ -4,6 +4,7 @@ import { deleteRequest } from "../requests/actions";
 import Select from "@/components/Select";
 import { NONE_VALUE } from "@/lib/constants";
 import ErrorNote from "@/components/ErrorNote";
+import type { PrizeRequest } from "@/lib/types";
 import CheckoutsTable, { type MergedCheckoutRow } from "./CheckoutsTable";
 
 // Always fetch fresh data -- this page has no searchParams/cookies to force
@@ -22,6 +23,8 @@ export default async function CheckoutsPage() {
     { data: allPrizeFilamentLinks },
     { data: allRequestTagLinks },
     { data: allRequestFilamentLinks },
+    { data: filaments },
+    { data: franchiseTagRows },
   ] = await Promise.all([
     supabase.from("prizes").select("id, name").order("name"),
     supabase
@@ -40,6 +43,10 @@ export default async function CheckoutsPage() {
     supabase.from("prize_filament").select("prize_id, filament:filaments(id, color_name, swatch_hex)"),
     supabase.from("request_franchise_tags").select("request_id, tag:franchise_tags(id, name)"),
     supabase.from("request_filaments").select("request_id, filament:filaments(id, color_name, swatch_hex)"),
+    // Needed for the request edit form reused on this page (same fields
+    // RequestForm needs everywhere else it's rendered).
+    supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
+    supabase.from("franchise_tags").select("id, name").order("name"),
   ]);
 
   type Tag = { id: string; name: string };
@@ -121,6 +128,20 @@ export default async function CheckoutsPage() {
     for (const c of row.colors) allColors.set(c.id, c);
   }
 
+  // Full raw request rows, keyed by id -- the flattened MergedCheckoutRow
+  // above is just enough to render the table/summary DetailRows, but
+  // editing a request-sourced row reuses the same RequestForm every other
+  // request edit uses, which needs the actual PrizeRequest shape
+  // (franchiseTags/colorFilaments included) rather than the flattened one.
+  const requestsById: Record<string, PrizeRequest> = {};
+  for (const r of fulfilledRequests ?? []) {
+    requestsById[r.id] = {
+      ...r,
+      franchiseTags: tagsByRequestId.get(r.id) ?? [],
+      colorFilaments: colorsByRequestId.get(r.id) ?? [],
+    } as PrizeRequest;
+  }
+
   async function handleRemove(row: { source: "bin" | "request"; rawId: string }) {
     "use server";
     if (row.source === "bin") {
@@ -195,6 +216,10 @@ export default async function CheckoutsPage() {
         rows={merged}
         colorOptions={Array.from(allColors.values())}
         onRemove={handleRemove}
+        prizes={prizes ?? []}
+        filaments={filaments ?? []}
+        allFranchiseTags={franchiseTagRows ?? []}
+        requestsById={requestsById}
       />
     </div>
   );

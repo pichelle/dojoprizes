@@ -399,7 +399,7 @@ export async function updateRequestStatus(
     status: RequestStatus;
     sale_price?: number | null;
     pending_at?: string;
-    fulfilled_at?: string;
+    fulfilled_at?: string | null;
   } = { status };
   // Price is locked in when a request moves to Printed (that's when actual
   // size/color availability is known), and carries forward through
@@ -420,12 +420,21 @@ export async function updateRequestStatus(
 
   const { data: existing } = await supabase
     .from("requests")
-    .select("status, pending_at, student_name, photo_url, size, links")
+    .select("status, pending_at, fulfilled_at, student_name, photo_url, size, links")
     .eq("id", requestId)
     .single();
 
   if (status === "pending" && !existing?.pending_at) {
     update.pending_at = new Date().toISOString();
+  }
+
+  // A request moving away from Fulfilled (e.g. "Move back to Pickup" on the
+  // Checkouts page, or just re-picking a status by hand) shouldn't keep
+  // carrying a stale fulfilled_at from the mistaken pass through Fulfilled
+  // -- left alone it'd silently linger under the hood even though the
+  // request is active again.
+  if (status !== "fulfilled" && existing?.fulfilled_at) {
+    update.fulfilled_at = null;
   }
 
   const { error } = await supabase
@@ -451,6 +460,7 @@ export async function updateRequestStatus(
   }
 
   revalidatePath("/requests");
+  revalidatePath("/checkouts");
   revalidatePath("/");
 }
 
