@@ -1,9 +1,8 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Prize } from "@/lib/types";
 import { quickCheckout, renameFranchiseTag } from "./actions";
 import CatalogBoard from "./CatalogBoard";
+import CatalogSortSelect from "./CatalogSortSelect";
 import FilterSidebar from "@/components/FilterSidebar";
 import ErrorNote from "@/components/ErrorNote";
 
@@ -259,15 +258,7 @@ export default async function CatalogPage({
         <FilterSidebar
           basePath="/catalog"
           extraParams={["q", "sort"]}
-          mobileAction={
-            <Link
-              href="/catalog/new"
-              className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
-            >
-              <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
-              Add a prize
-            </Link>
-          }
+          mobileAction={<CatalogSortSelect />}
           groups={[
             {
               key: "theme",

@@ -45,9 +45,9 @@ export default function Select({
       required={required}
     >
       <RadixSelect.Trigger
-        className={`flex items-center justify-between gap-2 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink outline-none transition-colors data-[placeholder]:text-muted hover:border-border-hover hover:bg-nav focus:ring-2 focus:ring-sage disabled:opacity-50 ${className}`}
+        className={`flex items-center justify-between gap-2 rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm text-ink outline-none transition-colors data-[placeholder]:text-muted hover:border-border-hover hover:bg-nav focus:ring-2 focus:ring-sage disabled:opacity-50 min-w-0 ${className}`}
       >
-        <RadixSelect.Value placeholder={placeholder} />
+        <RadixSelect.Value className="truncate min-w-0" placeholder={placeholder} />
         <RadixSelect.Icon>
           <ChevronDown size={14} className="text-muted shrink-0" aria-hidden="true" />
         </RadixSelect.Icon>

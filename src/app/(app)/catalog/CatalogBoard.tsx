@@ -213,14 +213,15 @@ export default function CatalogBoard({
 
   return (
     <>
-      {/* Add a prize now lives next to the mobile "Filters" button
-          (FilterSidebar's mobileAction) so it doesn't cost the toolbar an
-          extra line there -- only shown here at sm+. */}
+      {/* Mobile reads as two lines: "Filters + Sort" (FilterSidebar's own
+          row, via its mobileAction slot) above, "Search + Add a prize"
+          here below -- Sort moved out of CatalogFilterBar into that first
+          row on mobile, and Search shrinks to make room for this button. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <CatalogFilterBar />
         <Link
           href="/catalog/new"
-          className="hidden sm:flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
+          className="flex items-center gap-1.5 rounded-md bg-ink text-page text-sm font-medium px-4 py-2 hover:opacity-90 shrink-0"
         >
           <Plus size={15} strokeWidth={2.5} aria-hidden="true" />
           Add a prize
