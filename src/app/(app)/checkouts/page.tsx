@@ -35,7 +35,7 @@ export default async function CheckoutsPage() {
     supabase.from("prizes").select("id, name").order("name"),
     supabase
       .from("checkouts")
-      .select("*, prize:prizes(id, name, photo_url, coin_price, size, makerworld_link)")
+      .select("*, prize:prizes(id, name, photo_url, coin_price, size, makerworld_link, notes)")
       .order("date_checked_out", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(500),
@@ -193,6 +193,7 @@ export default async function CheckoutsPage() {
     makerworldLink: c.prize?.makerworld_link ?? null,
     photoUrl: c.prize?.photo_url ?? null,
     isPrintClub: false,
+    notes: c.prize?.notes ?? null,
   }));
 
   const requestRows: MergedCheckoutRow[] = (fulfilledRequests ?? []).map((r) => ({
@@ -214,6 +215,7 @@ export default async function CheckoutsPage() {
     makerworldLink: r.links || r.prize?.makerworld_link || null,
     photoUrl: r.photo_url || r.prize?.photo_url || null,
     isPrintClub: r.is_print_club,
+    notes: r.notes ?? null,
   }));
 
   const merged = [...binRows, ...requestRows];

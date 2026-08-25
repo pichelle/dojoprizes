@@ -310,6 +310,20 @@ export default function PrizeForm({
         )}
       </div>
 
+      <div className="pt-5 border-t border-border-warm">
+        <label className="block text-sm font-medium text-ink">
+          Notes (optional)
+        </label>
+        <textarea
+          name="notes"
+          rows={2}
+          defaultValue={initial?.notes ?? ""}
+          placeholder="Internal notes -- print settings, where it's stored, anything staff should know..."
+          className="mt-1 w-full rounded-md border border-border-warm-strong bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
+        />
+        <p className="mt-1 text-xs text-muted">Staff-only -- never shown to ninjas.</p>
+      </div>
+
       <div className="flex items-center gap-3">
         <button
           type="submit"

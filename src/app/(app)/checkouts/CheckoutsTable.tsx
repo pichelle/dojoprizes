@@ -13,6 +13,7 @@ import {
   Pencil,
   RotateCcw,
   Ruler,
+  StickyNote,
   Tags,
   Trash2,
   User,
@@ -154,6 +155,10 @@ export type MergedCheckoutRow = {
   makerworldLink: string | null;
   photoUrl: string | null;
   isPrintClub: boolean;
+  // Internal staff notes -- the request's own `notes` field for
+  // request-sourced rows, the linked prize's `notes` field for bin-sourced
+  // rows. Never shown to ninjas, same as everywhere else it appears.
+  notes: string | null;
 };
 
 // "Request" reuses the accent tint/hover now that the standalone
@@ -166,6 +171,18 @@ const SOURCE_META = {
 };
 
 const SIZE_RANK: Record<string, number> = { small: 0, medium: 1, large: 2, xlarge: 3, true_to_size: 4 };
+
+// Mobile-only stand-in for the desktop table's per-column sort arrows --
+// once rows collapse into cards below sm there's no header row for those
+// arrows to live in, so this covers the same options as one dropdown.
+const MOBILE_SORT_OPTIONS: { value: string; label: string; key: "date" | "item" | "size" | "price"; dir: "asc" | "desc" }[] = [
+  { value: "date-desc", label: "Newest first", key: "date", dir: "desc" },
+  { value: "date-asc", label: "Oldest first", key: "date", dir: "asc" },
+  { value: "price-desc", label: "Price: high to low", key: "price", dir: "desc" },
+  { value: "price-asc", label: "Price: low to high", key: "price", dir: "asc" },
+  { value: "item-asc", label: "Name: A–Z", key: "item", dir: "asc" },
+  { value: "item-desc", label: "Name: Z–A", key: "item", dir: "desc" },
+];
 
 type Period = "month" | "year" | "all";
 const PERIOD_LABEL: Record<Period, string> = { month: "Past month", year: "Past year", all: "All time" };
@@ -309,6 +326,15 @@ export default function CheckoutsTable({
     setSortDir((prev) => (sortKey === key && prev === dir ? null : dir));
   }
 
+  const mobileSortValue =
+    MOBILE_SORT_OPTIONS.find((o) => o.key === sortKey && o.dir === sortDir)?.value ?? "date-desc";
+  function applyMobileSort(value: string) {
+    const opt = MOBILE_SORT_OPTIONS.find((o) => o.value === value);
+    if (!opt) return;
+    setSortKey(opt.key);
+    setSortDir(opt.dir);
+  }
+
   const filtered = useMemo(() => {
     let list = rows.filter((r) => !pendingDeleteIds.has(r.id));
     if (sourceFilter) list = list.filter((r) => r.source === sourceFilter);
@@ -424,9 +450,18 @@ export default function CheckoutsTable({
             className="w-full rounded-md border border-border-warm-strong bg-card pl-3 pr-8 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sage"
           />
         </div>
+        {/* Column-header sort arrows don't have anywhere to live once the
+            table becomes a card list below sm -- this dropdown covers the
+            same sort options in one control, mobile-only. */}
+        <Select
+          value={mobileSortValue}
+          onValueChange={applyMobileSort}
+          className="w-full sm:hidden"
+          options={MOBILE_SORT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        />
       </div>
 
-      <div className="bg-card border border-border-warm rounded-xl overflow-hidden">
+      <div className="hidden sm:block bg-card border border-border-warm rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-nav text-left">
             <tr>
@@ -471,16 +506,52 @@ export default function CheckoutsTable({
             })}
           </tbody>
         </table>
-        {sorted.length === 0 && rows.length === 0 && (
-          <EmptyStateMascot
-            pose="sparkle"
-            message="nothing checked out yet — it'll show up here the first time a prize leaves the shelf"
-          />
-        )}
-        {sorted.length === 0 && rows.length > 0 && (
-          <p className="p-4 text-sm text-muted">Nothing matches yet.</p>
-        )}
       </div>
+
+      {/* Mobile (below sm): the 7-column table has nowhere to go on a
+          phone-width screen, so each row collapses into a card instead --
+          tapping it opens the same peek a table row would. */}
+      <div className="sm:hidden space-y-2.5">
+        {sorted.map((r, i) => {
+          const meta = SOURCE_META[r.source];
+          const priceTag = formatCoinPriceBreakdown(r.price);
+          return (
+            <button
+              type="button"
+              key={r.id}
+              onClick={() => openPeek(r.id)}
+              style={{ "--stagger-delay": staggerDelay(i) } as React.CSSProperties}
+              className="stagger-fade-in w-full text-left bg-card border border-border-warm rounded-xl p-3.5 space-y-1.5"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="font-medium text-ink text-sm">{r.itemName}</span>
+                <span
+                  className="shrink-0 text-[10px] font-medium rounded-full px-2.5 py-1"
+                  style={{ background: meta.bg, color: meta.text }}
+                >
+                  {meta.label}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted">
+                <span>{formatShortDate(r.date)}</span>
+                {r.who && <span>{r.who}</span>}
+                {r.size && <span>{formatSize(r.size)}</span>}
+                {priceTag && <span>{priceTag}</span>}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {sorted.length === 0 && rows.length === 0 && (
+        <EmptyStateMascot
+          pose="sparkle"
+          message="nothing checked out yet — it'll show up here the first time a prize leaves the shelf"
+        />
+      )}
+      {sorted.length === 0 && rows.length > 0 && (
+        <p className="text-sm text-muted py-4 text-center">Nothing matches yet.</p>
+      )}
 
       <SidePeek
         open={Boolean(active)}
@@ -624,6 +695,9 @@ export default function CheckoutsTable({
                   )}
                   {formatCoinPriceBreakdown(active.price) && (
                     <DetailRow label="Price" icon={Coins}>{formatCoinPriceBreakdown(active.price)}</DetailRow>
+                  )}
+                  {active.notes && (
+                    <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>
                   )}
                   {active.makerworldLink && (
                     <DetailRow label="Link" icon={ExternalLink}>

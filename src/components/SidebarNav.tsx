@@ -6,17 +6,15 @@ import { usePathname } from "next/navigation";
 import FeedbackButton from "./FeedbackButton";
 import { useProfiles } from "./ProfileContext";
 
-const NAV_LINKS = [
+// Desktop-only now (sm+) -- the floating vertical pill. Below sm, MobileNav
+// (bottom tab bar + "More" sheet) takes over entirely; see AppShell.tsx.
+export const NAV_LINKS = [
   { href: "/requests", label: "Requests", icon: "/icons/nav-requests.png" },
   { href: "/catalog", label: "Prize Bin", icon: "/icons/nav-catalog.png" },
   { href: "/checkouts", label: "Checkouts", icon: "/icons/nav-checkouts.png" },
   { href: "/filament", label: "Filaments", icon: "/icons/nav-filaments.png" },
 ];
 
-// Shared spacing between the four groups (primary nav / external tools /
-// support+logout / signature) -- pulled out as a constant rather than
-// repeated inline so the "more breathing room between sections" spacing
-// stays consistent if it ever needs adjusting again.
 const GROUP_DIVIDER = "h-px bg-border-warm my-4 sm:my-5 w-full";
 
 function NavItem({
@@ -32,7 +30,7 @@ function NavItem({
   isActive?: boolean;
   external?: boolean;
 }) {
-  const className = `flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] transition-colors text-center ${
+  const className = `flex flex-col items-center gap-1 px-2 py-2 rounded-2xl text-[10px] transition-colors text-center ${
     isActive
       ? "text-ink font-bold"
       : "text-ink-soft font-medium hover:bg-nav-hover hover:text-ink"
@@ -40,7 +38,7 @@ function NavItem({
   const style = isActive ? { background: "var(--color-nav-active)" } : undefined;
   const iconEl = (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={icon} alt="" className="w-7 h-7 sm:w-6 sm:h-6 object-contain shrink-0" aria-hidden="true" />
+    <img src={icon} alt="" className="w-6 h-6 object-contain shrink-0" aria-hidden="true" />
   );
 
   if (external) {
@@ -68,12 +66,12 @@ function ActiveProfileButton() {
       type="button"
       onClick={switchProfile}
       title="Switch profile"
-      className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center w-full"
+      className="flex flex-col items-center gap-1 px-2 py-2 rounded-2xl text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center w-full"
     >
       {/* Square with rounded corners (not a circle) so it matches the
-          other nav icons' shape, same w-7/h-7 (sm: w-6/h-6) sizing. */}
+          other nav icons' shape, same w-6/h-6 sizing. */}
       <span
-        className="w-7 h-7 sm:w-6 sm:h-6 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
+        className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
         style={{ background: activeProfile.color_hex }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -95,14 +93,14 @@ export default function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col items-center w-full sm:w-auto">
+    <div className="flex flex-col items-center">
       <Link href="/requests" className="block shrink-0">
         <Image src="/ninja.png" alt="DojoPrizes" width={40} height={40} className="rounded-full" priority />
       </Link>
 
       <div className={GROUP_DIVIDER} />
 
-      <nav className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
+      <nav className="flex flex-col items-stretch gap-1.5 w-full">
         {NAV_LINKS.map((link) => (
           <NavItem key={link.href} {...link} isActive={pathname.startsWith(link.href)} />
         ))}
@@ -110,26 +108,26 @@ export default function SidebarNav() {
 
       <div className={GROUP_DIVIDER} />
 
-      <nav className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
+      <nav className="flex flex-col items-stretch gap-1.5 w-full">
         <NavItem href="https://makerworld.com/en" label="MakerWorld" icon="/makerworld-icon.png" external />
         <NavItem href="https://www.tinkercad.com/" label="Tinkercad" icon="/tinkercad-icon.png" external />
       </nav>
 
       <div className={GROUP_DIVIDER} />
 
-      <div className="flex flex-row sm:flex-col items-stretch gap-1.5 flex-wrap w-full">
+      <div className="flex flex-col items-stretch gap-1.5 w-full">
         <ActiveProfileButton />
-        <FeedbackButton className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center" />
+        <FeedbackButton className="flex flex-col items-center gap-1 px-2 py-2 rounded-2xl text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink text-center" />
         <form action="/api/logout" method="POST">
           <button
             type="submit"
-            className="flex sm:flex-col items-center gap-3 sm:gap-1 px-3 sm:px-2 py-2 rounded-md sm:rounded-2xl text-sm sm:text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink w-full text-center"
+            className="flex flex-col items-center gap-1 px-2 py-2 rounded-2xl text-[10px] text-ink-soft font-medium transition-colors hover:bg-nav-hover hover:text-ink w-full text-center"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/icons/nav-logout.png"
               alt=""
-              className="w-7 h-7 sm:w-6 sm:h-6 object-contain shrink-0"
+              className="w-6 h-6 object-contain shrink-0"
               aria-hidden="true"
             />
             Log out

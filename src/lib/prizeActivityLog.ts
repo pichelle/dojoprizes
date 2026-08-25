@@ -35,6 +35,7 @@ export type PrizeSnapshot = {
   makerworld_link: string | null;
   stock_count: number;
   size: RequestSize | null;
+  notes: string | null;
   colorNames: string[];
   themeNames: string[];
 };
@@ -73,6 +74,7 @@ export function computePrizeEditChanges(
   push("theme", "Theme", listLabel(before.themeNames), listLabel(after.themeNames));
   push("photo_url", "Photo", before.photo_url ? "set" : null, after.photo_url ? "set" : null);
   push("makerworld_link", "MakerWorld link", before.makerworld_link, after.makerworld_link);
+  push("notes", "Notes", before.notes, after.notes);
 
   return changes;
 }

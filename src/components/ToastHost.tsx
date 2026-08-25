@@ -46,7 +46,9 @@ export default function ToastHost() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end pointer-events-none">
+    // bottom-24 on mobile clears the fixed bottom tab bar (MobileNav);
+    // back to bottom-6 at sm+ where that bar doesn't exist.
+    <div className="fixed bottom-24 sm:bottom-6 right-4 sm:right-6 z-50 flex flex-col gap-2 items-end pointer-events-none">
       {toasts.map((t) => (
         <div
           key={t.id}

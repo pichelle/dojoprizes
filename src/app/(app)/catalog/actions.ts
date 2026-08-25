@@ -47,7 +47,7 @@ async function snapshotPrize(
   const [{ data: prize }, { data: filamentLinks }, { data: tagLinks }] = await Promise.all([
     supabase
       .from("prizes")
-      .select("name, photo_url, coin_price, makerworld_link, stock_count, size")
+      .select("name, photo_url, coin_price, makerworld_link, stock_count, size, notes")
       .eq("id", prizeId)
       .single(),
     supabase.from("prize_filament").select("filament:filaments(color_name)").eq("prize_id", prizeId),
@@ -61,6 +61,7 @@ async function snapshotPrize(
     makerworld_link: prize.makerworld_link,
     stock_count: prize.stock_count,
     size: prize.size,
+    notes: prize.notes,
     colorNames: ((filamentLinks ?? []) as unknown as { filament: { color_name: string } | null }[])
       .map((l) => l.filament?.color_name)
       .filter((v): v is string => Boolean(v)),
@@ -81,6 +82,10 @@ function coinPriceFromForm(formData: FormData): number | null {
 function sizeFromForm(formData: FormData): RequestSize | null {
   const raw = String(formData.get("size") ?? "").trim();
   return raw && raw !== NONE_VALUE ? (raw as RequestSize) : null;
+}
+
+function notesFromForm(formData: FormData): string | null {
+  return String(formData.get("notes") ?? "").trim() || null;
 }
 
 // Status is fully derived from stock count -- there's no manual status
@@ -147,6 +152,7 @@ async function performCreatePrize(formData: FormData): Promise<PrizeFormState> {
         stock_count: stockCount,
         status: statusFromStock(stockCount),
         size: sizeFromForm(formData),
+        notes: notesFromForm(formData),
       })
       .select("id")
       .single();
@@ -195,6 +201,7 @@ async function performUpdatePrize(
         stock_count: stockCount,
         status: statusFromStock(stockCount),
         size: sizeFromForm(formData),
+        notes: notesFromForm(formData),
         updated_at: new Date().toISOString(),
       })
       .eq("id", prizeId);
@@ -213,6 +220,7 @@ async function performUpdatePrize(
         makerworld_link: String(formData.get("makerworld_link") ?? "").trim() || null,
         stock_count: stockCount,
         size: sizeFromForm(formData),
+        notes: notesFromForm(formData),
         colorNames: await namesForFilamentIds(supabase, filamentIds),
         themeNames,
       };

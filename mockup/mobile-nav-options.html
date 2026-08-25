@@ -1,0 +1,691 @@
+<title>Mobile Nav Options</title>
+<style>
+  :root {
+    --page: #f3efe3;
+    --panel: #ffffff;
+    --ink: #3a3a38;
+    --ink-soft: #6b6b66;
+    --muted: #8c8c86;
+    --border: #ebe7dc;
+    --border-strong: #ddd6c4;
+    --nav: #faf8f2;
+    --nav-active: #efebdf;
+    --nav-hover: #f4efe0;
+    --accent: #006add;
+    --accent-hover: #0055b1;
+    --accent-tint: #e0edfb;
+    --rust: #b54b3a;
+    --good-bg: #e9f4de;
+    --good-text: #3e6b1e;
+    --bad-bg: #faeaea;
+    --bad-text: #8a4f4f;
+    --shadow: 0 18px 40px rgba(58, 58, 56, 0.16);
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    --sans: "Figtree", -apple-system, "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #201f1a;
+      --panel: #2a2924;
+      --ink: #efece2;
+      --ink-soft: #c2beb0;
+      --muted: #948e7d;
+      --border: #3a382f;
+      --border-strong: #4a473b;
+      --nav: #262520;
+      --nav-active: #33322a;
+      --nav-hover: #2e2d26;
+      --accent: #5aa3ff;
+      --accent-hover: #7fb6ff;
+      --accent-tint: #23334a;
+      --rust: #e08871;
+      --good-bg: #26331c;
+      --good-text: #a9d98a;
+      --bad-bg: #3a2323;
+      --bad-text: #e7a3a3;
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #201f1a;
+    --panel: #2a2924;
+    --ink: #efece2;
+    --ink-soft: #c2beb0;
+    --muted: #948e7d;
+    --border: #3a382f;
+    --border-strong: #4a473b;
+    --nav: #262520;
+    --nav-active: #33322a;
+    --nav-hover: #2e2d26;
+    --accent: #5aa3ff;
+    --accent-hover: #7fb6ff;
+    --accent-tint: #23334a;
+    --rust: #e08871;
+    --good-bg: #26331c;
+    --good-text: #a9d98a;
+    --bad-bg: #3a2323;
+    --bad-text: #e7a3a3;
+    --shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    padding: 2.5rem 1.5rem 4rem;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.5rem;
+  }
+  h1 {
+    font-size: 1.7rem;
+    margin: 0 0 0.4rem;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--ink-soft);
+    max-width: 60ch;
+    line-height: 1.55;
+    margin: 0 0 2.5rem;
+  }
+
+  .previews {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  .preview-col h2 {
+    font-size: 1rem;
+    margin: 0 0 0.15rem;
+  }
+  .preview-col .tap-hint {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin: 0 0 1rem;
+  }
+
+  /* ---- phone frame ---- */
+  .phone {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto;
+    background: var(--panel);
+    border: 1px solid var(--border-strong);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-screen {
+    height: 560px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .status {
+    height: 26px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    background: var(--panel);
+  }
+
+  /* fake page content behind the nav chrome */
+  .fake-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .fake-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+  }
+  .fake-line { height: 10px; border-radius: 5px; background: var(--border); }
+  .fake-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.7rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  /* ---- option A: top bar + hamburger ---- */
+  .topbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.9rem;
+    background: var(--nav);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; }
+  .brand-dot {
+    width: 24px; height: 24px; border-radius: 999px;
+    background: var(--accent-tint); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent; border: none; color: var(--ink);
+    cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--nav-hover); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .drawer-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 5;
+  }
+  .drawer {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 76%;
+    background: var(--panel);
+    border-left: 1px solid var(--border-strong);
+    transform: translateX(100%);
+    transition: transform 0.24s ease;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 0.9rem;
+    gap: 0.2rem;
+  }
+  .phone.drawer-open .drawer-overlay { opacity: 1; pointer-events: auto; }
+  .phone.drawer-open .drawer { transform: translateX(0); }
+
+  .drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.6rem;
+  }
+  .drawer-head span { font-weight: 700; font-size: 0.85rem; }
+
+  .nav-row {
+    display: flex; align-items: center; gap: 0.65rem;
+    padding: 0.55rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .nav-row.active { background: var(--nav-active); color: var(--ink); font-weight: 700; }
+  .nav-row .dot { width: 18px; height: 18px; border-radius: 5px; background: var(--border); flex-shrink: 0; }
+  .nav-divider { height: 1px; background: var(--border); margin: 0.5rem 0; }
+
+  /* ---- option B: bottom tab bar ---- */
+  .bottombar {
+    flex-shrink: 0;
+    display: flex;
+    border-top: 1px solid var(--border);
+    background: var(--nav);
+  }
+  .tab {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+    padding: 0.5rem 0.2rem 0.6rem;
+    font-size: 0.62rem;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: var(--sans);
+  }
+  .tab.active { color: var(--ink); font-weight: 700; }
+  .tab .tab-dot {
+    width: 20px; height: 20px; border-radius: 6px; background: var(--border);
+    transition: width 0.16s ease, height 0.16s ease;
+  }
+  .tab.active .tab-dot { background: var(--accent-tint); }
+
+  /* larger touch-target variant, toggled live */
+  .bottombar.roomy .tab { padding: 0.7rem 0.2rem 0.85rem; font-size: 0.68rem; gap: 0.3rem; }
+  .bottombar.roomy .tab .tab-dot { width: 26px; height: 26px; border-radius: 7px; }
+
+  .size-toggle {
+    display: flex; gap: 0.4rem; margin: 0 0 0.9rem;
+  }
+  .size-toggle button {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    padding: 0.3rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    background: var(--panel);
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .size-toggle button.active { background: var(--nav-active); color: var(--ink); font-weight: 600; }
+
+  /* ---- stacked-card table mockup ---- */
+  .checkout-cards {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    background: var(--panel);
+  }
+  .co-card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0.7rem 0.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .co-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .co-card-name { font-weight: 700; font-size: 0.85rem; }
+  .co-pill {
+    flex-shrink: 0;
+    font-size: 0.58rem;
+    font-weight: 600;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+  }
+  .co-pill.request { background: var(--accent-tint); color: var(--accent-hover); }
+  .co-pill.bin { background: #fbf4dc; color: #7a6a12; }
+  .co-card-meta {
+    display: flex; flex-wrap: wrap; gap: 0.1rem 0.7rem;
+    font-size: 0.72rem; color: var(--ink-soft);
+  }
+  .co-card-meta span { white-space: nowrap; }
+  .co-sticky-head {
+    flex-shrink: 0;
+    padding: 0.6rem 0.8rem 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--muted);
+    background: var(--nav);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .sheet-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 5;
+  }
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--panel);
+    border-top: 1px solid var(--border-strong);
+    border-radius: 18px 18px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.24s ease;
+    z-index: 6;
+    padding: 0.9rem;
+    box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
+  }
+  .phone.sheet-open .sheet-overlay { opacity: 1; pointer-events: auto; }
+  .phone.sheet-open .sheet { transform: translateY(0); }
+  .sheet-grab {
+    width: 34px; height: 4px; border-radius: 999px;
+    background: var(--border-strong); margin: 0 auto 0.8rem;
+  }
+
+  /* ---- annotation callouts under each phone ---- */
+  .callouts { margin-top: 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .callout {
+    display: flex; gap: 0.55rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .callout .tag {
+    flex-shrink: 0;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 5px;
+    height: fit-content;
+  }
+  .tag.good { background: var(--good-bg); color: var(--good-text); }
+  .tag.bad { background: var(--bad-bg); color: var(--bad-text); }
+
+  /* ---- recommendation ---- */
+  .recommend {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 1.5rem 1.6rem;
+    margin-bottom: 2rem;
+  }
+  .recommend .eyebrow { color: var(--accent); }
+  .recommend h2 { margin: 0 0 0.7rem; font-size: 1.15rem; }
+  .recommend p { line-height: 1.6; color: var(--ink-soft); margin: 0 0 0.9rem; max-width: 68ch; }
+  .recommend p:last-child { margin-bottom: 0; }
+  .recommend strong { color: var(--ink); }
+
+  /* ---- comparison table ---- */
+  .compare-wrap { overflow-x: auto; margin-bottom: 0.5rem; }
+  table.compare {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 560px;
+  }
+  table.compare th, table.compare td {
+    text-align: left;
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.compare th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  table.compare td.label { font-weight: 700; white-space: nowrap; }
+  table.compare tr:last-child td { border-bottom: none; }
+
+  footer {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 2.5rem;
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">DojoPrizes &middot; mobile nav review</p>
+  <h1>Hamburger drawer vs. bottom tab bar</h1>
+  <p class="lede">
+    Two working previews of how the sidebar nav could collapse below 640px.
+    Tap the menu icon / the "More" tab on each phone to see it open.
+  </p>
+
+  <div class="previews">
+    <div class="preview-col">
+      <h2>Option A &mdash; top bar + hamburger</h2>
+      <p class="tap-hint">tap the &#9776; icon</p>
+      <div class="phone" id="phoneA">
+        <div class="phone-screen">
+          <div class="status">9:41</div>
+          <div class="topbar">
+            <div class="brand"><span class="brand-dot">&#128155;</span> DojoPrizes</div>
+            <button class="icon-btn" id="hamburgerBtn" aria-label="Open menu">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M2 5h14M2 9h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="fake-content">
+            <div class="fake-title">Requests</div>
+            <div class="fake-line" style="width:70%"></div>
+            <div class="fake-card">
+              <div class="fake-line" style="width:55%"></div>
+              <div class="fake-line" style="width:35%"></div>
+            </div>
+            <div class="fake-card">
+              <div class="fake-line" style="width:60%"></div>
+              <div class="fake-line" style="width:40%"></div>
+            </div>
+          </div>
+          <div class="drawer-overlay" id="drawerOverlay"></div>
+          <div class="drawer">
+            <div class="drawer-head">
+              <span>Menu</span>
+              <button class="icon-btn" id="drawerCloseBtn" aria-label="Close menu">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <div class="nav-row active"><span class="dot"></span>Requests</div>
+            <div class="nav-row"><span class="dot"></span>Prize Bin</div>
+            <div class="nav-row"><span class="dot"></span>Checkouts</div>
+            <div class="nav-row"><span class="dot"></span>Filaments</div>
+            <div class="nav-divider"></div>
+            <div class="nav-row"><span class="dot"></span>MakerWorld</div>
+            <div class="nav-row"><span class="dot"></span>Tinkercad</div>
+            <div class="nav-divider"></div>
+            <div class="nav-row"><span class="dot"></span>Sensei Michelle</div>
+            <div class="nav-row"><span class="dot"></span>Feedback</div>
+            <div class="nav-row"><span class="dot"></span>Log out</div>
+          </div>
+        </div>
+      </div>
+      <div class="callouts">
+        <div class="callout"><span class="tag good">+</span>Everything lives in one predictable place, including the rarely-used items.</div>
+        <div class="callout"><span class="tag bad">&minus;</span>Switching between Requests / Prize Bin / Checkouts &mdash; the thing done most, all shift &mdash; now takes two taps instead of one, every time.</div>
+        <div class="callout"><span class="tag bad">&minus;</span>The current page name isn't visible unless you open the menu.</div>
+      </div>
+    </div>
+
+    <div class="preview-col">
+      <h2>Option B &mdash; bottom tab bar</h2>
+      <p class="tap-hint">tap the "More" tab &middot; try the size toggle below</p>
+      <div class="size-toggle">
+        <button type="button" class="active" id="sizeCompactBtn">Compact (as drafted)</button>
+        <button type="button" id="sizeRoomyBtn">Larger touch targets</button>
+      </div>
+      <div class="phone" id="phoneB">
+        <div class="phone-screen">
+          <div class="status">9:41</div>
+          <div class="fake-content">
+            <div class="fake-title">Requests</div>
+            <div class="fake-line" style="width:70%"></div>
+            <div class="fake-card">
+              <div class="fake-line" style="width:55%"></div>
+              <div class="fake-line" style="width:35%"></div>
+            </div>
+            <div class="fake-card">
+              <div class="fake-line" style="width:60%"></div>
+              <div class="fake-line" style="width:40%"></div>
+            </div>
+          </div>
+          <div class="sheet-overlay" id="sheetOverlay"></div>
+          <div class="sheet">
+            <div class="sheet-grab"></div>
+            <div class="nav-row"><span class="dot"></span>MakerWorld</div>
+            <div class="nav-row"><span class="dot"></span>Tinkercad</div>
+            <div class="nav-divider"></div>
+            <div class="nav-row"><span class="dot"></span>Sensei Michelle</div>
+            <div class="nav-row"><span class="dot"></span>Feedback</div>
+            <div class="nav-row"><span class="dot"></span>Log out</div>
+          </div>
+          <div class="bottombar" id="bottombarB">
+            <button class="tab active"><span class="tab-dot"></span>Requests</button>
+            <button class="tab"><span class="tab-dot"></span>Prize Bin</button>
+            <button class="tab"><span class="tab-dot"></span>Checkouts</button>
+            <button class="tab"><span class="tab-dot"></span>Filaments</button>
+            <button class="tab" id="moreTabBtn"><span class="tab-dot">&hellip;</span>More</button>
+          </div>
+        </div>
+      </div>
+      <div class="callouts">
+        <div class="callout"><span class="tag good">+</span>The 4 main sections &mdash; the ones switched between constantly &mdash; are always one tap away, no menu to open first.</div>
+        <div class="callout"><span class="tag good">+</span>Matches how the app is actually used: a kanban-style tool with a handful of peer destinations, not a deep hierarchy.</div>
+        <div class="callout"><span class="tag bad">&minus;</span>Sits permanently at the bottom, so it competes for space with a mobile browser's own address bar and any floating action button.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="previews" style="grid-template-columns: minmax(300px, 340px); justify-content: center; margin-bottom: 3rem;">
+    <div class="preview-col">
+      <h2>Checkouts on mobile &mdash; stacked cards instead of a table</h2>
+      <p class="tap-hint">scroll inside the phone &middot; tap a card to imagine the peek opening, same as today</p>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="status">9:41</div>
+          <div class="co-sticky-head">
+            <span>4 checkouts &middot; past month</span>
+            <span>&#8942;</span>
+          </div>
+          <div class="checkout-cards">
+            <div class="co-card">
+              <div class="co-card-top">
+                <span class="co-card-name">Hello Kitty Pig Planter</span>
+                <span class="co-pill request">Request</span>
+              </div>
+              <div class="co-card-meta">
+                <span>Aug 18</span>
+                <span>Ryder</span>
+                <span>Medium</span>
+                <span>2g</span>
+              </div>
+            </div>
+            <div class="co-card">
+              <div class="co-card-top">
+                <span class="co-card-name">Pink RC Car</span>
+                <span class="co-pill bin">Prize bin</span>
+              </div>
+              <div class="co-card-meta">
+                <span>Aug 17</span>
+                <span>Sadie</span>
+                <span>Large</span>
+                <span>1 obsidian</span>
+              </div>
+            </div>
+            <div class="co-card">
+              <div class="co-card-top">
+                <span class="co-card-name">Dragon Egg (articulated)</span>
+                <span class="co-pill request">Request</span>
+              </div>
+              <div class="co-card-meta">
+                <span>Aug 14</span>
+                <span>Marcus</span>
+                <span>Small</span>
+                <span>3g</span>
+              </div>
+            </div>
+            <div class="co-card">
+              <div class="co-card-top">
+                <span class="co-card-name">Minecraft Sword</span>
+                <span class="co-pill bin">Prize bin</span>
+              </div>
+              <div class="co-card-meta">
+                <span>Aug 12</span>
+                <span>Wren</span>
+                <span>True to size</span>
+                <span>1g</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="callouts" style="max-width: 340px; margin-left: auto; margin-right: auto;">
+        <div class="callout"><span class="tag good">+</span>Reuses the existing peek on tap &mdash; no new detail view to build, same as clicking a table row does today.</div>
+        <div class="callout"><span class="tag good">+</span>Sort/filter controls above stay as-is; only the row rendering changes below `sm`.</div>
+        <div class="callout"><span class="tag bad">&minus;</span>Column sorting (tap "Date"/"Price" arrows) doesn't map cleanly to a card list &mdash; would probably become a single "Sort by" dropdown on mobile instead.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="recommend">
+    <p class="eyebrow">Recommendation</p>
+    <h2>Bottom tab bar for the 4 main sections, hamburger-style "More" for the rest</h2>
+    <p>
+      Requests, Prize Bin, Checkouts, and Filaments are <strong>peers</strong> &mdash;
+      there's no primary/secondary relationship between them, and switching
+      between them is probably the single most common action on the whole
+      site. A hamburger buries that behind an extra tap every single time,
+      which adds up fast on a phone used for quick shelf checks between classes.
+    </p>
+    <p>
+      A bottom bar keeps those 4 exactly where thumbs already rest, and
+      folds MakerWorld / Tinkercad / profile switch / feedback / log out
+      &mdash; things opened rarely, if ever, in a session &mdash; into the "More" sheet,
+      which is really just a hamburger drawer in a different position. So
+      this isn't really "hamburger vs. bottom bar" as an either/or: it's
+      using each pattern for the tier of navigation it's actually good at.
+    </p>
+    <p>
+      One open question worth deciding before this gets built: the active
+      profile switcher (top of the current desktop nav) needs a new home on
+      mobile too &mdash; either folded into the "More" sheet as shown here, or
+      kept visible somewhere in the top status area since switching profiles
+      happens more often than opening MakerWorld.
+    </p>
+  </div>
+
+  <div class="compare-wrap">
+    <table class="compare">
+      <thead>
+        <tr><th>Signal</th><th>Hamburger drawer</th><th>Bottom tab bar</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="label">Taps to switch section</td><td>2 (open menu, then pick)</td><td>1</td></tr>
+        <tr><td class="label">Screen space when idle</td><td>One slim top bar</td><td>One slim bottom bar (competes with browser chrome)</td></tr>
+        <tr><td class="label">Best suited for</td><td>Deep or rarely-used destinations</td><td>A small set of equally-weighted, frequently-switched sections</td></tr>
+        <tr><td class="label">Discoverability</td><td>Lower &mdash; hidden until opened</td><td>Higher &mdash; always visible</td></tr>
+        <tr><td class="label">Matches this app's shape</td><td>Not quite &mdash; treats 4 peer sections as buried menu items</td><td>Yes &mdash; mirrors the existing peer-section sidebar</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>mockup &middot; not wired to real data &middot; for layout discussion only</footer>
+</div>
+
+<script>
+  (function () {
+    var phoneA = document.getElementById("phoneA");
+    var hamburgerBtn = document.getElementById("hamburgerBtn");
+    var drawerCloseBtn = document.getElementById("drawerCloseBtn");
+    var drawerOverlay = document.getElementById("drawerOverlay");
+    function toggleDrawer(open) {
+      phoneA.classList.toggle("drawer-open", open);
+    }
+    hamburgerBtn.addEventListener("click", function () { toggleDrawer(true); });
+    drawerCloseBtn.addEventListener("click", function () { toggleDrawer(false); });
+    drawerOverlay.addEventListener("click", function () { toggleDrawer(false); });
+
+    var phoneB = document.getElementById("phoneB");
+    var moreTabBtn = document.getElementById("moreTabBtn");
+    var sheetOverlay = document.getElementById("sheetOverlay");
+    function toggleSheet(open) {
+      phoneB.classList.toggle("sheet-open", open);
+    }
+    moreTabBtn.addEventListener("click", function () { toggleSheet(!phoneB.classList.contains("sheet-open")); });
+    sheetOverlay.addEventListener("click", function () { toggleSheet(false); });
+
+    var bottombarB = document.getElementById("bottombarB");
+    var sizeCompactBtn = document.getElementById("sizeCompactBtn");
+    var sizeRoomyBtn = document.getElementById("sizeRoomyBtn");
+    function setRoomy(roomy) {
+      bottombarB.classList.toggle("roomy", roomy);
+      sizeCompactBtn.classList.toggle("active", !roomy);
+      sizeRoomyBtn.classList.toggle("active", roomy);
+    }
+    sizeCompactBtn.addEventListener("click", function () { setRoomy(false); });
+    sizeRoomyBtn.addEventListener("click", function () { setRoomy(true); });
+  })();
+</script>

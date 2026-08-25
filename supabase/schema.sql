@@ -38,6 +38,9 @@ create table if not exists prizes (
   status text not null default 'in_stock'
     check (status in ('in_stock', 'print_on_request')),
   size text check (size in ('small', 'medium', 'large', 'xlarge', 'true_to_size')),
+  -- Internal, staff-only free-text notes -- same field requests already
+  -- have, never shown to ninjas.
+  notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

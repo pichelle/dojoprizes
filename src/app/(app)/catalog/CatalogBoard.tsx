@@ -14,6 +14,7 @@ import {
   Plus,
   Printer,
   Ruler,
+  StickyNote,
   Tags,
   Trash2,
 } from "lucide-react";
@@ -350,6 +351,9 @@ export default function CatalogBoard({
                         Open ↗
                       </a>
                     </DetailRow>
+                  )}
+                  {active.notes && (
+                    <DetailRow label="Notes" icon={StickyNote}>{active.notes}</DetailRow>
                   )}
                   <DetailRow label="Reprints" icon={Printer}>
                     <span className="flex items-center gap-2">

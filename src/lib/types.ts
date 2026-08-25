@@ -38,6 +38,7 @@ export interface Prize {
   stock_count: number;
   status: PrizeStatus;
   size: RequestSize | null;
+  notes: string | null;
   created_at: string;
   updated_at: string;
   filaments?: Pick<Filament, "id" | "color_name">[];
