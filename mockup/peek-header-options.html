@@ -1,0 +1,393 @@
+<title>Peek Header Options</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --page: #fdfbf7;
+    --card: #ffffff;
+    --nav: #f6f1e8;
+    --ink: #33291f;
+    --ink-soft: #6b5d4f;
+    --muted: #8a7c6d;
+    --border-warm: #e8ddce;
+    --border-warm-strong: #d8c9b3;
+    --rust: #b8532f;
+    --rust-tint: rgba(184, 83, 47, 0.08);
+    --link: #006add;
+    --link-hover: #0055b1;
+    --link-tint: #e0edfb;
+    --good: #3f7d4f;
+    --good-bg: #e9f4ea;
+    --bad-bg: #fbeae5;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page: #1c1712;
+      --card: #262019;
+      --nav: #2c2419;
+      --ink: #f1e9dd;
+      --ink-soft: #cbbca8;
+      --muted: #a3927e;
+      --border-warm: #3a3023;
+      --border-warm-strong: #4a3d2c;
+      --rust: #e08662;
+      --rust-tint: rgba(224, 134, 98, 0.12);
+      --link: #6badf5;
+      --link-hover: #94c6fa;
+      --link-tint: #24344a;
+      --good: #8fc79a;
+      --good-bg: #223227;
+      --bad-bg: #3a281f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --page: #1c1712;
+    --card: #262019;
+    --nav: #2c2419;
+    --ink: #f1e9dd;
+    --ink-soft: #cbbca8;
+    --muted: #a3927e;
+    --border-warm: #3a3023;
+    --border-warm-strong: #4a3d2c;
+    --rust: #e08662;
+    --rust-tint: rgba(224, 134, 98, 0.12);
+    --link: #6badf5;
+    --link-hover: #94c6fa;
+    --link-tint: #24344a;
+    --good: #8fc79a;
+    --good-bg: #223227;
+    --bad-bg: #3a281f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Figtree", ui-sans-serif, system-ui, sans-serif;
+    margin: 0;
+    padding: 40px 20px 80px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 780px; margin: 0 auto; }
+
+  header.page-head {
+    margin-bottom: 40px;
+  }
+  header.page-head h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.9rem;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  header.page-head p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 60ch;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  section.block {
+    margin-bottom: 56px;
+  }
+  section.block > h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.15rem;
+    margin: 0 0 4px;
+  }
+  section.block > .sub {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin: 0 0 20px;
+    max-width: 65ch;
+    line-height: 1.55;
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  @media (min-width: 640px) {
+    .compare.two-col { grid-template-columns: 1fr 1fr; }
+  }
+
+  .option {
+    border: 1px solid var(--border-warm);
+    border-radius: 14px;
+    background: var(--card);
+    overflow: hidden;
+  }
+  .option .tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-warm);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .option .tag .badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .option.current .tag .badge { background: var(--bad-bg); color: var(--rust); }
+  .option.proposed .tag .badge { background: var(--good-bg); color: var(--good); }
+
+  .peek-preview {
+    padding: 20px 18px 22px;
+  }
+
+  .peek-photo {
+    height: 90px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f3d9d4, #e8b9ae 55%, #caa08e);
+    margin-bottom: 14px;
+  }
+
+  .peek-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .peek-title-row.squeeze { justify-content: space-between; }
+  .peek-title {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .peek-title.wide { flex: 1; }
+
+  .btn-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .btn-row.tight { gap: 8px; }
+  .btn-row.stack-below { margin-top: 12px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    padding: 7px 13px;
+    border-radius: 8px;
+    border: 1px solid var(--border-warm-strong);
+    background: var(--card);
+    color: var(--ink);
+    white-space: nowrap;
+    cursor: default;
+  }
+  .btn.overwide {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
+  .btn.danger {
+    border: none;
+    background: none;
+    color: var(--rust);
+    padding: 7px 8px;
+  }
+  .btn.icon-only {
+    padding: 7px 9px;
+  }
+  .btn svg { flex-shrink: 0; }
+
+  .pill {
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--link-tint);
+    color: var(--link-hover);
+    white-space: nowrap;
+  }
+
+  .link-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--link);
+    cursor: default;
+  }
+
+  .row-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .annotate {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .annotate b { color: var(--ink-soft); }
+
+  .callout {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--nav);
+    border: 1px solid var(--border-warm);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-top: 16px;
+  }
+  .callout b { color: var(--ink); }
+
+  footer {
+    margin-top: 20px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+</style>
+
+<div class="wrap">
+  <header class="page-head">
+    <h1>Peek header options</h1>
+    <p>Round two: "Move back" as an inline link next to the source pill instead of a button, and the Prize Bin title-wrap fix with both alignment options laid out. Nothing here is wired up &mdash; just laid out for a look.</p>
+  </header>
+
+  <section class="block">
+    <h2>1. The "Move back" link</h2>
+    <p class="sub">Link style (not a bordered button), sitting right next to the Request/Prize bin source pill instead of down by the divider &mdash; and in your accent blue, the same blue the source pill itself already uses (<code style="background:var(--nav); padding:1px 5px; border-radius:4px">--color-link</code> / <code style="background:var(--nav); padding:1px 5px; border-radius:4px">--color-sage</code> resolve to the same hex in this app).</p>
+
+    <div class="compare two-col">
+      <div class="option current">
+        <div class="tag">Today <span class="badge">Off-system</span></div>
+        <div class="peek-preview">
+          <div class="row-flex">
+            <span class="pill">Request</span>
+            <div class="btn-row tight">
+              <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</span>
+              <span class="btn overwide" style="width:132px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 4v6h6"/></svg>
+                Move back to Pickup
+              </span>
+              <span class="btn danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="option proposed">
+        <div class="tag">Proposed &middot; inline link, next to the pill <span class="badge">On-system</span></div>
+        <div class="peek-preview">
+          <div class="row-flex">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="pill">Request</span>
+              <span class="link-inline">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 4v6h6"/></svg>
+                Move back
+              </span>
+            </div>
+            <div class="btn-row tight">
+              <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</span>
+              <span class="btn danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</span>
+            </div>
+          </div>
+        </div>
+        <div class="annotate" style="padding:0 16px 16px">Reads as "here's what this Request is, and here's the one thing you can do about that" &mdash; paired with the pill it's describing, instead of grouped with Edit/Delete which apply no matter the source.</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span>&#128161;</span>
+      <span>Kept the label as just "Move back" rather than "Move back to Pickup" &mdash; sitting right against the "Request" pill already implies where it's headed, and the confirm modal still spells it out fully before anything happens. Shout if you'd rather keep the full "to Pickup" wording even inline.</span>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>2. Title getting clipped (Prize Bin)</h2>
+    <p class="sub">Agreed the buttons move to their own line below the title &mdash; the open question is whether that button row stays flush right (like it is today, and like Requests/Checkouts already do) or sits left, flowing naturally under the title.</p>
+
+    <div class="compare two-col">
+      <div class="option current">
+        <div class="tag">Today <span class="badge">Clips</span></div>
+        <div class="peek-preview">
+          <div class="peek-photo"></div>
+          <div class="peek-title-row squeeze">
+            <span class="peek-title" style="max-width:150px">Hello Kitty Piggy Bank</span>
+            <div class="btn-row tight">
+              <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</span>
+              <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Duplicate</span>
+              <span class="btn danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</span>
+            </div>
+          </div>
+        </div>
+        <div class="annotate" style="padding:0 16px 16px">Title and the 3-button row fight for the same line &mdash; title loses first.</div>
+      </div>
+
+      <div class="option proposed">
+        <div class="tag">Option 1 &middot; right-aligned <span class="badge">On-system</span></div>
+        <div class="peek-preview">
+          <div class="peek-photo"></div>
+          <div class="peek-title-row">
+            <span class="peek-title wide">Hello Kitty Piggy Bank</span>
+          </div>
+          <div class="btn-row tight stack-below" style="justify-content:flex-end">
+            <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</span>
+            <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Duplicate</span>
+            <span class="btn danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</span>
+          </div>
+        </div>
+        <div class="annotate" style="padding:0 16px 16px">Matches where the eye already expects to find these &mdash; the buttons don't move from the right edge, they just drop down one line. Least jarring change from what you're used to.</div>
+      </div>
+
+      <div class="option proposed">
+        <div class="tag">Option 2 &middot; left-aligned <span class="badge">On-system</span></div>
+        <div class="peek-preview">
+          <div class="peek-photo"></div>
+          <div class="peek-title-row">
+            <span class="peek-title wide">Hello Kitty Piggy Bank</span>
+          </div>
+          <div class="btn-row tight stack-below">
+            <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</span>
+            <span class="btn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Duplicate</span>
+            <span class="btn danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>Delete</span>
+          </div>
+        </div>
+        <div class="annotate" style="padding:0 16px 16px">Reads like a toolbar attached to the title just above it, left to right like the rest of the page. Slightly more "reads top to bottom" than "scan the right edge."</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span>&#128161;</span>
+      <span><b>Leaning right-aligned (Option 1):</b> it's the only change that's purely "the same layout, wrapped" &mdash; nothing moves horizontally, it just drops a line. It also keeps this peek visually identical in shape to Requests/Checkouts (pill or empty space on the left, actions flush right), rather than introducing a third alignment pattern into the app.</span>
+    </div>
+  </section>
+
+  <footer>Static mockup &mdash; not wired to the app. Colors approximated from your screenshots to match the existing palette.</footer>
+</div>

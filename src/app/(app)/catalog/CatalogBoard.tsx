@@ -260,8 +260,15 @@ export default function CatalogBoard({
                 className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
-            <div className="flex items-center justify-between gap-2 pr-8">
-              <div className="flex items-center gap-2 min-w-0">
+            {/* flex-wrap (not truncate) so a long title gets the buttons
+                bumped to their own line below instead of getting clipped --
+                both the title group and the button group are shrink-0 so
+                neither squeezes the other; ml-auto on the button group is
+                what keeps it flush right whether it's sharing the first
+                line or wrapped onto its own, since justify-between doesn't
+                right-align a lone item once it's alone on a wrapped line. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-2 pr-8">
+              <div className="flex items-center gap-2 shrink-0">
                 {peekMode === "edit" && (
                   <button
                     type="button"
@@ -272,12 +279,12 @@ export default function CatalogBoard({
                     <ChevronLeft size={18} aria-hidden="true" />
                   </button>
                 )}
-                <h2 className="font-serif text-xl text-ink truncate">
+                <h2 className="font-serif text-xl text-ink">
                   {peekMode === "edit" ? "Edit prize" : active.name}
                 </h2>
               </div>
               {peekMode === "view" && (
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center gap-3 shrink-0 ml-auto">
                   <button
                     type="button"
                     onClick={() => setPeekMode("edit")}

@@ -512,21 +512,18 @@ export default function CheckoutsTable({
             {peekMode === "view" ? (
               <>
                 <div className="flex items-center justify-between">
-                  <span
-                    className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
-                    style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
-                  >
-                    {SOURCE_META[active.source].label}
-                  </span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPeekMode("edit")}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
+                      style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
                     >
-                      <Pencil size={13} aria-hidden="true" />
-                      Edit
-                    </button>
+                      {SOURCE_META[active.source].label}
+                    </span>
+                    {/* Styled as a link (not a bordered button) and paired
+                        with the source pill it's acting on, rather than
+                        grouped with Edit/Delete which apply regardless of
+                        source -- same blue as the pill itself (text-link
+                        resolves to the same --color-link/--color-sage hex). */}
                     <ActionButton
                       action={async () => {
                         if (active.source === "request") {
@@ -551,11 +548,21 @@ export default function CheckoutsTable({
                         setActiveId(null);
                         hideForDelete(active.id);
                       }}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                      className="flex items-center gap-1 text-sm font-medium text-link hover:text-link-hover"
                     >
-                      <RotateCcw size={13} aria-hidden="true" />
+                      <RotateCcw size={12} aria-hidden="true" />
                       {active.source === "request" ? "Move back to Pickup" : "Move back to Prize Bin"}
                     </ActionButton>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPeekMode("edit")}
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                    >
+                      <Pencil size={13} aria-hidden="true" />
+                      Edit
+                    </button>
                     <ActionButton
                       action={async () => {
                         await onRemove({ source: active.source, rawId: active.rawId });
