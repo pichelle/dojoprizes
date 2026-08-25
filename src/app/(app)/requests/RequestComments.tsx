@@ -212,7 +212,7 @@ function CommentRow({
         <textarea
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          rows={2}
+          rows={3}
           className="w-full mt-1.5 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong resize-none"
         />
         <div className="flex items-center justify-end gap-4 mt-1.5">
@@ -425,7 +425,7 @@ export default function RequestComments({
             id="comment-body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            rows={2}
+            rows={3}
             className="w-full mt-1 text-sm px-2.5 py-2 rounded-lg border border-border-warm-strong resize-none"
           />
           <div className="flex items-center justify-end gap-4 mt-2">
