@@ -4,7 +4,7 @@ import { deleteRequest } from "../requests/actions";
 import Select from "@/components/Select";
 import { NONE_VALUE } from "@/lib/constants";
 import ErrorNote from "@/components/ErrorNote";
-import type { PrizeRequest } from "@/lib/types";
+import type { Prize, PrizeRequest } from "@/lib/types";
 import CheckoutsTable, { type MergedCheckoutRow } from "./CheckoutsTable";
 
 // Always fetch fresh data -- this page has no searchParams/cookies to force
@@ -25,6 +25,12 @@ export default async function CheckoutsPage() {
     { data: allRequestFilamentLinks },
     { data: filaments },
     { data: franchiseTagRows },
+    { data: allRequestComments },
+    { data: allRequestActivity },
+    { data: allRequestReactions },
+    { data: allPrizeComments },
+    { data: allPrizeActivity },
+    { data: allPrizeReactions },
   ] = await Promise.all([
     supabase.from("prizes").select("id, name").order("name"),
     supabase
@@ -47,6 +53,34 @@ export default async function CheckoutsPage() {
     // RequestForm needs everywhere else it's rendered).
     supabase.from("filaments").select("id, color_name, swatch_hex").order("color_name"),
     supabase.from("franchise_tags").select("id, name").order("name"),
+    // Comments/activity for both sources, so a checkout entry can carry
+    // over the full discussion/history it had before it was checked out --
+    // same unfiltered-then-map-by-id pattern requests/page.tsx and
+    // catalog/page.tsx already use.
+    supabase
+      .from("request_comments")
+      .select("id, request_id, author, body, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("request_activity")
+      .select("id, request_id, actor, event_type, changes, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("comment_reactions")
+      .select("id, comment_id, emoji, actor, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("prize_comments")
+      .select("id, prize_id, author, body, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("prize_activity")
+      .select("id, prize_id, actor, event_type, changes, created_at")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("prize_comment_reactions")
+      .select("id, comment_id, emoji, actor, created_at")
+      .order("created_at", { ascending: true }),
   ]);
 
   type Tag = { id: string; name: string };
@@ -84,10 +118,70 @@ export default async function CheckoutsPage() {
     colorsByRequestId.set(link.request_id, list);
   }
 
+  const reactionsByRequestCommentId = new Map<
+    string,
+    { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[]
+  >();
+  for (const reaction of allRequestReactions ?? []) {
+    const list = reactionsByRequestCommentId.get(reaction.comment_id) ?? [];
+    list.push(reaction);
+    reactionsByRequestCommentId.set(reaction.comment_id, list);
+  }
+
+  const requestCommentsByRequestId = new Map<string, NonNullable<PrizeRequest["comments"]>>();
+  for (const comment of allRequestComments ?? []) {
+    const list = requestCommentsByRequestId.get(comment.request_id) ?? [];
+    list.push({ ...comment, reactions: reactionsByRequestCommentId.get(comment.id) ?? [] });
+    requestCommentsByRequestId.set(comment.request_id, list);
+  }
+
+  const requestActivityByRequestId = new Map<string, NonNullable<PrizeRequest["activity"]>>();
+  for (const entry of allRequestActivity ?? []) {
+    const list = requestActivityByRequestId.get(entry.request_id) ?? [];
+    list.push(entry as (typeof list)[number]);
+    requestActivityByRequestId.set(entry.request_id, list);
+  }
+
+  const reactionsByPrizeCommentId = new Map<
+    string,
+    { id: string; comment_id: string; emoji: string; actor: string | null; created_at: string }[]
+  >();
+  for (const reaction of allPrizeReactions ?? []) {
+    const list = reactionsByPrizeCommentId.get(reaction.comment_id) ?? [];
+    list.push(reaction);
+    reactionsByPrizeCommentId.set(reaction.comment_id, list);
+  }
+
+  const prizeCommentsByPrizeId = new Map<string, NonNullable<Prize["comments"]>>();
+  for (const comment of allPrizeComments ?? []) {
+    const list = prizeCommentsByPrizeId.get(comment.prize_id) ?? [];
+    list.push({ ...comment, reactions: reactionsByPrizeCommentId.get(comment.id) ?? [] });
+    prizeCommentsByPrizeId.set(comment.prize_id, list);
+  }
+
+  const prizeActivityByPrizeId = new Map<string, NonNullable<Prize["activity"]>>();
+  for (const entry of allPrizeActivity ?? []) {
+    const list = prizeActivityByPrizeId.get(entry.prize_id) ?? [];
+    list.push(entry as (typeof list)[number]);
+    prizeActivityByPrizeId.set(entry.prize_id, list);
+  }
+
+  // Keyed by prize id (not checkout id) -- a bin checkout's comments/
+  // activity live on the prize itself, so every checkout of the same prize
+  // shares the same discussion/history, same as the Prize Bin peek shows.
+  const prizeExtrasByPrizeId: Record<string, { comments: NonNullable<Prize["comments"]>; activity: NonNullable<Prize["activity"]> }> = {};
+  for (const p of prizes ?? []) {
+    prizeExtrasByPrizeId[p.id] = {
+      comments: prizeCommentsByPrizeId.get(p.id) ?? [],
+      activity: prizeActivityByPrizeId.get(p.id) ?? [],
+    };
+  }
+
   const binRows: MergedCheckoutRow[] = (binCheckouts ?? []).map((c) => ({
     id: `bin-${c.id}`,
     rawId: c.id,
     source: "bin",
+    prizeId: c.prize_id,
     date: c.date_checked_out,
     itemName: c.prize?.name ?? "(deleted prize)",
     who: c.bought_by,
@@ -105,6 +199,7 @@ export default async function CheckoutsPage() {
     id: `req-${r.id}`,
     rawId: r.id,
     source: "request",
+    prizeId: null,
     date: r.date_requested,
     itemName: r.prize?.name ?? r.free_text_prize ?? "Untitled print",
     who: r.student_name,
@@ -116,7 +211,7 @@ export default async function CheckoutsPage() {
         ? tagsByRequestId.get(r.id)!
         : tagsByPrizeId.get(r.prize_id ?? "") ?? [],
     price: r.sale_price ?? null,
-    makerworldLink: r.prize?.makerworld_link ?? null,
+    makerworldLink: r.links || r.prize?.makerworld_link || null,
     photoUrl: r.photo_url || r.prize?.photo_url || null,
     isPrintClub: r.is_print_club,
   }));
@@ -139,6 +234,8 @@ export default async function CheckoutsPage() {
       ...r,
       franchiseTags: tagsByRequestId.get(r.id) ?? [],
       colorFilaments: colorsByRequestId.get(r.id) ?? [],
+      comments: requestCommentsByRequestId.get(r.id) ?? [],
+      activity: requestActivityByRequestId.get(r.id) ?? [],
     } as PrizeRequest;
   }
 
@@ -220,6 +317,7 @@ export default async function CheckoutsPage() {
         filaments={filaments ?? []}
         allFranchiseTags={franchiseTagRows ?? []}
         requestsById={requestsById}
+        prizeExtrasByPrizeId={prizeExtrasByPrizeId}
       />
     </div>
   );

@@ -30,7 +30,13 @@ import EmptyStateMascot from "@/components/EmptyStateMascot";
 import Select, { NONE_VALUE } from "@/components/Select";
 import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
+import ProfileChip from "@/components/ProfileChip";
+import PeekTabs from "@/components/PeekTabs";
 import RequestForm from "../requests/RequestForm";
+import RequestComments from "../requests/RequestComments";
+import RequestActivity from "../requests/RequestActivity";
+import PrizeComments from "../catalog/PrizeComments";
+import PrizeActivity from "../catalog/PrizeActivity";
 import { updateRequestInline, updateRequestStatus } from "../requests/actions";
 import { undoCheckout, updateCheckout } from "./actions";
 
@@ -133,6 +139,10 @@ export type MergedCheckoutRow = {
   id: string;
   rawId: string;
   source: "bin" | "request";
+  // Set for bin-sourced rows only -- keys into `prizeExtrasByPrizeId` so
+  // the peek can show that prize's comments/activity. Request-sourced rows
+  // look their extras up via `requestsById[rawId]` instead.
+  prizeId: string | null;
   date: string;
   itemName: string;
   who: string | null;
@@ -239,6 +249,7 @@ export default function CheckoutsTable({
   filaments,
   allFranchiseTags,
   requestsById,
+  prizeExtrasByPrizeId,
 }: {
   rows: MergedCheckoutRow[];
   colorOptions: { id: string; color_name: string; swatch_hex: string | null }[];
@@ -249,11 +260,16 @@ export default function CheckoutsTable({
   filaments: Pick<Filament, "id" | "color_name" | "swatch_hex">[];
   allFranchiseTags: Pick<FranchiseTag, "id" | "name">[];
   // Full raw request rows keyed by id -- the flattened MergedCheckoutRow
-  // doesn't carry everything RequestForm's `initial` prop needs.
+  // doesn't carry everything RequestForm's `initial` prop needs (also
+  // carries comments/activity for the peek's tabs).
   requestsById: Record<string, PrizeRequest>;
+  // Comments/activity for bin-sourced rows, keyed by prize id -- every
+  // checkout of the same prize shares that prize's discussion/history.
+  prizeExtrasByPrizeId: Record<string, { comments: NonNullable<Prize["comments"]>; activity: NonNullable<Prize["activity"]> }>;
 }) {
   const router = useRouter();
-  const { activeProfile } = useProfiles();
+  const { activeProfile, profiles } = useProfiles();
+  const [peekTab, setPeekTab] = useState<"comments" | "activity">("comments");
   const [period, setPeriod] = useState<Period>("month");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -269,6 +285,7 @@ export default function CheckoutsTable({
   function openPeek(id: string) {
     setActiveId(id);
     setPeekMode("view");
+    setPeekTab("comments");
   }
 
   function hideForDelete(id: string) {
@@ -413,7 +430,7 @@ export default function CheckoutsTable({
         <table className="w-full text-sm">
           <thead className="bg-nav text-left">
             <tr>
-              <SortHeader label="Date" sortKeyName="date" ascLabel="Oldest" descLabel="Most recent" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
+              <SortHeader label="Date sold" sortKeyName="date" ascLabel="Oldest" descLabel="Most recent" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
               <SortHeader label="Item" sortKeyName="item" ascLabel="A–Z" descLabel="Z–A" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
               <th className="px-3 py-2.5 font-medium text-muted text-xs">Who</th>
               <SortHeader label="Size" sortKeyName="size" ascLabel="Small to large" descLabel="Large to small" sortKey={sortKey} sortDir={sortDir} onSort={setSort} />
@@ -511,87 +528,92 @@ export default function CheckoutsTable({
 
             {peekMode === "view" ? (
               <>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
-                      style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
-                    >
-                      {SOURCE_META[active.source].label}
-                    </span>
-                    {/* Styled as a link (not a bordered button) and paired
-                        with the source pill it's acting on, rather than
-                        grouped with Edit/Delete which apply regardless of
-                        source -- same blue as the pill itself (text-link
-                        resolves to the same --color-link/--color-sage hex). */}
-                    <ActionButton
-                      action={async () => {
-                        if (active.source === "request") {
-                          await updateRequestStatus(active.rawId, "printed", undefined, activeProfile?.name ?? null);
-                        } else {
-                          await undoCheckout(active.rawId);
-                        }
-                        router.refresh();
-                      }}
-                      toastMessage={active.source === "request" ? "Moved back to Pickup" : "Moved back to Prize Bin"}
-                      // A larger, more considered move than a plain delete-undo
-                      // toast can cover -- it changes what board/page the item
-                      // lives on, not just whether a row exists, so it gets its
-                      // own explicit confirm rather than the 5s undo pattern.
-                      confirmMessage={
-                        active.source === "request"
-                          ? `Move ${active.itemName} back to Pickup? It'll reappear on the Requests board.`
-                          : `Move ${active.itemName} back to the Prize Bin? This restocks it by 1.`
+                <div>
+                  <span
+                    className="inline-block text-[10px] font-medium rounded-full px-2.5 py-1"
+                    style={{ background: SOURCE_META[active.source].bg, color: SOURCE_META[active.source].text }}
+                  >
+                    {SOURCE_META[active.source].label}
+                  </span>
+                </div>
+
+                <div>
+                  {/* Styled as a link (not a bordered button), on its own
+                      row, left-aligned -- a bigger, more considered move
+                      than Edit/Delete, so it doesn't compete for space with
+                      them or the pill above. Same blue as the pill itself
+                      (text-link resolves to the same --color-link/
+                      --color-sage hex). */}
+                  <ActionButton
+                    action={async () => {
+                      if (active.source === "request") {
+                        await updateRequestStatus(active.rawId, "printed", undefined, activeProfile?.name ?? null);
+                      } else {
+                        await undoCheckout(active.rawId);
                       }
-                      undoable={false}
-                      onStart={() => {
-                        setActiveId(null);
-                        hideForDelete(active.id);
-                      }}
-                      className="flex items-center gap-1 text-sm font-medium text-link hover:text-link-hover"
-                    >
-                      <RotateCcw size={12} aria-hidden="true" />
-                      {active.source === "request" ? "Move back to Pickup" : "Move back to Prize Bin"}
-                    </ActionButton>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPeekMode("edit")}
-                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
-                    >
-                      <Pencil size={13} aria-hidden="true" />
-                      Edit
-                    </button>
-                    <ActionButton
-                      action={async () => {
-                        await onRemove({ source: active.source, rawId: active.rawId });
-                        router.refresh();
-                      }}
-                      toastMessage="Checkout removed"
-                      confirmMessage={`Delete this checkout of ${active.itemName}? This can't be undone.`}
-                      undoable={false}
-                      onStart={() => {
-                        setActiveId(null);
-                        hideForDelete(active.id);
-                      }}
-                      className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
-                    >
-                      <Trash2 size={13} aria-hidden="true" />
-                      Delete
-                    </ActionButton>
-                  </div>
+                      router.refresh();
+                    }}
+                    toastMessage={active.source === "request" ? "Moved back to Pickup" : "Moved back to Prize Bin"}
+                    // A larger, more considered move than a plain delete-undo
+                    // toast can cover -- it changes what board/page the item
+                    // lives on, not just whether a row exists, so it gets its
+                    // own explicit confirm rather than the 5s undo pattern.
+                    confirmMessage={
+                      active.source === "request"
+                        ? `Move ${active.itemName} back to Pickup? It'll reappear on the Requests board.`
+                        : `Move ${active.itemName} back to the Prize Bin? This restocks it by 1.`
+                    }
+                    undoable={false}
+                    onStart={() => {
+                      setActiveId(null);
+                      hideForDelete(active.id);
+                    }}
+                    className="flex items-center gap-1 text-sm font-medium text-link hover:text-link-hover"
+                  >
+                    <RotateCcw size={12} aria-hidden="true" />
+                    {active.source === "request" ? "Move back to Pickup" : "Move back to Prize Bin"}
+                  </ActionButton>
+                </div>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPeekMode("edit")}
+                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                  >
+                    <Pencil size={13} aria-hidden="true" />
+                    Edit
+                  </button>
+                  <ActionButton
+                    action={async () => {
+                      await onRemove({ source: active.source, rawId: active.rawId });
+                      router.refresh();
+                    }}
+                    toastMessage="Checkout removed"
+                    confirmMessage={`Delete this checkout of ${active.itemName}? This can't be undone.`}
+                    undoable={false}
+                    onStart={() => {
+                      setActiveId(null);
+                      hideForDelete(active.id);
+                    }}
+                    className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
+                  >
+                    <Trash2 size={13} aria-hidden="true" />
+                    Delete
+                  </ActionButton>
                 </div>
 
                 <div className="text-sm">
-                  <DetailRow label="Date" icon={Clock}>{formatShortDate(active.date)}</DetailRow>
+                  <DetailRow label="Date sold" icon={Clock}>{formatShortDate(active.date)}</DetailRow>
                   {active.who && (
                     <DetailRow label={active.source === "request" ? "Requested by" : "Bought by"} icon={User}>
                       {active.who}
                     </DetailRow>
                   )}
                   {active.requestedBy && (
-                    <DetailRow label="Sensei" icon={User}>{active.requestedBy}</DetailRow>
+                    <DetailRow label="Sensei" icon={User}>
+                      <ProfileChip name={active.requestedBy} profiles={profiles} />
+                    </DetailRow>
                   )}
                   {active.size && <DetailRow label="Size" icon={Ruler}>{formatSize(active.size)}</DetailRow>}
                   {active.colors.length > 0 && (
@@ -617,6 +639,44 @@ export default function CheckoutsTable({
                       </a>
                     </DetailRow>
                   )}
+                </div>
+
+                <div className="pt-1">
+                  <PeekTabs
+                    tabs={[
+                      {
+                        value: "comments" as const,
+                        label: "Comments",
+                        count:
+                          active.source === "request"
+                            ? (requestsById[active.rawId]?.comments ?? []).length
+                            : (prizeExtrasByPrizeId[active.prizeId ?? ""]?.comments ?? []).length,
+                      },
+                      {
+                        value: "activity" as const,
+                        label: "Activity",
+                        count:
+                          active.source === "request"
+                            ? (requestsById[active.rawId]?.activity ?? []).length
+                            : (prizeExtrasByPrizeId[active.prizeId ?? ""]?.activity ?? []).length,
+                      },
+                    ]}
+                    active={peekTab}
+                    onChange={setPeekTab}
+                  />
+                  <div className="pt-4">
+                    {active.source === "request" ? (
+                      peekTab === "comments" ? (
+                        <RequestComments requestId={active.rawId} comments={requestsById[active.rawId]?.comments ?? []} />
+                      ) : (
+                        <RequestActivity activity={requestsById[active.rawId]?.activity ?? []} />
+                      )
+                    ) : peekTab === "comments" ? (
+                      <PrizeComments prizeId={active.prizeId ?? ""} comments={prizeExtrasByPrizeId[active.prizeId ?? ""]?.comments ?? []} />
+                    ) : (
+                      <PrizeActivity activity={prizeExtrasByPrizeId[active.prizeId ?? ""]?.activity ?? []} />
+                    )}
+                  </div>
                 </div>
               </>
             ) : active.source === "request" ? (

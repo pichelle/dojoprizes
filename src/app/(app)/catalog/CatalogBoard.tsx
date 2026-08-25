@@ -260,66 +260,62 @@ export default function CatalogBoard({
                 className="w-full h-40 rounded-xl border border-border-warm object-cover"
               />
             )}
-            {/* flex-wrap (not truncate) so a long title gets the buttons
-                bumped to their own line below instead of getting clipped --
-                both the title group and the button group are shrink-0 so
-                neither squeezes the other; ml-auto on the button group is
-                what keeps it flush right whether it's sharing the first
-                line or wrapped onto its own, since justify-between doesn't
-                right-align a lone item once it's alone on a wrapped line. */}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-2 pr-8">
-              <div className="flex items-center gap-2 shrink-0">
-                {peekMode === "edit" && (
-                  <button
-                    type="button"
-                    onClick={() => setPeekMode("view")}
-                    aria-label="Back"
-                    className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
-                  >
-                    <ChevronLeft size={18} aria-hidden="true" />
-                  </button>
-                )}
-                <h2 className="font-serif text-xl text-ink">
-                  {peekMode === "edit" ? "Edit prize" : active.name}
-                </h2>
-              </div>
-              {peekMode === "view" && (
-                <div className="flex items-center gap-3 shrink-0 ml-auto">
-                  <button
-                    type="button"
-                    onClick={() => setPeekMode("edit")}
-                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
-                  >
-                    <Pencil size={13} aria-hidden="true" />
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDuplicate}
-                    disabled={duplicating}
-                    title="Duplicate this prize -- opens the copy for editing"
-                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav disabled:opacity-60"
-                  >
-                    <Copy size={13} aria-hidden="true" />
-                    Duplicate
-                  </button>
-                  <ActionButton
-                    action={deletePrize.bind(null, active.id)}
-                    toastMessage="Prize deleted"
-                    confirmMessage={`Delete ${active.name}? This can't be undone.`}
-                    onStart={() => {
-                      close();
-                      hideForDelete(active.id);
-                    }}
-                    onUndo={() => restoreFromDelete(active.id)}
-                    className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
-                  >
-                    <Trash2 size={13} aria-hidden="true" />
-                    Delete
-                  </ActionButton>
-                </div>
+            {/* Title always gets its own row now, exactly like the
+                Requests/Checkouts peeks -- Edit/Duplicate/Delete on the row
+                below, right-aligned. pr-8 here (not on the button row)
+                clears the peek's floating close button, which only ever
+                overlaps this first row. */}
+            <div className="flex items-center gap-2 min-w-0 pr-8">
+              {peekMode === "edit" && (
+                <button
+                  type="button"
+                  onClick={() => setPeekMode("view")}
+                  aria-label="Back"
+                  className="shrink-0 text-muted hover:text-ink -ml-1 p-1 rounded hover:bg-nav"
+                >
+                  <ChevronLeft size={18} aria-hidden="true" />
+                </button>
               )}
+              <h2 className="font-serif text-xl text-ink truncate">
+                {peekMode === "edit" ? "Edit prize" : active.name}
+              </h2>
             </div>
+            {peekMode === "view" && (
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPeekMode("edit")}
+                  className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDuplicate}
+                  disabled={duplicating}
+                  title="Duplicate this prize -- opens the copy for editing"
+                  className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav disabled:opacity-60"
+                >
+                  <Copy size={13} aria-hidden="true" />
+                  Duplicate
+                </button>
+                <ActionButton
+                  action={deletePrize.bind(null, active.id)}
+                  toastMessage="Prize deleted"
+                  confirmMessage={`Delete ${active.name}? This can't be undone.`}
+                  onStart={() => {
+                    close();
+                    hideForDelete(active.id);
+                  }}
+                  onUndo={() => restoreFromDelete(active.id)}
+                  className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
+                >
+                  <Trash2 size={13} aria-hidden="true" />
+                  Delete
+                </ActionButton>
+              </div>
+            )}
 
             {peekMode === "view" ? (
               <>
