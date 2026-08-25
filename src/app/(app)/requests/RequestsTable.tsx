@@ -333,7 +333,7 @@ export default function RequestsTable({
                     originatedAsIdea={active.originated_as_idea}
                     onPick={(next, salePrice) => handlePick(active.id, next, salePrice)}
                   />
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => setPeekMode("edit")}

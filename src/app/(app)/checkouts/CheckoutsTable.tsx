@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Ruler,
   Tags,
+  Trash2,
   User,
   type LucideIcon,
 } from "lucide-react";
@@ -517,14 +518,62 @@ export default function CheckoutsTable({
                   >
                     {SOURCE_META[active.source].label}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setPeekMode("edit")}
-                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
-                  >
-                    <Pencil size={13} aria-hidden="true" />
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPeekMode("edit")}
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                    >
+                      <Pencil size={13} aria-hidden="true" />
+                      Edit
+                    </button>
+                    <ActionButton
+                      action={async () => {
+                        if (active.source === "request") {
+                          await updateRequestStatus(active.rawId, "printed", undefined, activeProfile?.name ?? null);
+                        } else {
+                          await undoCheckout(active.rawId);
+                        }
+                        router.refresh();
+                      }}
+                      toastMessage={active.source === "request" ? "Moved back to Pickup" : "Moved back to Prize Bin"}
+                      // A larger, more considered move than a plain delete-undo
+                      // toast can cover -- it changes what board/page the item
+                      // lives on, not just whether a row exists, so it gets its
+                      // own explicit confirm rather than the 5s undo pattern.
+                      confirmMessage={
+                        active.source === "request"
+                          ? `Move ${active.itemName} back to Pickup? It'll reappear on the Requests board.`
+                          : `Move ${active.itemName} back to the Prize Bin? This restocks it by 1.`
+                      }
+                      undoable={false}
+                      onStart={() => {
+                        setActiveId(null);
+                        hideForDelete(active.id);
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
+                    >
+                      <RotateCcw size={13} aria-hidden="true" />
+                      {active.source === "request" ? "Move back to Pickup" : "Move back to Prize Bin"}
+                    </ActionButton>
+                    <ActionButton
+                      action={async () => {
+                        await onRemove({ source: active.source, rawId: active.rawId });
+                        router.refresh();
+                      }}
+                      toastMessage="Checkout removed"
+                      confirmMessage={`Delete this checkout of ${active.itemName}? This can't be undone.`}
+                      undoable={false}
+                      onStart={() => {
+                        setActiveId(null);
+                        hideForDelete(active.id);
+                      }}
+                      className="flex items-center gap-1.5 text-sm text-rust rounded-md px-2 py-1.5 hover:bg-rust/10 transition-colors"
+                    >
+                      <Trash2 size={13} aria-hidden="true" />
+                      Delete
+                    </ActionButton>
+                  </div>
                 </div>
 
                 <div className="text-sm">
@@ -561,55 +610,6 @@ export default function CheckoutsTable({
                       </a>
                     </DetailRow>
                   )}
-                </div>
-
-                <div className="flex flex-col gap-2 items-start">
-                  <ActionButton
-                    action={async () => {
-                      if (active.source === "request") {
-                        await updateRequestStatus(active.rawId, "printed", undefined, activeProfile?.name ?? null);
-                      } else {
-                        await undoCheckout(active.rawId);
-                      }
-                      router.refresh();
-                    }}
-                    toastMessage={active.source === "request" ? "Moved back to Pickup" : "Moved back to Prize Bin"}
-                    // A larger, more considered move than a plain delete-undo
-                    // toast can cover -- it changes what board/page the item
-                    // lives on, not just whether a row exists, so it gets its
-                    // own explicit confirm rather than the 5s undo pattern.
-                    confirmMessage={
-                      active.source === "request"
-                        ? `Move ${active.itemName} back to Pickup? It'll reappear on the Requests board.`
-                        : `Move ${active.itemName} back to the Prize Bin? This restocks it by 1.`
-                    }
-                    undoable={false}
-                    onStart={() => {
-                      setActiveId(null);
-                      hideForDelete(active.id);
-                    }}
-                    className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav"
-                  >
-                    <RotateCcw size={13} aria-hidden="true" />
-                    {active.source === "request" ? "Move back to Pickup" : "Move back to Prize Bin"}
-                  </ActionButton>
-
-                  <ActionButton
-                    action={async () => {
-                      await onRemove({ source: active.source, rawId: active.rawId });
-                      router.refresh();
-                    }}
-                    toastMessage="Checkout removed"
-                    confirmMessage={`Delete this checkout of ${active.itemName}? This can't be undone.`}
-                    undoable={false}
-                    onStart={() => {
-                      setActiveId(null);
-                      hideForDelete(active.id);
-                    }}
-                    className="text-sm text-rust hover:underline"
-                  >
-                    Delete
-                  </ActionButton>
                 </div>
               </>
             ) : active.source === "request" ? (
