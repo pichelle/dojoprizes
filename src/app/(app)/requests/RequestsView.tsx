@@ -21,6 +21,7 @@ export default function RequestsView({
   colorOptions,
   onStatusChange,
   onDelete,
+  onDuplicate,
   onClearCancelled,
   filtersActive,
 }: {
@@ -36,6 +37,7 @@ export default function RequestsView({
     actor?: string | null,
   ) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
+  onDuplicate: (requestId: string, actor: string | null) => Promise<string>;
   onClearCancelled: () => Promise<void>;
   filtersActive: boolean;
 }) {
@@ -109,6 +111,7 @@ export default function RequestsView({
           allFranchiseTags={allFranchiseTags}
           onStatusChange={onStatusChange}
           onDelete={onDelete}
+          onDuplicate={onDuplicate}
           onClearCancelled={onClearCancelled}
           filtersActive={filtersActive}
         />
@@ -120,6 +123,7 @@ export default function RequestsView({
           allFranchiseTags={allFranchiseTags}
           onStatusChange={onStatusChange}
           onDelete={onDelete}
+          onDuplicate={onDuplicate}
         />
       )}
     </div>

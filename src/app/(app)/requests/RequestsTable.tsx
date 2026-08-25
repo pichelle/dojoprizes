@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   Clock,
   Coins,
+  Copy,
   ExternalLink,
   Palette,
   Pencil,
@@ -46,6 +47,7 @@ export default function RequestsTable({
   allFranchiseTags,
   onStatusChange,
   onDelete,
+  onDuplicate,
 }: {
   requests: PrizeRequest[];
   prizes: Pick<Prize, "id" | "name">[];
@@ -58,6 +60,7 @@ export default function RequestsTable({
     actor?: string | null,
   ) => Promise<void>;
   onDelete: (requestId: string) => Promise<void>;
+  onDuplicate: (requestId: string, actor: string | null) => Promise<string>;
 }) {
   const { profiles, activeProfile } = useProfiles();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -66,6 +69,11 @@ export default function RequestsTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
   const [pendingDeleteIds, setPendingDeleteIds] = useState<Set<string>>(new Set());
+  const [duplicating, setDuplicating] = useState(false);
+  // Set right after a duplicate is created, since the new request doesn't
+  // exist in the `requests` prop yet -- the effect below opens its edit
+  // view as soon as router.refresh() brings it in.
+  const [pendingOpenId, setPendingOpenId] = useState<string | null>(null);
   const router = useRouter();
 
   const effectiveRequests = useMemo(
@@ -101,6 +109,13 @@ export default function RequestsTable({
       }
       return changed ? next : prev;
     });
+    // Opens a just-duplicated request's edit view as soon as it shows up
+    // here -- same render-time adjustment as the override-clearing above.
+    if (pendingOpenId && requests.some((r) => r.id === pendingOpenId)) {
+      setActiveId(pendingOpenId);
+      setPeekMode("edit");
+      setPendingOpenId(null);
+    }
   }
 
   const sortedRequests = useMemo(() => {
@@ -152,6 +167,21 @@ export default function RequestsTable({
       next.delete(requestId);
       return next;
     });
+  }
+
+  async function handleDuplicate() {
+    if (!active || duplicating) return;
+    setDuplicating(true);
+    try {
+      const newId = await onDuplicate(active.id, activeProfile?.name ?? null);
+      showToast("Request duplicated");
+      setPendingOpenId(newId);
+      router.refresh();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Couldn't duplicate that request");
+    } finally {
+      setDuplicating(false);
+    }
   }
 
   if (effectiveRequests.length === 0) {
@@ -311,6 +341,16 @@ export default function RequestsTable({
                     >
                       <Pencil size={13} aria-hidden="true" />
                       Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDuplicate}
+                      disabled={duplicating}
+                      title="Duplicate this request -- opens the copy for editing"
+                      className="flex items-center gap-1.5 text-sm text-ink border border-border-warm-strong rounded-md px-3 py-1.5 hover:bg-nav disabled:opacity-60"
+                    >
+                      <Copy size={13} aria-hidden="true" />
+                      Duplicate
                     </button>
                     <ActionButton
                       action={onDelete.bind(null, active.id)}

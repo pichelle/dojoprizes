@@ -454,6 +454,78 @@ export async function updateRequestStatus(
   revalidatePath("/");
 }
 
+// Duplicates a request/idea's design-identity fields (title, prize link,
+// size, colors, theme, notes, photo, link) into a brand-new row -- for a
+// student wanting to reprint an improved version of something, so it
+// doesn't have to be re-typed from scratch. The copy is a fresh trip
+// through the pipeline: it starts back at Idea or Pending (whichever kind
+// the original was) with today's date, and never inherits status, sale
+// price, pickup timestamps, comments, or activity history, since those
+// describe what happened to the *original* request, not the design.
+export async function duplicateRequest(requestId: string, actor: string | null): Promise<string> {
+  const supabase = createServerClient();
+
+  const { data: original, error: fetchError } = await supabase
+    .from("requests")
+    .select(
+      "student_name, requested_by, prize_id, free_text_prize, size, color_any, links, notes, photo_url, is_print_club, originated_as_idea",
+    )
+    .eq("id", requestId)
+    .single();
+  if (fetchError || !original) throw new Error(fetchError?.message ?? "Request not found.");
+
+  const [{ data: filamentLinks }, { data: tagLinks }] = await Promise.all([
+    supabase.from("request_filaments").select("filament_id").eq("request_id", requestId),
+    supabase.from("request_franchise_tags").select("tag_id").eq("request_id", requestId),
+  ]);
+
+  const initialStatus: RequestStatus = original.originated_as_idea ? "idea" : "pending";
+
+  const { data: copy, error } = await supabase
+    .from("requests")
+    .insert({
+      student_name: `${original.student_name} (copy)`,
+      requested_by: original.requested_by,
+      prize_id: original.prize_id,
+      free_text_prize: original.free_text_prize,
+      size: original.size,
+      color_any: original.color_any,
+      links: original.links,
+      notes: original.notes,
+      photo_url: original.photo_url,
+      is_print_club: original.is_print_club,
+      originated_as_idea: original.originated_as_idea,
+      date_requested: new Date().toISOString().slice(0, 10),
+      status: initialStatus,
+      pending_at: initialStatus === "idea" ? null : new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  if (!copy) throw new Error("Something went wrong duplicating that request.");
+
+  const filamentIds = ((filamentLinks ?? []) as { filament_id: string }[]).map((l) => l.filament_id);
+  const tagIds = ((tagLinks ?? []) as { tag_id: string }[]).map((l) => l.tag_id);
+  if (filamentIds.length > 0) {
+    const { error: filamentError } = await supabase
+      .from("request_filaments")
+      .insert(filamentIds.map((filament_id) => ({ request_id: copy.id, filament_id })));
+    if (filamentError) throw new Error(filamentError.message);
+  }
+  if (tagIds.length > 0) {
+    const { error: tagError } = await supabase
+      .from("request_franchise_tags")
+      .insert(tagIds.map((tag_id) => ({ request_id: copy.id, tag_id })));
+    if (tagError) throw new Error(tagError.message);
+  }
+
+  await logRequestActivity(supabase, copy.id, actor, "created", statusChange(null, initialStatus));
+
+  revalidatePath("/requests");
+  revalidatePath("/");
+  return copy.id;
+}
+
 export async function deleteRequest(requestId: string) {
   const supabase = createServerClient();
   const { error } = await supabase.from("requests").delete().eq("id", requestId);
