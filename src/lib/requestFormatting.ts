@@ -67,6 +67,18 @@ export function formatRequestedAgo(iso: string, status?: RequestStatus) {
   return `${verb} ${age} days ago`;
 }
 
+// The date that should anchor "how long has this been waiting" for a row
+// currently in the queue. A regular request's date_requested already means
+// that. An idea-turned-request's date_requested instead marks when the
+// idea was first jotted down -- pending_at (stamped the moment it actually
+// entered the queue, see updateRequestStatus) is the honest answer for
+// those, and stays null until that happens, so this naturally falls back
+// to date_requested while something's still sitting in the Ideas column.
+export function queueEntryDate(r: Pick<PrizeRequest, "date_requested" | "pending_at" | "originated_as_idea">) {
+  if (r.originated_as_idea && r.pending_at) return r.pending_at.slice(0, 10);
+  return r.date_requested;
+}
+
 export function formatCalendarDate(iso: string) {
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return iso;

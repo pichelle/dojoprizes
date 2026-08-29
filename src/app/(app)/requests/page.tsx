@@ -3,17 +3,12 @@ import { createServerClient } from "@/lib/supabase/server";
 import { updateRequestStatus, deleteRequest, duplicateRequest, clearCancelledRequests } from "./actions";
 import ErrorNote from "@/components/ErrorNote";
 import RequestsView from "./RequestsView";
+import { daysAgo, queueEntryDate } from "@/lib/requestFormatting";
 
 // Force dynamic rendering (belt-and-suspenders alongside reading
 // searchParams below) so this page always reflects the latest requests
 // instead of any build-time snapshot.
 export const dynamic = "force-dynamic";
-
-function daysAgo(iso: string) {
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)));
-}
 
 export default async function RequestsPage({
   searchParams,
@@ -198,19 +193,25 @@ export default async function RequestsPage({
   const oldestPendingDays = requests
     .filter((r) => r.status === "pending")
     .reduce<number | null>((max, r) => {
-      const age = daysAgo(r.date_requested);
+      const age = daysAgo(queueEntryDate(r));
       if (age === null) return max;
       return max === null || age > max ? age : max;
     }, null);
 
   return (
-    <div className="space-y-6">
+    // sm:h-[calc(100vh-6rem)] matches AppShell's own fixed main padding
+    // (py-12 + pb-12 = 6rem at sm+) -- this, combined with sm:overflow-hidden
+    // and the flex-1/min-h-0 chain below, means the *page* never scrolls at
+    // sm+; only the individual kanban columns (or the table body) do. Below
+    // sm: plain block layout, normal page scroll -- columns stack there
+    // instead of sitting side by side, so there's nothing to protect.
+    <div className="space-y-6 sm:flex sm:flex-col sm:h-[calc(100vh-6rem)] sm:overflow-hidden">
       {/* Stacks on mobile (title/subtext, then the two stat tiles full
           width below) instead of squeezing everything into one row --
           the old unwrapped row let the flex-shrink default compress the
           tiles unevenly, wrapping "Oldest waiting"'s value but not
           "Avg. turnaround"'s, purely from DOM order, not the data. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="shrink-0 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl text-ink">Request log</h1>
           <p className="text-sm text-muted mt-1">Track pending prints and see what to make next.</p>
@@ -237,7 +238,7 @@ export default async function RequestsPage({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-4 sm:flex-1 sm:min-h-0 sm:flex sm:flex-col">
         {error && <ErrorNote>Couldn&apos;t load requests: {error.message}</ErrorNote>}
 
         <RequestsView

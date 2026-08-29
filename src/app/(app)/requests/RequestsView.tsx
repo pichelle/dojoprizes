@@ -67,13 +67,13 @@ export default function RequestsView({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:flex-1 sm:min-h-0 sm:flex sm:flex-col">
       {/* Mobile (below sm): two rows -- view toggle + "Add a request"
           together on the first, filters alone on the second. Desktop
           (sm+): unchanged, everything back in one flex-wrap row
           (`sm:contents` makes the two mobile grouping divs disappear from
           layout so their children rejoin the single row). */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+      <div className="shrink-0 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <div className="flex items-center gap-2 sm:contents">
           <div className="flex gap-1 bg-nav border border-border-warm rounded-lg p-1">
             <button
@@ -118,27 +118,35 @@ export default function RequestsView({
       </div>
 
       {view === "board" ? (
-        <RequestsKanban
-          requests={requests}
-          prizes={prizes}
-          filaments={filaments}
-          allFranchiseTags={allFranchiseTags}
-          onStatusChange={onStatusChange}
-          onDelete={onDelete}
-          onDuplicate={onDuplicate}
-          onClearCancelled={onClearCancelled}
-          filtersActive={filtersActive}
-        />
+        // No overflow here -- the grid fills this exactly (sm:h-full) and
+        // each column scrolls its own card list internally, same as before.
+        <div className="sm:flex-1 sm:min-h-0 sm:flex sm:flex-col">
+          <RequestsKanban
+            requests={requests}
+            prizes={prizes}
+            filaments={filaments}
+            allFranchiseTags={allFranchiseTags}
+            onStatusChange={onStatusChange}
+            onDelete={onDelete}
+            onDuplicate={onDuplicate}
+            onClearCancelled={onClearCancelled}
+            filtersActive={filtersActive}
+          />
+        </div>
       ) : (
-        <RequestsTable
-          requests={requests}
-          prizes={prizes}
-          filaments={filaments}
-          allFranchiseTags={allFranchiseTags}
-          onStatusChange={onStatusChange}
-          onDelete={onDelete}
-          onDuplicate={onDuplicate}
-        />
+        // A table has no per-row scroll partitioning like the board's
+        // columns do, so this whole region scrolls as one unit instead.
+        <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto">
+          <RequestsTable
+            requests={requests}
+            prizes={prizes}
+            filaments={filaments}
+            allFranchiseTags={allFranchiseTags}
+            onStatusChange={onStatusChange}
+            onDelete={onDelete}
+            onDuplicate={onDuplicate}
+          />
+        </div>
       )}
     </div>
   );

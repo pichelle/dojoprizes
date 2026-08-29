@@ -11,6 +11,7 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Lightbulb,
   Maximize2,
   MessageCircle,
   Palette,
@@ -26,6 +27,7 @@ import {
 import Tooltip from "@/components/Tooltip";
 import DetailRow from "@/components/DetailRow";
 import type { Filament, FranchiseTag, Prize, PrizeRequest, RequestStatus } from "@/lib/types";
+import { daysAgo, formatRequestedAgo, formatRequestDateDetailed, printTitle } from "@/lib/requestFormatting";
 import StatusPill from "./StatusPill";
 import RequestForm from "./RequestForm";
 import RequestComments from "./RequestComments";
@@ -103,50 +105,6 @@ function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override
     });
   }
   return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
-}
-
-function daysAgo(iso: string) {
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return null;
-  return Math.max(0, Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24)));
-}
-
-// "Requested 5 days ago" -- more actionable at a glance than a raw date.
-// Ideas aren't requests yet -- just suggestions someone jotted down -- so
-// they read as "Added" instead, which avoids implying the same
-// waiting-on-us urgency a real request has.
-function formatRequestedAgo(iso: string, status?: RequestStatus) {
-  const verb = status === "idea" ? "Added" : "Requested";
-  const age = daysAgo(iso);
-  if (age === null) return `${verb} ${iso}`;
-  if (age === 0) return `${verb} today`;
-  if (age === 1) return `${verb} 1 day ago`;
-  return `${verb} ${age} days ago`;
-}
-
-function formatCalendarDate(iso: string) {
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-}
-
-// Same relative time as formatRequestedAgo, but without the "Requested"
-// prefix and with the calendar date alongside it -- used only in the
-// peek's Request date row, not on the card.
-function formatRequestDateDetailed(iso: string) {
-  const age = daysAgo(iso);
-  const relative = age === null ? iso : age === 0 ? "Today" : age === 1 ? "1 day ago" : `${age} days ago`;
-  return `${relative} (${formatCalendarDate(iso)})`;
-}
-
-// Ideas don't have a prize/free-text title -- the "idea title" field
-// captured at creation is stored in student_name instead, so use that as
-// the display title. Checked via originated_as_idea (not status === "idea")
-// since an idea keeps using its title through Queue and Prize Bin too --
-// it never gets a prize_id/free_text_prize filled in along the way.
-function printTitle(r: PrizeRequest) {
-  if (r.originated_as_idea) return r.student_name || "Untitled idea";
-  return r.prize?.name ?? r.free_text_prize ?? "Untitled print";
 }
 
 function CardAvatar({ photoUrl }: { photoUrl: string | null }) {
@@ -465,28 +423,33 @@ export default function RequestsKanban({
 
   return (
     <>
-      {hiddenColumns.length > 0 && (
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs text-muted">Hidden:</span>
-          {hiddenColumns.map((c) => (
-            <button
-              key={c.status}
-              type="button"
-              onClick={() => toggleHide(c.status)}
-              className="flex items-center gap-1 text-xs font-medium text-ink bg-[#f3f3f0] rounded px-2.5 py-1 hover:opacity-80"
-            >
-              <Eye size={12} aria-hidden="true" />
-              {c.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {/* This wrapper (not the grid itself) is what actually fills the
+          sm:flex-1/min-h-0 space RequestsView hands down -- the grid gets
+          sm:flex-1 within it, so the "Hidden: ..." bar above stays its
+          natural height instead of being squeezed by the grid's growth. */}
+      <div className="sm:flex sm:flex-col sm:h-full sm:min-h-0">
+        {hiddenColumns.length > 0 && (
+          <div className="shrink-0 flex items-center gap-2 mb-3">
+            <span className="text-xs text-muted">Hidden:</span>
+            {hiddenColumns.map((c) => (
+              <button
+                key={c.status}
+                type="button"
+                onClick={() => toggleHide(c.status)}
+                className="flex items-center gap-1 text-xs font-medium text-ink bg-[#f3f3f0] rounded px-2.5 py-1 hover:opacity-80"
+              >
+                <Eye size={12} aria-hidden="true" />
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-      <div
-        className="grid items-start sm:items-stretch gap-5 sm:h-[calc(100vh-14rem)] sm:min-h-[420px]"
-        style={{ gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))` }}
-      >
-        {visibleColumns.map((col) => {
+        <div
+          className="grid items-start sm:items-stretch gap-5 sm:flex-1 sm:min-h-0"
+          style={{ gridTemplateColumns: `repeat(auto-fit, minmax(240px, 1fr))` }}
+        >
+          {visibleColumns.map((col) => {
           const override = sortOverrides[col.status] ?? null;
           const rows = sortForColumn(effectiveRequests, col.status, override);
           const isExpanded = expanded === col.status;
@@ -583,8 +546,15 @@ export default function RequestsKanban({
                   const hasSalePrice =
                     saleBreakdown.obsidian > 0 || saleBreakdown.gold > 0 || saleBreakdown.silver > 0;
                   const estTag = formatCoinPriceBreakdown(catalogPrice);
+                  // An idea's date_requested is when the idea was jotted
+                  // down, not when it actually joined the queue -- once it's
+                  // out of the Ideas column, that date no longer means
+                  // "waiting since", so it's misleading to show it (and
+                  // doubly so to flag it urgent off of it). Shown as an
+                  // origin tag instead, below.
+                  const isIdeaInQueue = r.originated_as_idea && r.status !== "idea";
                   const age = daysAgo(r.date_requested);
-                  const urgent = age !== null && age > URGENT_DAYS && r.status === "pending";
+                  const urgent = !isIdeaInQueue && age !== null && age > URGENT_DAYS && r.status === "pending";
                   const printName = printTitle(r);
                   return (
                     <div
@@ -627,11 +597,21 @@ export default function RequestsKanban({
                         </div>
                       )}
                       <div className="flex items-start justify-between gap-2">
-                        <span
-                          className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
-                        >
-                          {formatRequestedAgo(r.date_requested, r.status)}
-                        </span>
+                        {isIdeaInQueue ? (
+                          <span
+                            className="flex items-center gap-1 text-[11px] font-medium whitespace-nowrap"
+                            style={{ color: "var(--color-idea-text)" }}
+                          >
+                            <Lightbulb size={11} aria-hidden="true" />
+                            From ideas
+                          </span>
+                        ) : (
+                          <span
+                            className={`text-[11px] font-medium whitespace-nowrap ${urgent ? "text-rust font-semibold" : "text-muted"}`}
+                          >
+                            {formatRequestedAgo(r.date_requested, r.status)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2.5 mt-2.5">
                         <CardAvatar photoUrl={r.photo_url || r.prize?.photo_url || null} />
@@ -736,6 +716,7 @@ export default function RequestsKanban({
             </div>
           );
         })}
+        </div>
       </div>
 
       <SidePeek open={Boolean(active)} onClose={() => setActiveId(null)}>
