@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
-  Lightbulb,
   Maximize2,
   MessageCircle,
   Palette,
@@ -598,11 +597,7 @@ export default function RequestsKanban({
                       )}
                       <div className="flex items-start justify-between gap-2">
                         {isIdeaInQueue ? (
-                          <span
-                            className="flex items-center gap-1 text-[11px] font-medium whitespace-nowrap"
-                            style={{ color: "var(--color-idea-text)" }}
-                          >
-                            <Lightbulb size={11} aria-hidden="true" />
+                          <span className="text-[11px] font-medium whitespace-nowrap text-muted">
                             From ideas
                           </span>
                         ) : (
