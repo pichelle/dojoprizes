@@ -23,6 +23,7 @@ export default function RequestsView({
   onDelete,
   onDuplicate,
   onClearCancelled,
+  onReorder,
   filtersActive,
 }: {
   requests: PrizeRequest[];
@@ -39,6 +40,7 @@ export default function RequestsView({
   onDelete: (requestId: string) => Promise<void>;
   onDuplicate: (requestId: string, actor: string | null) => Promise<string>;
   onClearCancelled: () => Promise<void>;
+  onReorder: (orderedIds: string[]) => Promise<void>;
   filtersActive: boolean;
 }) {
   const router = useRouter();
@@ -130,6 +132,7 @@ export default function RequestsView({
             onDelete={onDelete}
             onDuplicate={onDuplicate}
             onClearCancelled={onClearCancelled}
+            onReorder={onReorder}
             filtersActive={filtersActive}
           />
         </div>

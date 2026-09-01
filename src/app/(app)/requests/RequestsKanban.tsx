@@ -76,34 +76,57 @@ const EMPTY_COLUMN_COPY: Record<RequestStatus, { pose: "happy" | "sparkle" | "hu
   cancelled: { pose: "sparkle", message: "nothing cancelled. not one request lost." },
 };
 
-// Requests carrying a priority sort (pending/printed) show 3D Print Club
-// first, then oldest-waiting first -- the same order the old Queue page
-// used for "what to print next". Fulfilled/cancelled are just an archive,
-// so those stay in the newest-first order the page already queried in.
-// A manual sort override (from the up/down carats) replaces this entirely
-// while it's active.
+// These three columns bubble 3D Print Club requests to the top -- the same
+// split the old Queue page used for "what to print next" -- and are the
+// only ones that support manual drag reordering. Fulfilled/cancelled are
+// just an archive, so those stay in the newest-first order the page
+// already queried in and can't be dragged.
 const PRIORITY_SORTED: RequestStatus[] = ["idea", "pending", "printed"];
+
+function canManuallyReorder(status: RequestStatus) {
+  return PRIORITY_SORTED.includes(status);
+}
 
 const URGENT_DAYS = 14;
 const UNDO_WINDOW_MS = 5000;
 
 type SortOverride = "asc" | "desc" | null;
 
-// Default (no manual override) is oldest-first everywhere -- that's the
-// order things actually need attention in. Pending/printed/idea also
-// bubble Print Club requests to the top within that.
+function compareByDate(a: PrizeRequest, b: PrizeRequest) {
+  return a.date_requested.localeCompare(b.date_requested);
+}
+
+// Ascending by manual sort_order, with never-dragged (null) rows falling to
+// the end and falling back to date order among each other -- this is what
+// shows with no explicit Oldest/Newest override, so a manual drag is
+// immediately visible without having to pick anything first.
+function compareBySortOrder(a: PrizeRequest, b: PrizeRequest) {
+  if (a.sort_order !== null && b.sort_order !== null) return a.sort_order - b.sort_order;
+  if (a.sort_order !== null) return -1;
+  if (b.sort_order !== null) return 1;
+  return compareByDate(a, b);
+}
+
+// No override shows the manual drag order (falling back to oldest-first
+// for anything never dragged). Explicit Oldest/Newest ignore manual order
+// entirely and show plain date order instead -- dragging a card while one
+// of those is active clears it (see handleReorder) so what you just did is
+// what you immediately see. Pending/printed/idea also bubble 3D Print Club
+// requests to the top in every mode -- that split never moves, only the
+// order within each side of it does.
 function sortForColumn(requests: PrizeRequest[], status: RequestStatus, override: SortOverride) {
   const rows = requests.filter((r) => r.status === status);
-  if (override === "desc") {
-    return [...rows].sort((a, b) => b.date_requested.localeCompare(a.date_requested));
-  }
-  if (override !== "asc" && PRIORITY_SORTED.includes(status)) {
+  const compare =
+    override === "desc" ? (a: PrizeRequest, b: PrizeRequest) => -compareByDate(a, b)
+    : override === "asc" ? compareByDate
+    : compareBySortOrder;
+  if (PRIORITY_SORTED.includes(status)) {
     return [...rows].sort((a, b) => {
       if (a.is_print_club !== b.is_print_club) return a.is_print_club ? -1 : 1;
-      return a.date_requested.localeCompare(b.date_requested);
+      return compare(a, b);
     });
   }
-  return [...rows].sort((a, b) => a.date_requested.localeCompare(b.date_requested));
+  return [...rows].sort(compare);
 }
 
 function CardAvatar({ photoUrl }: { photoUrl: string | null }) {
@@ -139,6 +162,7 @@ export default function RequestsKanban({
   onDelete,
   onDuplicate,
   onClearCancelled,
+  onReorder,
   filtersActive,
 }: {
   requests: PrizeRequest[];
@@ -154,6 +178,9 @@ export default function RequestsKanban({
   onDelete: (requestId: string) => Promise<void>;
   onDuplicate: (requestId: string, actor: string | null) => Promise<string>;
   onClearCancelled: () => Promise<void>;
+  // Persists a manual drag reorder -- orderedIds is one column's whole
+  // Print Club (or regular) partition in its new order.
+  onReorder: (orderedIds: string[]) => Promise<void>;
   // True if a color/size/search filter is currently narrowing `requests`.
   // A column reading empty because of an active filter is not the same
   // thing as a column that's genuinely empty -- only the latter should
@@ -168,10 +195,20 @@ export default function RequestsKanban({
   const [creatingStatus, setCreatingStatus] = useState<RequestStatus | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<RequestStatus | null>(null);
+  // Which card a within-column drag is currently hovering, and which half
+  // of it -- drives the insertion-line preview. Separate from dragOverStatus
+  // (that one's for the cross-column drop highlight, which still applies
+  // even while hovering a specific card).
+  const [dragOverCard, setDragOverCard] = useState<{ id: string; edge: "before" | "after" } | null>(null);
   const [hidden, setHidden] = useState<Set<RequestStatus>>(new Set());
   const [expanded, setExpanded] = useState<RequestStatus | null>(null);
   const [sortOverrides, setSortOverrides] = useState<Partial<Record<RequestStatus, SortOverride>>>({});
   const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  // Optimistic sort_order values from a just-completed drag reorder, keyed
+  // by request id -- same idea as `overrides`, but kept separate since one
+  // reorder touches a whole partition's worth of rows at once rather than
+  // a single card.
+  const [sortOrderOverrides, setSortOrderOverrides] = useState<Record<string, number>>({});
   // The card that should play its pop-in animation, if any. Previously
   // this was set automatically on create and paired with an effect that
   // tried to auto-scroll to it -- that turned out unreliable in practice
@@ -213,10 +250,11 @@ export default function RequestsKanban({
         .filter((r) => !pendingDeleteIds.has(r.id))
         .map((r) => {
           const o = overrides[r.id];
-          if (!o) return r;
-          return { ...r, status: o.status, sale_price: o.salePrice };
+          const withStatus = o ? { ...r, status: o.status, sale_price: o.salePrice } : r;
+          const sortOverride = sortOrderOverrides[r.id];
+          return sortOverride === undefined ? withStatus : { ...withStatus, sort_order: sortOverride };
         }),
-    [requests, overrides, pendingDeleteIds],
+    [requests, overrides, sortOrderOverrides, pendingDeleteIds],
   );
 
   // Clears an optimistic override once the server `requests` prop already
@@ -234,6 +272,18 @@ export default function RequestsKanban({
       for (const [id, override] of Object.entries(prev)) {
         const serverRow = requests.find((r) => r.id === id);
         if (serverRow && serverRow.status === override.status && serverRow.sale_price === override.salePrice) {
+          delete next[id];
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+    setSortOrderOverrides((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const [id, sortOrder] of Object.entries(prev)) {
+        const serverRow = requests.find((r) => r.id === id);
+        if (serverRow && serverRow.sort_order === sortOrder) {
           delete next[id];
           changed = true;
         }
@@ -353,6 +403,47 @@ export default function RequestsKanban({
     handlePick(requestId, status);
   }
 
+  // Drops `draggedId` next to `targetId` within one column. Print
+  // Club/regular is a hard split -- a card only ever reorders among its
+  // own partition, so dropping near a card on the other side just settles
+  // at that boundary (top of the regular group, or bottom of the Print
+  // Club group) instead of doing nothing.
+  function handleReorder(status: RequestStatus, draggedId: string, targetId: string, edge: "before" | "after") {
+    const dragged = effectiveRequests.find((r) => r.id === draggedId);
+    const target = effectiveRequests.find((r) => r.id === targetId);
+    if (!dragged || !target || dragged.id === target.id) return;
+
+    const partitionRows = sortForColumn(effectiveRequests, status, sortOverrides[status] ?? null).filter(
+      (r) => r.is_print_club === dragged.is_print_club && r.id !== draggedId,
+    );
+
+    let insertAt: number;
+    if (target.is_print_club === dragged.is_print_club) {
+      const targetIndex = partitionRows.findIndex((r) => r.id === targetId);
+      insertAt = edge === "before" ? targetIndex : targetIndex + 1;
+    } else {
+      insertAt = dragged.is_print_club ? partitionRows.length : 0;
+    }
+
+    const reordered = [...partitionRows];
+    reordered.splice(insertAt, 0, dragged);
+
+    // Optimistic: show the new order immediately, and drop any
+    // Oldest/Newest override on this column -- a fresh drag is a clearer
+    // signal of intent than a toggle picked earlier, and leaving the
+    // override active would hide the very change just made.
+    setSortOrderOverrides((prev) => {
+      const next = { ...prev };
+      reordered.forEach((r, i) => {
+        next[r.id] = (i + 1) * 1024;
+      });
+      return next;
+    });
+    setSortOverrides((prev) => ({ ...prev, [status]: null }));
+
+    onReorder(reordered.map((r) => r.id)).then(() => router.refresh());
+  }
+
   function handlePick(requestId: string, next: RequestStatus, salePrice?: number | null) {
     const current = effectiveRequests.find((r) => r.id === requestId);
     if (!current) return;
@@ -452,6 +543,12 @@ export default function RequestsKanban({
           const override = sortOverrides[col.status] ?? null;
           const rows = sortForColumn(effectiveRequests, col.status, override);
           const isExpanded = expanded === col.status;
+          // Shown only while a manual drag arrangement is actually what's
+          // on screen (no Oldest/Newest override active, and at least one
+          // card here has actually been dragged) -- otherwise it'd be
+          // claiming a custom order that isn't really visible.
+          const hasCustomOrder =
+            override === null && canManuallyReorder(col.status) && rows.some((r) => r.sort_order !== null);
           return (
             <div
               key={col.status}
@@ -463,6 +560,7 @@ export default function RequestsKanban({
               onDragLeave={() => setDragOverStatus((s) => (s === col.status ? null : s))}
               onDrop={(e) => {
                 e.preventDefault();
+                setDragOverCard(null);
                 handleDrop(col.status);
               }}
               className={`rounded-2xl p-3 bg-nav border transition-colors sm:flex sm:flex-col sm:min-h-0 ${
@@ -479,6 +577,9 @@ export default function RequestsKanban({
                   />
                   {col.label}
                   <span className="text-muted font-medium">{rows.length}</span>
+                  {hasCustomOrder && (
+                    <span className="text-[10px] font-medium text-muted">Custom order</span>
+                  )}
                 </p>
                 <div className="flex items-center gap-1">
                   <Tooltip label="Oldest">
@@ -567,6 +668,44 @@ export default function RequestsKanban({
                       onDragEnd={() => {
                         setDraggingId(null);
                         setDragOverStatus(null);
+                        setDragOverCard(null);
+                      }}
+                      onDragOver={(e) => {
+                        if (!draggingId || draggingId === r.id) return;
+                        const draggedRow = effectiveRequests.find((x) => x.id === draggingId);
+                        if (!draggedRow || draggedRow.status !== r.status || !canManuallyReorder(r.status)) return;
+                        // Only preventDefault (which is what allows onDrop
+                        // to fire here at all) once this is actually a
+                        // valid same-column reorder target -- otherwise
+                        // leave it alone so the drop bubbles to the column
+                        // itself as a normal cross-column status change.
+                        e.preventDefault();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const edge: "before" | "after" = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                        setDragOverCard((prev) =>
+                          prev?.id === r.id && prev.edge === edge ? prev : { id: r.id, edge },
+                        );
+                      }}
+                      onDragLeave={() => setDragOverCard((c) => (c?.id === r.id ? null : c))}
+                      onDrop={(e) => {
+                        const draggedId = draggingId;
+                        setDraggingId(null);
+                        setDragOverStatus(null);
+                        setDragOverCard(null);
+                        if (!draggedId || draggedId === r.id) return;
+                        const draggedRow = effectiveRequests.find((x) => x.id === draggedId);
+                        if (draggedRow && draggedRow.status === r.status && canManuallyReorder(r.status)) {
+                          // Same column as the card being dragged -- reorder
+                          // instead of the column's own onDrop (which only
+                          // handles a status change), so stop it there.
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const edge: "before" | "after" = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
+                          handleReorder(r.status, draggedId, r.id, edge);
+                        }
+                        // Otherwise let it bubble to the column's onDrop for
+                        // the usual cross-column status-change handling.
                       }}
                       onClick={() => {
                         setActiveId(r.id);
@@ -579,7 +718,11 @@ export default function RequestsKanban({
                       }}
                       className={`relative card-hover cursor-pointer bg-card border border-border-warm rounded-xl p-4 ${
                         r.id === revealId ? "card-added-in" : "stagger-in"
-                      } ${draggingId === r.id ? "opacity-40" : ""}`}
+                      } ${draggingId === r.id ? "opacity-40" : ""} ${
+                        dragOverCard?.id === r.id && dragOverCard.edge === "before" ? "border-t-2 border-t-sage"
+                        : dragOverCard?.id === r.id && dragOverCard.edge === "after" ? "border-b-2 border-b-sage"
+                        : ""
+                      }`}
                     >
                       {r.is_print_club && (
                         <div className="absolute top-2 right-2 z-10">

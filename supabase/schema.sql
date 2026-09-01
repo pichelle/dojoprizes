@@ -110,6 +110,15 @@ create table if not exists requests (
   -- (e.g. both sitting in "pending"), so it knows whether the next step
   -- is Printed/Fulfilled or straight to the Prize Bin.
   originated_as_idea boolean not null default false,
+  -- Manual drag position within a board column, scoped to whichever
+  -- Print Club/regular partition the row is currently in (is_print_club
+  -- always sorts first within a column -- this only orders rows within
+  -- that split, never across it). Null until someone actually drags a
+  -- card in that column; null rows fall back to date_requested order and
+  -- always sort after any manually-positioned ones. Reset to null
+  -- whenever status or is_print_club changes, since a position tuned for
+  -- the old column/partition doesn't mean anything in the new one.
+  sort_order double precision,
   created_at timestamptz not null default now()
 );
 

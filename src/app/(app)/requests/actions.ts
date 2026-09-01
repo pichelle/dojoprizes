@@ -249,7 +249,16 @@ async function performUpdateRequest(
     const before = existing ? await snapshotRequest(supabase, requestId, existing) : null;
 
     const fields = requestFieldsFromForm(formData);
-    const { error } = await supabase.from("requests").update(fields).eq("id", requestId);
+    // A manual drag position only means something within the column/Print
+    // Club partition it was set in -- flipping Print Club moves the row to
+    // the other partition of the same column, so that position no longer
+    // applies. (A plain status change goes through updateRequestStatus
+    // instead, which resets it there.)
+    const printClubChanged = existing && existing.is_print_club !== fields.is_print_club;
+    const { error } = await supabase
+      .from("requests")
+      .update(printClubChanged ? { ...fields, sort_order: null } : fields)
+      .eq("id", requestId);
 
     if (error) return { error: error.message };
 
@@ -400,6 +409,7 @@ export async function updateRequestStatus(
     sale_price?: number | null;
     pending_at?: string;
     fulfilled_at?: string | null;
+    sort_order?: null;
   } = { status };
   // Price is locked in when a request moves to Printed (that's when actual
   // size/color availability is known), and carries forward through
@@ -426,6 +436,13 @@ export async function updateRequestStatus(
 
   if (status === "pending" && !existing?.pending_at) {
     update.pending_at = new Date().toISOString();
+  }
+
+  // A manual drag position only means something within the column it was
+  // set in -- moving to a different status leaves it meaningless there, so
+  // it resets and the row falls back to date order until re-dragged.
+  if (existing && existing.status !== status) {
+    update.sort_order = null;
   }
 
   // A request moving away from Fulfilled (e.g. "Move back to Pickup" on the
@@ -534,6 +551,28 @@ export async function duplicateRequest(requestId: string, actor: string | null):
   revalidatePath("/requests");
   revalidatePath("/");
   return copy.id;
+}
+
+// Saves a manual drag reorder within one column's Print Club (or regular)
+// partition -- `orderedIds` is that whole partition's cards in their new
+// order, and every row gets a freshly spaced sort_order (rather than just
+// the one that moved) so the numbers stay simple integers instead of
+// accumulating ever-finer fractions between two neighbors over time. Cheap
+// at this app's scale (a partition is at most a few dozen cards).
+export async function reorderRequests(orderedIds: string[]) {
+  const supabase = createServerClient();
+  const results = await Promise.all(
+    orderedIds.map((id, i) =>
+      supabase
+        .from("requests")
+        .update({ sort_order: (i + 1) * 1024 })
+        .eq("id", id),
+    ),
+  );
+  const firstError = results.find((r) => r.error)?.error;
+  if (firstError) throw new Error(firstError.message);
+  revalidatePath("/requests");
+  revalidatePath("/");
 }
 
 export async function deleteRequest(requestId: string) {

@@ -70,6 +70,11 @@ export interface PrizeRequest {
   // "idea"). Determines whether its next status step is Printed/Fulfilled
   // or straight to the Prize Bin.
   originated_as_idea: boolean;
+  // Manual drag position within a board column -- see the column comment
+  // on this field in supabase/schema.sql for the full rules (partitioned
+  // by is_print_club, null falls back to date order, reset on
+  // status/is_print_club change).
+  sort_order: number | null;
   created_at: string;
   // populated via join
   prize?: Pick<Prize, "id" | "name" | "photo_url" | "coin_price"> | null;
