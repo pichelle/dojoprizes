@@ -17,7 +17,6 @@ import ErrorNote from "@/components/ErrorNote";
 import PhotoDropzone from "@/components/PhotoDropzone";
 import { showToast } from "@/components/ToastHost";
 import { useProfiles } from "@/components/ProfileContext";
-import ProfileNameField from "@/components/ProfileNameField";
 import type { RequestFormState } from "./actions";
 
 function Req() {
@@ -273,14 +272,16 @@ export default function RequestForm({
             <label className="block text-sm font-medium text-ink mb-1">
               Requested by (sensei) <Req />
             </label>
-            <ProfileNameField
+            <input
+              name="requested_by"
               value={requestedBy}
-              onChange={(v) => {
-                setRequestedBy(v);
+              onChange={(e) => {
+                setRequestedBy(e.target.value);
                 setErrors((prev) => ({ ...prev, requested_by: false }));
               }}
-              inputName="requested_by"
-              hasError={errors.requested_by}
+              className={`w-full rounded-md border bg-card px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sage ${
+                errors.requested_by ? "field-error" : "border-border-warm-strong"
+              }`}
             />
             <FieldError show={errors.requested_by} />
           </div>
